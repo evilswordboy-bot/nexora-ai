@@ -1,4 +1,11 @@
-import { Message, ProviderStatusResponse, UserSettings, Conversation } from '../types';
+import {
+  Message,
+  ProviderStatusResponse,
+  UserSettings,
+  Conversation,
+  SearchResultItem,
+  ResearchProgress,
+} from '../types';
 
 const BASE_URL = '/api/v1';
 
@@ -26,7 +33,6 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         detail = errJson;
         errorMsg = errJson.detail || errJson.message || errorMsg;
       } catch {
-        // Fallback to text
         const text = await res.text();
         if (text) errorMsg = text;
       }
@@ -54,6 +60,18 @@ function resolveClientApiKey(settings: UserSettings): string {
   return '';
 }
 
+function resolveClientSearchKey(settings: UserSettings): string {
+  const { selectedSearchEngine, tavilyApiKey, serperApiKey, braveApiKey } = settings;
+  if (selectedSearchEngine === 'tavily' || tavilyApiKey) {
+    return tavilyApiKey || '';
+  } else if (selectedSearchEngine === 'serper' || serperApiKey) {
+    return serperApiKey || '';
+  } else if (selectedSearchEngine === 'brave' || braveApiKey) {
+    return braveApiKey || '';
+  }
+  return '';
+}
+
 export const api = {
   async getHealth(): Promise<{ status: string; providers_configured: boolean; configured_providers: string[] }> {
     return request('/health');
@@ -63,12 +81,25 @@ export const api = {
     return request('/providers/status');
   },
 
+  async searchWeb(query: string, maxResults: number = 5, settings?: UserSettings): Promise<{ results: SearchResultItem[] }> {
+    return request('/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        query,
+        max_results: maxResults,
+        engine: settings?.selectedSearchEngine || 'auto',
+        client_search_key: settings ? resolveClientSearchKey(settings) : undefined,
+      }),
+    });
+  },
+
   async sendChatMessage(params: {
     conversationId?: string;
     messages: Message[];
     settings: UserSettings;
-  }): Promise<{ id: string; content: string; model: string; provider: string; finish_reason?: string }> {
+  }): Promise<{ id: string; content: string; model: string; provider: string; sources?: SearchResultItem[]; finish_reason?: string }> {
     const clientApiKey = resolveClientApiKey(params.settings);
+    const clientSearchKey = resolveClientSearchKey(params.settings);
 
     return request('/chat', {
       method: 'POST',
@@ -80,6 +111,9 @@ export const api = {
         temperature: params.settings.temperature,
         system_prompt: params.settings.systemPrompt,
         client_api_key: clientApiKey || undefined,
+        search_mode: params.settings.searchMode,
+        search_engine: params.settings.selectedSearchEngine,
+        client_search_key: clientSearchKey || undefined,
         stream: false,
       }),
     });
@@ -91,11 +125,14 @@ export const api = {
     settings: UserSettings;
     signal?: AbortSignal;
     onStart?: (info: { id: string; model: string; provider: string }) => void;
+    onResearchProgress?: (progress: ResearchProgress) => void;
+    onResearchSources?: (sources: SearchResultItem[]) => void;
     onChunk: (chunk: string) => void;
     onDone?: (info: { id: string; finish_reason?: string }) => void;
     onError?: (errorMsg: string) => void;
   }): Promise<void> {
     const clientApiKey = resolveClientApiKey(params.settings);
+    const clientSearchKey = resolveClientSearchKey(params.settings);
     const url = `${BASE_URL}/chat/stream`;
 
     try {
@@ -110,6 +147,9 @@ export const api = {
           temperature: params.settings.temperature,
           system_prompt: params.settings.systemPrompt,
           client_api_key: clientApiKey || undefined,
+          search_mode: params.settings.searchMode,
+          search_engine: params.settings.selectedSearchEngine,
+          client_search_key: clientSearchKey || undefined,
           stream: true,
         }),
         signal: params.signal,
@@ -155,6 +195,10 @@ export const api = {
                 const parsed = JSON.parse(dataStr);
                 if (parsed.type === 'start') {
                   params.onStart?.(parsed);
+                } else if (parsed.type === 'research_progress') {
+                  params.onResearchProgress?.(parsed);
+                } else if (parsed.type === 'research_sources') {
+                  params.onResearchSources?.(parsed.sources || []);
                 } else if (parsed.type === 'chunk') {
                   params.onChunk(parsed.content);
                 } else if (parsed.type === 'done') {
@@ -171,7 +215,6 @@ export const api = {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
-        // Explicitly stopped by user
         return;
       }
       params.onError?.(err.message || 'Streaming connection failed.');

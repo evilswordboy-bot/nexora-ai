@@ -1,5 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Conversation, Message, UserSettings, ProviderStatusResponse, ToastMessage } from '../types';
+import {
+  Conversation,
+  Message,
+  UserSettings,
+  ProviderStatusResponse,
+  ToastMessage,
+  SearchMode,
+  ResearchProgress,
+  SearchResultItem,
+} from '../types';
 import { storage } from '../services/storage';
 import { api } from '../services/api';
 
@@ -9,6 +18,9 @@ interface ChatContextType {
   activeConversation: Conversation | null;
   isLoading: boolean;
   isStreaming: boolean;
+  searchMode: SearchMode;
+  setSearchMode: (mode: SearchMode) => void;
+  researchProgress: ResearchProgress | null;
   isBackendConnected: boolean;
   providerStatus: ProviderStatusResponse | null;
   settings: UserSettings;
@@ -46,6 +58,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [settings, setSettings] = useState<UserSettings>(() => storage.getSettings());
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [researchProgress, setResearchProgress] = useState<ResearchProgress | null>(null);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [providerStatus, setProviderStatus] = useState<ProviderStatusResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,7 +68,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // AbortController ref for canceling active streams
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -70,17 +82,14 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // Save conversations to localStorage whenever changed
   useEffect(() => {
     storage.saveConversations(conversations);
   }, [conversations]);
 
-  // Save activeId whenever changed
   useEffect(() => {
     storage.setActiveId(activeConversationId);
   }, [activeConversationId]);
 
-  // Save settings whenever changed
   useEffect(() => {
     storage.saveSettings(settings);
   }, [settings]);
@@ -95,7 +104,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Periodic health check & provider inspection
   useEffect(() => {
     refreshProviderStatus();
     const interval = setInterval(refreshProviderStatus, 15000);
@@ -110,6 +118,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSettings((prev) => ({ ...prev, ...newSettings }));
     showToast('Settings saved', 'success');
   }, [showToast]);
+
+  const searchMode = settings.searchMode || 'ai_only';
+  const setSearchMode = useCallback((mode: SearchMode) => {
+    setSettings((prev) => ({ ...prev, searchMode: mode }));
+  }, []);
 
   const createNewConversation = useCallback(async (): Promise<string> => {
     const newConv: Conversation = {
@@ -186,8 +199,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setIsLoading(false);
     setIsStreaming(false);
+    setResearchProgress(null);
 
-    // Unset streaming flag on all messages
     setConversations((prev) =>
       prev.map((c) => ({
         ...c,
@@ -203,7 +216,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let targetConvId = activeConversationId;
     let isBrandNew = false;
 
-    // Create a new conversation if none is active
     if (!targetConvId) {
       isBrandNew = true;
       const newId = 'conv-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
@@ -224,6 +236,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'user',
       content: content.trim(),
       timestamp: new Date().toISOString(),
+      search_mode: settings.searchMode,
     };
 
     const assistantPlaceholderId = 'msg-' + Date.now() + '-assistant';
@@ -234,10 +247,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: new Date().toISOString(),
       model: settings.selectedModel,
       provider: settings.selectedProvider,
+      search_mode: settings.searchMode,
       isStreaming: true,
+      sources: [],
     };
 
-    // Optimistically update conversation state
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === targetConvId) {
@@ -253,12 +267,12 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setIsLoading(true);
     setIsStreaming(true);
+    setResearchProgress(null);
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
     try {
-      // Gather context messages
       const currentConv = conversations.find((c) => c.id === targetConvId);
       const existingMessages = currentConv ? currentConv.messages : [];
       const messagesToSend = [...existingMessages, userMessage];
@@ -287,6 +301,24 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
           );
         },
+        onResearchProgress: (progress) => {
+          setResearchProgress(progress);
+        },
+        onResearchSources: (sources) => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantPlaceholderId ? { ...m, sources } : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
         onChunk: (chunk) => {
           accumulatedContent += chunk;
           setConversations((prev) =>
@@ -305,7 +337,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
             })
           );
         },
-        onDone: (doneInfo) => {
+        onDone: () => {
+          setResearchProgress(null);
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === targetConvId) {
@@ -323,6 +356,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
           );
         },
         onError: (errorMsg) => {
+          setResearchProgress(null);
           setConversations((prev) =>
             prev.map((c) => {
               if (c.id === targetConvId) {
@@ -346,7 +380,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
       });
 
-      // Auto-generate a smart conversation title if title is default
+      // Auto-generate title
       const convNow = conversations.find((c) => c.id === targetConvId);
       if (isBrandNew || (convNow && convNow.title === 'New Conversation')) {
         api.generateTitle(content, targetConvId, settings).then((smartTitle) => {
@@ -379,6 +413,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
+      setResearchProgress(null);
       abortControllerRef.current = null;
     }
   }, [activeConversationId, conversations, isLoading, settings]);
@@ -399,7 +434,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!userPrompt) return;
 
-    // Prune the assistant message
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === activeConversation.id) {
@@ -421,7 +455,6 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const msgIdx = activeConversation.messages.findIndex((m) => m.id === messageId);
     if (msgIdx === -1) return;
 
-    // Truncate messages from this point
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === activeConversation.id) {
@@ -445,6 +478,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeConversation,
         isLoading,
         isStreaming,
+        searchMode,
+        setSearchMode,
+        researchProgress,
         isBackendConnected,
         providerStatus,
         settings,

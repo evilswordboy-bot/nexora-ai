@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Message } from '../../types';
 import { useChat } from '../../context/ChatContext';
 import { MarkdownRenderer } from './MarkdownRenderer';
+import { SourcesSection } from './SourcesSection';
 import {
   Sparkles,
   User,
@@ -13,6 +14,8 @@ import {
   AlertCircle,
   KeyRound,
   ShieldAlert,
+  Globe,
+  Compass,
 } from 'lucide-react';
 
 interface MessageItemProps {
@@ -28,7 +31,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
 
   const isUser = message.role === 'user';
   const isSafetyGuard = message.provider === 'nexora-safety' || message.content.includes('Safety Guardrail');
-  const isUnconfigured = message.content.includes('Stage 1 Foundation Setup Required') || message.content.includes('No active AI provider');
+  const isUnconfigured = message.content.includes('Setup Required') || message.content.includes('No active AI provider');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -69,6 +72,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
             <div className="w-8 h-8 rounded-xl bg-violet-950/80 border border-violet-500/50 flex items-center justify-center text-violet-400">
               <ShieldAlert className="w-4 h-4" />
             </div>
+          ) : message.search_mode === 'deep_research' ? (
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-violet-glow flex items-center justify-center text-white">
+              <Compass className="w-4 h-4" />
+            </div>
+          ) : message.search_mode === 'web_search' ? (
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-teal-600 shadow-cyan-glow flex items-center justify-center text-white">
+              <Globe className="w-4 h-4" />
+            </div>
           ) : (
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 shadow-cyan-glow flex items-center justify-center text-white">
               <Sparkles className="w-4 h-4" />
@@ -78,12 +89,28 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
 
         {/* Message Body */}
         <div className="flex-1 min-w-0">
-          {/* Header (Author, Model tag, Timestamp) */}
+          {/* Header (Author, Model tag, Search mode tag, Timestamp) */}
           <div className="flex items-center justify-between mb-1.5">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-semibold text-slate-200">
                 {isUser ? 'You' : 'NEXORA'}
               </span>
+
+              {/* Search Mode badge */}
+              {message.search_mode === 'deep_research' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 flex items-center gap-1 font-medium">
+                  <Compass className="w-3 h-3 text-violet-400" />
+                  <span>Deep Research</span>
+                </span>
+              )}
+
+              {message.search_mode === 'web_search' && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 font-medium">
+                  <Globe className="w-3 h-3 text-cyan-400" />
+                  <span>Web Search</span>
+                </span>
+              )}
+
               {!isUser && message.model && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700/50">
                   {message.model}
@@ -129,15 +156,29 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
                 </div>
               )}
 
+              {/* Render Grounded Sources if available */}
+              {!isUser && message.sources && message.sources.length > 0 && (
+                <SourcesSection
+                  sources={message.sources}
+                  researchQueries={message.research_queries}
+                />
+              )}
+
               {/* Empty state while initial tokens are buffered */}
               {message.isStreaming && !message.content ? (
                 <div className="flex items-center gap-2 py-2 text-xs text-cyan-400 font-medium">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                  <span>NEXORA is generating live response...</span>
+                  <span>
+                    {message.search_mode === 'deep_research'
+                      ? 'NEXORA Deep Research is investigating...'
+                      : message.search_mode === 'web_search'
+                      ? 'Searching the web and synthesizing...'
+                      : 'NEXORA is generating live response...'}
+                  </span>
                 </div>
               ) : (
                 <div className="relative">
-                  <MarkdownRenderer content={message.content} />
+                  <MarkdownRenderer content={message.content} sources={message.sources} />
                   {message.isStreaming && (
                     <span className="inline-block w-2 h-4 ml-1 bg-cyan-400 animate-pulse rounded-sm align-middle shadow-cyan-glow" />
                   )}

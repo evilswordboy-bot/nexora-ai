@@ -50,15 +50,17 @@ async def provider_status():
     ]
 
     active_provider = configured_list[0] if is_configured else None
+    configured_search_engines = settings.get_configured_search_engines()
 
     instructions = (
         "Configure your API keys in backend/.env or enter your client API key "
-        "in the Frontend Settings modal to enable live generation."
+        "in the Frontend Settings modal to enable live generation and search."
     )
 
     return ProviderStatusResponse(
         configured=is_configured,
         active_provider=active_provider,
         available_providers=providers_info,
+        configured_search_engines=configured_search_engines,
         instructions=instructions,
     )

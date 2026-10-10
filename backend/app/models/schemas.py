@@ -7,6 +7,19 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+SearchMode = Literal["ai_only", "web_search", "deep_research"]
+
+
+class SearchResultItem(BaseModel):
+    title: str = Field(..., description="Webpage title")
+    url: str = Field(..., description="Target webpage URL")
+    snippet: str = Field(..., description="Summary text snippet")
+    domain: str = Field(..., description="Website host domain")
+    published_date: Optional[str] = None
+    content: Optional[str] = None
+    source_id: Optional[int] = None
+
+
 class Message(BaseModel):
     id: str = Field(..., description="Unique ID for the message")
     role: Literal["user", "assistant", "system"] = Field(..., description="Role of the author")
@@ -15,6 +28,10 @@ class Message(BaseModel):
     model: Optional[str] = None
     provider: Optional[str] = None
     error: Optional[bool] = False
+    isStreaming: Optional[bool] = False
+    sources: Optional[List[SearchResultItem]] = None
+    search_mode: Optional[SearchMode] = None
+    research_queries: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
     @field_validator("content")
@@ -55,6 +72,11 @@ class ChatRequest(BaseModel):
     stream: Optional[bool] = True
     client_api_key: Optional[str] = None  # Optional key provided securely from user's client settings
 
+    # Stage 3 Search & Research parameters
+    search_mode: Optional[SearchMode] = "ai_only"
+    search_engine: Optional[str] = "auto"
+    client_search_key: Optional[str] = None
+
     @field_validator("messages")
     @classmethod
     def validate_messages_count(cls, v: List[Message]) -> List[Message]:
@@ -74,7 +96,24 @@ class ChatResponse(BaseModel):
     provider: str
     finish_reason: Optional[str] = "stop"
     usage: Optional[Dict[str, int]] = None
+    sources: Optional[List[SearchResultItem]] = None
+    search_mode: Optional[SearchMode] = None
+    research_queries: Optional[List[str]] = None
     created_at: datetime = Field(default_factory=utc_now)
+
+
+class SearchRequest(BaseModel):
+    query: str
+    max_results: Optional[int] = 5
+    engine: Optional[str] = "auto"
+    client_search_key: Optional[str] = None
+
+
+class SearchResponse(BaseModel):
+    query: str
+    engine: str
+    results: List[SearchResultItem]
+    count: int
 
 
 class TitleGenerationRequest(BaseModel):
@@ -101,6 +140,7 @@ class ProviderStatusResponse(BaseModel):
     configured: bool
     active_provider: Optional[str]
     available_providers: List[ProviderInfo]
+    configured_search_engines: List[str]
     instructions: str
 
 

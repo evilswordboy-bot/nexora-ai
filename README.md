@@ -1,35 +1,40 @@
-# NEXORA AI — Stage 2: The Intelligence Engine
+# NEXORA AI — Stage 3: Universal Search & Deep Research Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 2** upgrades the foundational system with a production-grade **Intelligence Engine**: Server-Sent Events (SSE) streaming pipeline, modular LLM provider abstractions, client-side abort/stop generation controls, conversational context management, and smart auto-titling.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 3** elevates the system into a high-precision research assistant featuring a non-simulated **Universal Search and Deep Research Engine**: multi-engine web search (DuckDuckGo, Tavily, Google Serper, Brave), real-time source grounding, numbered inline citations (`[1]`, `[2]`), an interactive collapsible sources explorer, and a 6-step autonomous deep research pipeline with live execution telemetry.
 
 ---
 
-## 🌟 Stage 2 Core Deliverables
+## 🌟 Stage 3 Core Deliverables
 
-- **Real-Time Streaming Engine (Server-Sent Events / SSE)**:
-  - `POST /api/v1/chat/stream` streams tokens in real time directly to the client interface.
-  - Live typing cursor animation with smooth autoscrolling as tokens stream into the chat view.
-  - Seamless fallback streaming for honest unconfigured setup guidance (zero fake answers).
-- **Client-Side Generation Cancellation (Stop Controls)**:
-  - Responsive **Stop** button powered by standard `AbortController` in `fetch`.
-  - Halts generation immediately, preserves partial streamed output without corrupted formatting, and frees provider connection resources.
-- **Modular Multi-Provider Abstraction Layer**:
-  - `BaseAIProvider`: Abstract base class enforcing consistent message preparation, generation, and streaming.
-  - `GeminiProvider`: Google Gemini (`gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`) via `streamGenerateContent?alt=sse`.
-  - `OpenAIProvider`: OpenAI (`gpt-4o`, `gpt-4o-mini`, `o3-mini`) via `chat/completions` with `stream: true`.
-  - `AnthropicProvider`: Anthropic Claude (`claude-3-5-sonnet`, `claude-3-5-haiku`) via `messages` streaming.
-  - `OfflineHonestProvider`: Transparent, zero-mock guidance when no external credentials exist.
-- **Context Memory & Sliding Window Management**:
-  - Maintains strict chronological ordering and conversation history across follow-up queries.
-  - Configurable context limit (`MAX_CONTEXT_MESSAGES=20`) to prevent context window blowouts.
-  - Support for follow-up questions, message regeneration, copying responses, and editing user prompts.
-- **Smart Conversation Auto-Titling**:
-  - `POST /api/v1/chat/generate-title`: Generates concise 3-5 word topic titles from user inquiries.
-  - Automatically renames new conversations dynamically as the user chats.
-- **Reliability, Security & Size Validation**:
-  - Pydantic v2 validation enforcing maximum message character limits (32,000 characters) and conversation length limits.
-  - Configurable request timeouts (`REQUEST_TIMEOUT_SECONDS=45.0`).
-  - Strict privacy: Sensitive user prompts and raw API keys are never leaked to logs or external services.
+- **Real Web Search & Zero-Hallucination Grounding**:
+  - Genuine web search integration with zero simulated results, fabricated URLs, or fictitious citations.
+  - Multi-engine backend with auto-fallback:
+    - **DuckDuckGo**: High-reliability zero-credential web search available out of the box with HTML scraper fallback.
+    - **Tavily AI Search**: Direct answer and deep content web search.
+    - **Google Serper**: Google-indexed organic results with sitelinks and snippets.
+    - **Brave Search**: Independent web search index.
+- **Three Specialized Interaction Modes**:
+  - **AI Only**: Direct conversational intelligence from configured LLM (fastest latency).
+  - **Web Search**: Real-time web search for breaking news, up-to-date facts, and current events.
+  - **Deep Research**: 6-step autonomous investigation pipeline that breaks complex questions into sub-queries, executes multi-pass searches, scrapes and deduplicates content, and synthesizes an evidence-grounded report.
+- **Source-Grounded Inline Citations & Sources Explorer**:
+  - Numbered clickable inline citations (`[1]`, `[2]`) in markdown linking directly to verified source URLs.
+  - Collapsible **Sources Drawer** attached to messages with website favicons, domain tags, titles, snippets, and published dates.
+  - Honest disclosure whenever external evidence is conflicting or insufficient.
+- **6-Step Deep Research Pipeline**:
+  1. **Question Decomposition**: Breaks complex multi-faceted prompts into focused sub-queries.
+  2. **Multi-Pass Parallel Search**: Executes searches across target vectors.
+  3. **Content Extraction & Scraping**: Safely downloads readable article text.
+  4. **Evidence Deduplication**: Consolidates identical sources and domains.
+  5. **Cross-Examination**: Analyzes consensus, anomalies, and conflicting viewpoints.
+  6. **Structured Synthesis**: Outputs exhaustive findings, inline citations, methodological limitations, and actionable conclusions.
+  - Live progress stepper displayed in the UI during research execution.
+- **Hardened Security & Defenses**:
+  - **SSRF Protection**: `WebpageScraper` verifies IP resolutions to block loopback (`127.0.0.1`), RFC1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and cloud metadata endpoints (`169.254.169.254`).
+  - **Prompt Injection Defense**: Untrusted external HTML/text is quarantined in structured `<untrusted_web_evidence>` boundaries preventing remote prompt hijacking.
+- **Strict Backward Compatibility**:
+  - Preserves Stage 1 foundation (Tailwind dark theme, conversation management, honest unconfigured states).
+  - Preserves Stage 2 intelligence (SSE streaming, AbortController stop generation controls, auto-titling, adult-content guardrails with educational exemptions).
 
 ---
 
@@ -113,7 +118,7 @@ nexora-ai/
 ```bash
 cd backend
 
-# Run automated test suite (13/13 passing)
+# Run automated test suite (18/18 passing)
 python -m pytest tests -v
 
 # Launch the FastAPI server
@@ -130,6 +135,9 @@ In a separate terminal:
 ```bash
 cd frontend
 
+# Build check
+npm run build
+
 # Start the Vite development server
 npm run dev
 ```
@@ -137,22 +145,33 @@ Frontend runs at `http://localhost:5173`.
 
 ---
 
-## 🔑 AI Provider Configuration
+## 🔑 AI Provider & Search Engine Configuration
 
-NEXORA AI operates on an **honest provider architecture**. You can configure providers via either method:
+NEXORA AI operates on an **honest provider architecture**:
+- **Web Search**: Works out of the box with DuckDuckGo (zero API key needed). You can also configure Tavily, Serper, or Brave.
+- **AI Models**: Connect Google Gemini, OpenAI, or Anthropic Claude. If unconfigured, the UI clearly guides the user on obtaining credentials.
 
 ### Method A: Client Settings Modal (Instant)
 1. Open the web interface at `http://localhost:5173`.
 2. Click the **Gear icon (Settings)** in the top-right header.
-3. Paste your **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com)) or **OpenAI API Key**.
-4. Click **Save Settings**. Your key is saved strictly in your local browser session and utilized for real streaming generation.
+3. In **AI Providers & Keys**, enter your Gemini, OpenAI, or Anthropic API key.
+4. In **Search & Research**, select your preferred search engine (DuckDuckGo, Tavily, Serper, or Brave) and enter keys if applicable.
+5. Click **Save Settings**. Your keys are saved strictly in your local browser session and utilized for real streaming queries.
 
 ### Method B: Backend `.env` File
 Configure `backend/.env`:
 ```env
+# AI Models
 GEMINI_API_KEY=AIzaSy...
 OPENAI_API_KEY=sk-proj-...
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Universal Search & Deep Research
+DEFAULT_SEARCH_ENGINE=auto
+TAVILY_API_KEY=tvly-...
+SERPER_API_KEY=...
+BRAVE_API_KEY=BSA...
+```
 
 DEFAULT_PROVIDER=auto
 DEFAULT_MODEL=gemini-1.5-flash

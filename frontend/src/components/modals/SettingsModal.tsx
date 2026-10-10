@@ -13,6 +13,8 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Search,
+  Globe,
 } from 'lucide-react';
 
 export const SettingsModal: React.FC = () => {
@@ -26,10 +28,13 @@ export const SettingsModal: React.FC = () => {
     showToast,
   } = useChat();
 
-  const [activeTab, setActiveTab] = useState<'api' | 'model' | 'safety' | 'data'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'search' | 'model' | 'safety' | 'data'>('api');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showOpenAiKey, setShowOpenAiKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+  const [showTavilyKey, setShowTavilyKey] = useState(false);
+  const [showSerperKey, setShowSerperKey] = useState(false);
+  const [showBraveKey, setShowBraveKey] = useState(false);
 
   // Local form state
   const [form, setForm] = useState({ ...settings });
@@ -107,6 +112,18 @@ export const SettingsModal: React.FC = () => {
           >
             <Key className="w-4 h-4" />
             <span>AI Providers & Keys</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('search')}
+            className={`py-3 flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === 'search'
+                ? 'border-cyan-400 text-cyan-300 font-semibold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Search & Research</span>
           </button>
 
           <button
@@ -242,6 +259,134 @@ export const SettingsModal: React.FC = () => {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                   >
                     {showAnthropicKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="space-y-5">
+              <div className="p-3.5 rounded-xl bg-midnight-950/70 border border-cyan-500/20 text-xs text-slate-300 space-y-1">
+                <span className="font-semibold text-cyan-400">Universal Web Search & Deep Research Engine:</span>
+                <p className="text-slate-400">
+                  Nexora searches real-time web sources with zero fake links or simulated citations. DuckDuckGo works out of the box with zero credentials. Configure Tavily, Serper, or Brave for high-speed AI web grounding.
+                </p>
+              </div>
+
+              {/* Default Search Engine */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Preferred Search Engine
+                </label>
+                <select
+                  value={form.selectedSearchEngine}
+                  onChange={(e) => setForm({ ...form, selectedSearchEngine: e.target.value })}
+                  className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <option value="auto">Auto (Configured Key or DuckDuckGo fallback)</option>
+                  <option value="duckduckgo">DuckDuckGo (Free / Zero-Config)</option>
+                  <option value="tavily">Tavily AI Search (High Accuracy)</option>
+                  <option value="serper">Serper Google API</option>
+                  <option value="brave">Brave Search API</option>
+                </select>
+              </div>
+
+              {/* Tavily API Key */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Tavily Search API Key
+                  </label>
+                  <a
+                    href="https://tavily.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-cyan-400 hover:underline"
+                  >
+                    Get free key
+                  </a>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showTavilyKey ? 'text' : 'password'}
+                    value={form.tavilyApiKey}
+                    onChange={(e) => setForm({ ...form, tavilyApiKey: e.target.value })}
+                    placeholder="tvly-..."
+                    className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 pr-10 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowTavilyKey(!showTavilyKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {showTavilyKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Serper API Key */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Serper (Google Search) API Key
+                  </label>
+                  <a
+                    href="https://serper.dev"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-cyan-400 hover:underline"
+                  >
+                    serper.dev
+                  </a>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showSerperKey ? 'text' : 'password'}
+                    value={form.serperApiKey}
+                    onChange={(e) => setForm({ ...form, serperApiKey: e.target.value })}
+                    placeholder="Enter Serper API Key..."
+                    className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 pr-10 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSerperKey(!showSerperKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {showSerperKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Brave API Key */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-300">
+                    Brave Search API Key
+                  </label>
+                  <a
+                    href="https://brave.com/search/api/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-[11px] text-cyan-400 hover:underline"
+                  >
+                    brave.com/search/api
+                  </a>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showBraveKey ? 'text' : 'password'}
+                    value={form.braveApiKey}
+                    onChange={(e) => setForm({ ...form, braveApiKey: e.target.value })}
+                    placeholder="BSA..."
+                    className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 pr-10 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowBraveKey(!showBraveKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                  >
+                    {showBraveKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>

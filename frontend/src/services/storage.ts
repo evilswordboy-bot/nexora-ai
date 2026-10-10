@@ -15,6 +15,11 @@ export const defaultSettings: UserSettings = {
   temperature: 0.7,
   systemPrompt: 'You are NEXORA AI, an intelligent, precision-focused assistant engineered with modular architecture for deep research, coding, and problem solving.',
   enableSafetyGuardrails: true,
+  searchMode: 'ai_only',
+  selectedSearchEngine: 'auto',
+  tavilyApiKey: '',
+  serperApiKey: '',
+  braveApiKey: '',
 };
 
 export const storage = {

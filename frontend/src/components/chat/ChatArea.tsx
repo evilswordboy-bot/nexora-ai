@@ -3,10 +3,11 @@ import { useChat } from '../../context/ChatContext';
 import { MessageItem } from './MessageItem';
 import { WelcomeScreen } from './WelcomeScreen';
 import { MessageInput } from './MessageInput';
+import { ResearchProgressCard } from './ResearchProgressCard';
 import { ArrowDown, Loader2 } from 'lucide-react';
 
 export const ChatArea: React.FC = () => {
-  const { activeConversation, isLoading } = useChat();
+  const { activeConversation, isLoading, researchProgress } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
@@ -48,8 +49,13 @@ export const ChatArea: React.FC = () => {
               />
             ))}
 
+            {/* Deep Research Progress Card */}
+            {researchProgress && (
+              <ResearchProgressCard progress={researchProgress} />
+            )}
+
             {/* Live generation loading indicator */}
-            {isLoading && (
+            {isLoading && !researchProgress && (
               <div className="py-5 px-4 sm:px-6 bg-midnight-900/40 border-y border-slate-800/40">
                 <div className="max-w-3xl mx-auto flex items-center gap-3">
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 shadow-cyan-glow flex items-center justify-center text-white">

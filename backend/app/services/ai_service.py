@@ -1,16 +1,18 @@
 import json
 import uuid
 import logging
-from typing import AsyncGenerator, Optional, Tuple
+from typing import AsyncGenerator, Optional, Tuple, List
 
 from app.config import settings
-from app.models.schemas import ChatRequest, ChatResponse, Message
+from app.models.schemas import ChatRequest, ChatResponse, Message, SearchResultItem
 from app.core.safety import safety_guard
 from app.services.providers.base import BaseAIProvider
 from app.services.providers.gemini_provider import GeminiProvider
 from app.services.providers.openai_provider import OpenAIProvider
 from app.services.providers.anthropic_provider import AnthropicProvider
 from app.services.providers.offline_provider import OfflineHonestProvider
+from app.services.search.search_service import search_service
+from app.services.search.deep_research import deep_research_engine
 
 logger = logging.getLogger("nexora.ai_service")
 
@@ -18,8 +20,8 @@ logger = logging.getLogger("nexora.ai_service")
 class AIService:
     """
     Unified AI Service for NEXORA AI.
-    Dispatches generation and streaming across Gemini, OpenAI, Anthropic, and Offline providers.
-    Enforces the zero-fake-response policy and adult-content safety guardrail.
+    Integrates Multi-Provider LLMs with Universal Web Search & Deep Research Engine.
+    Enforces honest answers, zero mock citations, and prompt injection defense.
     """
 
     def __init__(self):
@@ -59,11 +61,11 @@ class AIService:
         return "offline", None
 
     async def generate_response(self, request: ChatRequest) -> ChatResponse:
-        # 1. Content Safety Verification
         latest_user_message = next(
             (m.content for m in reversed(request.messages) if m.role == "user"), ""
         )
 
+        # 1. Content Safety Verification
         if settings.enable_safety_guardrails:
             safety_result = safety_guard.evaluate_content(latest_user_message)
             if not safety_result.is_safe:
@@ -79,17 +81,56 @@ class AIService:
                     model=request.model or "guardrail",
                     provider="nexora-safety",
                     finish_reason="safety_violation",
+                    search_mode=request.search_mode,
                 )
 
         provider_name, api_key = self.resolve_provider_and_key(request)
         provider = self.providers.get(provider_name, self.providers["offline"])
-        logger.info(f"Dispatching synchronous completion to provider: {provider_name}")
-        return await provider.generate(request, api_key or "")
+
+        # 2. Stage 3 Search & Deep Research Preparation
+        sources: List[SearchResultItem] = []
+        research_queries: List[str] = []
+        active_request = request
+
+        if request.search_mode == "web_search":
+            sources = await search_service.execute_search(
+                query=latest_user_message,
+                max_results=settings.max_search_results,
+                engine_preference=request.search_engine or "auto",
+                client_key=request.client_search_key,
+            )
+            evidence_prompt = search_service.format_evidence_prompt(sources)
+            system_instruction = (
+                f"{request.system_prompt or ''}\n\n"
+                f"You are responding using live web search. Ground your answer with inline citations like [1], [2] "
+                f"referencing the following retrieved evidence:\n\n{evidence_prompt}"
+            )
+            active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        elif request.search_mode == "deep_research":
+            research_queries = deep_research_engine.decompose_query(latest_user_message)
+            sources = await deep_research_engine.gather_sources(
+                queries=research_queries,
+                engine_preference=request.search_engine or "auto",
+                client_search_key=request.client_search_key,
+                max_total_sources=settings.max_research_sources,
+            )
+            await deep_research_engine.extract_deep_contents(sources, max_to_scrape=3)
+            system_instruction = deep_research_engine.build_research_synthesis_prompt(
+                user_prompt=latest_user_message,
+                sources=sources,
+                queries=research_queries,
+            )
+            active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        # 3. Provider Generation
+        response = await provider.generate(active_request, api_key or "")
+        response.sources = sources if sources else None
+        response.search_mode = request.search_mode
+        response.research_queries = research_queries if research_queries else None
+        return response
 
     async def stream_response(self, request: ChatRequest) -> AsyncGenerator[str, None]:
-        """
-        Yields raw Server-Sent Event (SSE) strings formatted as 'data: <json>\n\n'.
-        """
         latest_user_message = next(
             (m.content for m in reversed(request.messages) if m.role == "user"), ""
         )
@@ -111,9 +152,52 @@ class AIService:
 
         provider_name, api_key = self.resolve_provider_and_key(request)
         provider = self.providers.get(provider_name, self.providers["offline"])
-        logger.info(f"Dispatching streaming completion to provider: {provider_name}")
 
-        async for chunk in provider.stream(request, api_key or ""):
+        # 2. Stage 3 Search & Deep Research Streaming Pipeline
+        sources: List[SearchResultItem] = []
+        research_queries: List[str] = []
+        active_request = request
+
+        if request.search_mode == "web_search":
+            yield f"data: {json.dumps({'type': 'research_progress', 'step': 'searching', 'message': 'Searching live web index...'})}\n\n"
+            sources = await search_service.execute_search(
+                query=latest_user_message,
+                max_results=settings.max_search_results,
+                engine_preference=request.search_engine or "auto",
+                client_key=request.client_search_key,
+            )
+            yield f"data: {json.dumps({'type': 'research_sources', 'sources': [s.model_dump() for s in sources]})}\n\n"
+            evidence_prompt = search_service.format_evidence_prompt(sources)
+            system_instruction = (
+                f"{request.system_prompt or ''}\n\n"
+                f"You are responding using live web search. Ground your answer with inline citations like [1], [2] "
+                f"referencing the following retrieved evidence:\n\n{evidence_prompt}"
+            )
+            active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        elif request.search_mode == "deep_research":
+            yield f"data: {json.dumps({'type': 'research_progress', 'step': 'decomposing', 'message': 'Decomposing research inquiry into investigation vectors...'})}\n\n"
+            research_queries = deep_research_engine.decompose_query(latest_user_message)
+            yield f"data: {json.dumps({'type': 'research_progress', 'step': 'searching', 'message': f'Searching {len(research_queries)} web query vectors...', 'queries': research_queries})}\n\n"
+            sources = await deep_research_engine.gather_sources(
+                queries=research_queries,
+                engine_preference=request.search_engine or "auto",
+                client_search_key=request.client_search_key,
+                max_total_sources=settings.max_research_sources,
+            )
+            yield f"data: {json.dumps({'type': 'research_progress', 'step': 'reading', 'message': f'Found {len(sources)} sources. Reading and extracting deep page contents...'})}\n\n"
+            await deep_research_engine.extract_deep_contents(sources, max_to_scrape=3)
+            yield f"data: {json.dumps({'type': 'research_sources', 'sources': [s.model_dump() for s in sources]})}\n\n"
+            yield f"data: {json.dumps({'type': 'research_progress', 'step': 'synthesizing', 'message': 'Synthesizing evidence-grounded research report...'})}\n\n"
+            system_instruction = deep_research_engine.build_research_synthesis_prompt(
+                user_prompt=latest_user_message,
+                sources=sources,
+                queries=research_queries,
+            )
+            active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        # 3. Stream from Chosen Provider
+        async for chunk in provider.stream(active_request, api_key or ""):
             yield f"data: {json.dumps(chunk)}\n\n"
 
     async def generate_smart_title(
@@ -123,13 +207,8 @@ class AIService:
         client_key: Optional[str] = None,
         provider: Optional[str] = "auto",
     ) -> str:
-        """
-        Generates a concise 3-6 word title for the conversation based on user content.
-        Uses fast model inference if credentials exist, or intelligent syntactic extraction if offline.
-        """
         clean_prompt = user_prompt.strip().replace("\n", " ")
 
-        # If key is available, attempt fast title generation via provider
         provider_name, api_key = self.resolve_provider_and_key(
             ChatRequest(
                 messages=[Message(id="m1", role="user", content=user_prompt)],
@@ -157,7 +236,6 @@ class AIService:
             except Exception:
                 pass
 
-        # Smart deterministic extraction fallback
         words = clean_prompt.split()
         if len(words) <= 5:
             return " ".join(words).title()
