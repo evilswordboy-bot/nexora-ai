@@ -17,6 +17,11 @@ import {
   VoiceInfo,
   TextToSpeechResponse,
   AudioTranscriptionResponse,
+  MonitoredTopic,
+  LiveNotification,
+  LiveQueryRequest,
+  LiveQueryResponse,
+  LiveCategory,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -449,6 +454,84 @@ export const api = {
     }
     return res.json();
   },
+
+  // Stage 8: Real-Time Intelligence Engine
+  async executeLiveQuery(params: {
+    query: string;
+    category?: LiveCategory;
+    forceRefresh?: boolean;
+    maxSources?: number;
+    settings?: UserSettings;
+  }): Promise<LiveQueryResponse> {
+    const clientSearchKey = params.settings ? resolveClientSearchKey(params.settings) : undefined;
+    return request<LiveQueryResponse>('/realtime/query', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: params.query,
+        category: params.category || 'general',
+        force_refresh: params.forceRefresh ?? false,
+        max_sources: params.maxSources ?? 5,
+        search_engine: params.settings?.selectedSearchEngine || 'auto',
+        client_search_key: clientSearchKey || undefined,
+      }),
+    });
+  },
+
+  async getMonitoredTopics(): Promise<MonitoredTopic[]> {
+    return request<MonitoredTopic[]>('/realtime/topics');
+  },
+
+  async createMonitoredTopic(params: {
+    name: string;
+    queryOrUrl: string;
+    category?: LiveCategory;
+    checkIntervalMinutes?: number;
+  }): Promise<MonitoredTopic> {
+    return request<MonitoredTopic>('/realtime/topics', {
+      method: 'POST',
+      body: JSON.stringify({
+        name: params.name,
+        query_or_url: params.queryOrUrl,
+        category: params.category || 'general',
+        check_interval_minutes: params.checkIntervalMinutes ?? 60,
+      }),
+    });
+  },
+
+  async deleteMonitoredTopic(topicId: string): Promise<void> {
+    return request(`/realtime/topics/${topicId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async refreshMonitoredTopic(topicId: string, settings?: UserSettings): Promise<MonitoredTopic> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<MonitoredTopic>(`/realtime/topics/${topicId}/refresh`, {
+      method: 'POST',
+      body: JSON.stringify({
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getLiveNotifications(): Promise<LiveNotification[]> {
+    return request<LiveNotification[]>('/realtime/notifications');
+  },
+
+  async markNotificationsRead(): Promise<void> {
+    return request('/realtime/notifications/read', {
+      method: 'POST',
+    });
+  },
+
+  async clearLiveNotifications(): Promise<void> {
+    return request('/realtime/notifications', {
+      method: 'DELETE',
+    });
+  },
 };
+
 
 

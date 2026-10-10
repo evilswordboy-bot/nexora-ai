@@ -262,3 +262,64 @@ export interface TranslationResponse {
   model: string;
 }
 
+// Stage 8: Real-Time Intelligence Engine Types
+export type LiveCategory = 'news' | 'tech' | 'research' | 'finance' | 'announcements' | 'weather' | 'general';
+
+export interface LiveSourceItem {
+  title: string;
+  url: string;
+  snippet: string;
+  domain: string;
+  published_date?: string;
+  retrieved_at: string;
+  source_freshness: 'fresh' | 'cached' | 'historical';
+}
+
+export interface MonitoredTopic {
+  id: string;
+  name: string;
+  query_or_url: string;
+  category: LiveCategory;
+  check_interval_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  last_checked_at?: string;
+  next_check_at?: string;
+  last_content_hash?: string;
+  change_count: number;
+  latest_summary?: string;
+}
+
+export interface LiveNotification {
+  id: string;
+  topic_id: string;
+  topic_name: string;
+  title: string;
+  summary_diff: string;
+  detected_at: string;
+  source_urls: string[];
+  is_read: boolean;
+}
+
+export interface LiveQueryRequest {
+  query: string;
+  category?: LiveCategory;
+  force_refresh?: boolean;
+  max_sources?: number;
+  search_engine?: string;
+  client_search_key?: string;
+}
+
+export interface LiveQueryResponse {
+  query: string;
+  category: LiveCategory;
+  is_fresh_retrieval: boolean;
+  retrieved_at: string;
+  freshness_label: string;
+  sources: LiveSourceItem[];
+  synthesized_answer: string;
+  provider: string;
+  model: string;
+}
+
+

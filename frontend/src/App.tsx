@@ -10,6 +10,7 @@ import { ToastContainer } from './components/ui/Toast';
 import { DocumentsWorkspace } from './components/documents/DocumentsWorkspace';
 import { FactCheckWorkspace } from './components/factcheck/FactCheckWorkspace';
 import { TranslationWorkspace } from './components/translation/TranslationWorkspace';
+import { RealTimeWorkspace } from './components/realtime/RealTimeWorkspace';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -30,6 +31,8 @@ const MainLayout: React.FC = () => {
           <FactCheckWorkspace />
         ) : activeWorkspaceView === 'translation' ? (
           <TranslationWorkspace />
+        ) : activeWorkspaceView === 'realtime' ? (
+          <RealTimeWorkspace />
         ) : (
           <ChatArea />
         )}

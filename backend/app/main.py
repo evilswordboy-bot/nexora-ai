@@ -11,6 +11,7 @@ from app.api.v1.documents import router as documents_router
 from app.api.v1.factcheck import router as factcheck_router
 from app.api.v1.multilingual import router as multilingual_router
 from app.api.v1.voice import router as voice_router
+from app.api.v1.realtime import router as realtime_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -51,6 +52,7 @@ app.include_router(documents_router, prefix="/api/v1")
 app.include_router(factcheck_router, prefix="/api/v1")
 app.include_router(multilingual_router, prefix="/api/v1")
 app.include_router(voice_router, prefix="/api/v1")
+app.include_router(realtime_router, prefix="/api/v1")
 
 
 @app.get("/")

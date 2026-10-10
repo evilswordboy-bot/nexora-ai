@@ -387,4 +387,68 @@ class AudioTranscriptionResponse(BaseModel):
     duration_seconds: Optional[float] = 0.0
 
 
+# ==========================================
+# Stage 8: Real-Time Intelligence Engine Schemas
+# ==========================================
+
+LiveCategory = Literal["news", "tech", "research", "finance", "announcements", "weather", "general"]
+
+class LiveSourceItem(BaseModel):
+    title: str
+    url: str
+    snippet: str
+    domain: str
+    published_date: Optional[str] = None
+    retrieved_at: datetime = Field(default_factory=utc_now)
+    source_freshness: str = "fresh" # 'fresh', 'cached', 'historical'
+
+
+class MonitoredTopic(BaseModel):
+    id: str
+    name: str
+    query_or_url: str
+    category: LiveCategory = "general"
+    check_interval_minutes: int = 60
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=utc_now)
+    last_checked_at: Optional[datetime] = None
+    next_check_at: Optional[datetime] = None
+    last_content_hash: Optional[str] = None
+    change_count: int = 0
+    latest_summary: Optional[str] = None
+
+
+class LiveNotification(BaseModel):
+    id: str
+    topic_id: str
+    topic_name: str
+    title: str
+    summary_diff: str
+    detected_at: datetime = Field(default_factory=utc_now)
+    source_urls: List[str] = Field(default_factory=list)
+    is_read: bool = False
+
+
+class LiveQueryRequest(BaseModel):
+    query: str
+    category: Optional[LiveCategory] = "general"
+    force_refresh: Optional[bool] = False
+    max_sources: Optional[int] = Field(5, ge=1, le=15)
+    search_engine: Optional[str] = "auto"
+    client_search_key: Optional[str] = None
+
+
+class LiveQueryResponse(BaseModel):
+    query: str
+    category: LiveCategory
+    is_fresh_retrieval: bool
+    retrieved_at: datetime = Field(default_factory=utc_now)
+    freshness_label: str # e.g. 'Retrieved just now (Live Web)'
+    sources: List[LiveSourceItem]
+    synthesized_answer: str
+    provider: str
+    model: str
+
+
+
 

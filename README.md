@@ -1,35 +1,35 @@
-# NEXORA AI — Stage 7: Voice Intelligence Engine
+# NEXORA AI — Stage 8: Real-Time Intelligence Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 7** introduces a production-ready **Voice Intelligence Engine**: real-time microphone dictation with permission handling, streaming transcript feedback, natural speech sanitization (stripping complex code snippets, citation brackets, and raw URLs), multi-provider text-to-speech synthesis (Web Speech API zero-latency native engines and OpenAI neural voices), 3 voice conversation modes (Push-to-Talk, Voice Chat, Text + Voice), play/pause/stop playback controls, and turn-taking interruption handling.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 8** introduces a production-ready **Real-Time Intelligence Engine**: freshness-aware live web data retrieval with time-stamped citations, continuous monitored research topics & URL change surveillance, SHA-256 content fingerprinting, automated in-app alerts on content differences, scheduled check tracking, and an interactive **Live Feed Dashboard**.
 
 ---
 
-## 🌟 Stage 7 Core Deliverables
+## 🌟 Stage 8 Core Deliverables
 
-- **Speech-to-Text & Microphone Dictation**:
-  - Live microphone button in message input bar with permission lifecycle management and visual recording pulse.
-  - Real-time interim transcription display allowing users to see spoken text preview before final turn submission.
-  - Native browser `SpeechRecognition` / `webkitSpeechRecognition` with automatic language detection and manual language selection (Tamil, Hindi, Telugu, English, etc.).
-  - Backend audio transcription endpoint `POST /api/v1/voice/transcribe` with OpenAI Whisper integration and fallback.
-- **Natural Speech Preprocessing & Sanitizer**:
-  - `VoiceEngine.sanitize_for_speech()`:
-    - Omit code blocks (````python...````) and replaces them with clean audio cues: `[Code snippet omitted for speech]`.
-    - Removes inline citation marks (`[1]`, `[2]`).
-    - Strips raw URLs (`https://...` replaced with clean spoken cue `link`).
-    - Cleans Markdown headings, bold/italics syntax while preserving identifier naming (`variable_x`).
-- **AI Voice Responses & Audio Synthesis**:
-  - `POST /api/v1/voice/tts` endpoint generating base64 audio or clean text for client-side Web Speech synthesis.
-  - Play, pause, resume, stop, and playback speed (0.5x – 2.0x) controls.
-  - **Listen** button on assistant message cards with live audio equalizer / mute toggle.
-  - Zero overlapping speech: interrupting with microphone automatically pauses and stops ongoing speech playback.
-- **Three Voice Interaction Modes**:
-  1. **Push-to-Talk**: User explicitly presses microphone button to speak and reviews transcription.
-  2. **Voice Chat**: Continuous turn-taking where completed utterances automatically submit and AI responses auto-play.
-  3. **Text + Voice**: Displays full Markdown responses with citations while simultaneously reading spoken audio.
-- **Privacy & Security**:
-  - Microphone access requested only upon explicit user action.
-  - Zero covert recording; clear UI indicators during active listening.
-  - Backend API keys protected; zero exposure of secrets in browser client.
+- **Live Information Retrieval & Freshness Tracking**:
+  - Reusable backend connector dispatching queries across web search and open data sources.
+  - Returns timestamped source URLs, domains, and publication dates with freshness indicators (*"Retrieved just now"*, *"Retrieved 4m ago (Cached)"*).
+  - Explicit provenance: distinguishes live retrieved information from base model weights.
+  - Zero mock data: reports unavailable or unindexed queries honestly without fabricating metrics or dates.
+- **Knowledge Refresh & Continuous Topic Surveillance**:
+  - Save research topics or specific URLs with configurable surveillance intervals (15 to 1440 minutes).
+  - **SHA-256 Content Fingerprinting**: Computes cryptographically stable hashes of fetched content to detect meaningful updates while ignoring minor layout noise.
+  - Tracks `last_checked_at`, `next_check_at`, content hashes, change counts, and concise update summaries.
+  - On-demand **Check Now** manual refresh triggers.
+- **In-App Change Notifications & Alert History**:
+  - Generates alert notifications when monitored topics undergo meaningful content alterations.
+  - Full notifications lifecycle: list unread alerts, mark-all-read, and clear notification history.
+  - Clickable source citations directly embedded into update alerts.
+- **Dedicated Live Feed Workspace**:
+  - Accessible via top navigation bar (**Chat & Search**, **Documents Vault**, **Fact Check**, **Translate**, **Live Feed**).
+  - 3 intuitive views:
+    1. **Live Retrieval**: Category filter (News, Tech, Research, Markets, Announcements) with instant web fetch & AI synthesis.
+    2. **Monitored Feeds**: Card-based registry of active monitored topics, intervals, and change counters.
+    3. **Alerts & History**: Unread badges and time-stamped diff digests.
+- **Reliability, SSRF & Instruction Protection**:
+  - Built-in SSRF protection rejecting private/loopback IP resolution (`localhost`, `10.0.0.0/8`, `192.168.0.0/16`, `169.254.0.0/16`).
+  - Strict system prompt boundaries isolating live external text to prevent indirect prompt injection.
+  - 5-minute memory cache with idempotent refresh execution.
 
 ---
 
