@@ -86,6 +86,9 @@ class ChatRequest(BaseModel):
     # Stage 9 Vision parameters
     images: Optional[List[str]] = None  # Base64 encoded or data URLs passed with the active prompt
 
+    # Stage 4 Document Vault Context parameters
+    document_ids: Optional[List[str]] = None  # IDs of active documents for grounded RAG chat
+
     @field_validator("messages")
     @classmethod
     def validate_messages_count(cls, v: List[Message]) -> List[Message]:

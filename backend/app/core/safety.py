@@ -12,7 +12,7 @@ class AdultContentSafetyGuard:
 
     # Indicators of explicit pornography / gratuitous sexually explicit content
     EXPLICIT_SEXUAL_PATTERNS = [
-        r"\b(?:porn(?:ography)?|hardcore|erotic(?:a)?|cybersex|hentai|xx{1,2}|camgirl)\b",
+        r"\b(?:porn(?:ograph(?:y|ic))?|hardcore|erotic(?:a)?|cybersex|hentai|xx{1,2}|camgirl)\b",
         r"\b(?:blowjob|handjob|cumshot|gangbang|threesome|creampie|bukkake)\b",
         r"\b(?:write\s+erotica|generate\s+porn|write\s+a\s+sexual\s+story|nsfw\s+story)\b",
         r"\b(?:explicit\s+sex\s+scene|dirty\s+talk|erotic\s+roleplay)\b",

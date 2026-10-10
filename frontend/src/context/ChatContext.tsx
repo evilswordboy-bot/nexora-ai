@@ -380,6 +380,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         messages: messagesToSend,
         settings,
         images: images && images.length > 0 ? images : undefined,
+        document_ids: selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
         signal: abortController.signal,
         onStart: (info) => {
           setConversations((prev) =>

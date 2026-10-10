@@ -37,6 +37,17 @@ async def translate_text(request: TranslationRequest):
     """Faithfully translates text with tone control, transliteration, and parallel sentence alignment."""
     if not request.text or not request.text.strip():
         raise HTTPException(status_code=400, detail="Text to translate cannot be empty.")
+    
+    from app.core.safety import safety_guard
+    from app.config import settings
+    if settings.enable_safety_guardrails:
+        safety_eval = safety_guard.evaluate_content(request.text)
+        if not safety_eval.is_safe:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Safety Policy Alert: {safety_eval.reason} (Category: {safety_eval.category})"
+            )
+
     try:
         return await translation_engine.translate(request)
     except Exception as e:

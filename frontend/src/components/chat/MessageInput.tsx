@@ -32,6 +32,8 @@ export const MessageInput: React.FC = () => {
     setIsListening,
     isSpeaking,
     stopSpeaking,
+    selectedDocumentIds,
+    clearSelectedDocuments,
   } = useChat();
 
   const [content, setContent] = useState('');
@@ -247,6 +249,25 @@ export const MessageInput: React.FC = () => {
               className="text-[11px] px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40"
             >
               Done / Stop
+            </button>
+          </div>
+        )}
+
+        {/* Stage 4 / 10 Unified Document Grounding Banner */}
+        {selectedDocumentIds.length > 0 && (
+          <div className="px-3.5 py-1.5 bg-cyan-950/40 border border-cyan-500/30 rounded-xl flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-xs font-semibold text-cyan-300">
+                Grounding answers with {selectedDocumentIds.length} attached document{selectedDocumentIds.length > 1 ? 's' : ''}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelectedDocuments}
+              className="text-[11px] text-slate-400 hover:text-slate-200 hover:underline"
+            >
+              Detach
             </button>
           </div>
         )}

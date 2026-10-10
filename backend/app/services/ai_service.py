@@ -138,6 +138,36 @@ class AIService:
             )
             active_request = request.model_copy(update={"system_prompt": system_instruction})
 
+        # Stage 4 Document Vault Grounding Context Augmentation
+        if request.document_ids and len(request.document_ids) > 0:
+            try:
+                from app.services.documents.retriever import lexical_retriever
+                from app.services.documents.storage import document_storage
+                relevant_chunks = lexical_retriever.retrieve(
+                    query=latest_user_message,
+                    target_document_ids=request.document_ids,
+                    top_k=5,
+                )
+                if relevant_chunks:
+                    doc_context_blocks = []
+                    for c in relevant_chunks:
+                        doc_context_blocks.append(
+                            f"[{c.doc_title} | Chunk {c.chunk_index}]:\n{c.text}"
+                        )
+                    doc_context_str = "\n\n---\n\n".join(doc_context_blocks)
+                    safe_doc_context = (
+                        f"<untrusted_document_context>\n"
+                        f"[EVIDENCE FROM ATTACHED DOCUMENTS - Ground answers using these excerpts]:\n"
+                        f"{doc_context_str}\n"
+                        f"</untrusted_document_context>"
+                    )
+                    curr_sys = active_request.system_prompt or ""
+                    active_request = active_request.model_copy(update={
+                        "system_prompt": f"{curr_sys}\n\n### Attached Document Vault Excerpts:\n{safe_doc_context}".strip()
+                    })
+            except Exception as de:
+                logger.warning(f"Document context grounding notice: {de}")
+
         # Stage 9 Vision Intelligence Context Augmentation
         has_images = bool(request.images) or any(bool(getattr(m, "images", None)) for m in request.messages)
         if has_images:
@@ -256,6 +286,35 @@ class AIService:
                 queries=research_queries,
             )
             active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        # Stage 4 Document Vault Grounding Context Augmentation
+        if request.document_ids and len(request.document_ids) > 0:
+            try:
+                from app.services.documents.retriever import lexical_retriever
+                relevant_chunks = lexical_retriever.retrieve(
+                    query=latest_user_message,
+                    target_document_ids=request.document_ids,
+                    top_k=5,
+                )
+                if relevant_chunks:
+                    doc_context_blocks = []
+                    for c in relevant_chunks:
+                        doc_context_blocks.append(
+                            f"[{c.doc_title} | Chunk {c.chunk_index}]:\n{c.text}"
+                        )
+                    doc_context_str = "\n\n---\n\n".join(doc_context_blocks)
+                    safe_doc_context = (
+                        f"<untrusted_document_context>\n"
+                        f"[EVIDENCE FROM ATTACHED DOCUMENTS - Ground answers using these excerpts]:\n"
+                        f"{doc_context_str}\n"
+                        f"</untrusted_document_context>"
+                    )
+                    curr_sys = active_request.system_prompt or ""
+                    active_request = active_request.model_copy(update={
+                        "system_prompt": f"{curr_sys}\n\n### Attached Document Vault Excerpts:\n{safe_doc_context}".strip()
+                    })
+            except Exception as de:
+                logger.warning(f"Streaming document context grounding notice: {de}")
 
         # Stage 9 Vision Intelligence Context Augmentation
         has_images = bool(request.images) or any(bool(getattr(m, "images", None)) for m in request.messages)

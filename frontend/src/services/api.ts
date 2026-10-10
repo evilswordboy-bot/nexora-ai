@@ -121,6 +121,7 @@ export const api = {
     messages: Message[];
     settings: UserSettings;
     images?: string[];
+    document_ids?: string[];
   }): Promise<{ id: string; content: string; model: string; provider: string; sources?: SearchResultItem[]; finish_reason?: string }> {
     const clientApiKey = resolveClientApiKey(params.settings);
     const clientSearchKey = resolveClientSearchKey(params.settings);
@@ -140,6 +141,7 @@ export const api = {
         client_search_key: clientSearchKey || undefined,
         target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
         images: params.images,
+        document_ids: params.document_ids,
         stream: false,
       }),
     });
@@ -150,6 +152,7 @@ export const api = {
     messages: Message[];
     settings: UserSettings;
     images?: string[];
+    document_ids?: string[];
     signal?: AbortSignal;
     onStart?: (info: { id: string; model: string; provider: string }) => void;
     onResearchProgress?: (progress: ResearchProgress) => void;
@@ -179,6 +182,7 @@ export const api = {
           client_search_key: clientSearchKey || undefined,
           target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
           images: params.images,
+          document_ids: params.document_ids,
           stream: true,
         }),
         signal: params.signal,

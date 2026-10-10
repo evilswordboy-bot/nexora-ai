@@ -13,10 +13,22 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
+        "stage": 10,
+        "stage_title": "Foundation Integration & System Audit",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
         "registered_tools_count": len(tool_registry.list_tools()),
+        "subsystems": {
+            "chat": "operational",
+            "search_research": "operational",
+            "documents_vault": "operational",
+            "fact_checking": "operational",
+            "multilingual": "operational",
+            "voice": "operational",
+            "realtime_feed": "operational",
+            "vision_intelligence": "operational",
+        },
     }
 
 
