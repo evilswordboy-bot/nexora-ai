@@ -47,6 +47,14 @@ class Settings(BaseModel):
     max_research_sources: int = int(os.getenv("MAX_RESEARCH_SOURCES", "8"))
     scraper_timeout_seconds: float = float(os.getenv("SCRAPER_TIMEOUT_SECONDS", "10.0"))
 
+    # Stage 4: Document Intelligence & Knowledge Engine
+    document_storage_dir: str = os.getenv("DOCUMENT_STORAGE_DIR", str(Path(__file__).resolve().parent.parent / "data" / "documents"))
+    max_upload_size_bytes: int = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(25 * 1024 * 1024))) # 25MB max
+    chunk_size_tokens: int = int(os.getenv("CHUNK_SIZE_TOKENS", "500"))
+    chunk_overlap_tokens: int = int(os.getenv("CHUNK_OVERLAP_TOKENS", "50"))
+    top_k_chunks: int = int(os.getenv("TOP_K_CHUNKS", "5"))
+    tesseract_cmd: str = os.getenv("TESSERACT_CMD", "")
+
     # Security & Rate Limiting
     rate_limit_per_minute: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
     enable_safety_guardrails: bool = os.getenv("ENABLE_SAFETY_GUARDRAILS", "true").lower() in ("true", "1", "yes")
@@ -75,3 +83,5 @@ class Settings(BaseModel):
 
 
 settings = Settings()
+# Ensure document storage directory exists
+Path(settings.document_storage_dir).mkdir(parents=True, exist_ok=True)

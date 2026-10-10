@@ -48,6 +48,12 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
+  // Stage 4: Documents Workspace
+  activeWorkspaceView: 'chat' | 'documents';
+  setActiveWorkspaceView: (view: 'chat' | 'documents') => void;
+  selectedDocumentIds: string[];
+  toggleSelectDocument: (docId: string) => void;
+  clearSelectedDocuments: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -67,6 +73,20 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Stage 4 Workspace & Selected Documents State
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents'>('chat');
+  const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+
+  const toggleSelectDocument = useCallback((docId: string) => {
+    setSelectedDocumentIds((prev) =>
+      prev.includes(docId) ? prev.filter((id) => id !== docId) : [...prev, docId]
+    );
+  }, []);
+
+  const clearSelectedDocuments = useCallback(() => {
+    setSelectedDocumentIds([]);
+  }, []);
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -508,6 +528,11 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showToast,
         removeToast,
         refreshProviderStatus,
+        activeWorkspaceView,
+        setActiveWorkspaceView,
+        selectedDocumentIds,
+        toggleSelectDocument,
+        clearSelectedDocuments,
       }}
     >
       {children}

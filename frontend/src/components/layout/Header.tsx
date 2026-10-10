@@ -1,6 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
-import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -10,6 +10,8 @@ export const Header: React.FC = () => {
     setSettingsModalOpen,
     setSetupGuideModalOpen,
     setMobileMenuOpen,
+    activeWorkspaceView,
+    setActiveWorkspaceView,
   } = useChat();
 
   const isConfigured = Boolean(
@@ -41,10 +43,36 @@ export const Header: React.FC = () => {
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Stage 3
+                Stage 4
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Workspace Switcher */}
+        <div className="hidden md:flex items-center p-1 rounded-xl bg-midnight-950/80 border border-slate-800/80 ml-2">
+          <button
+            onClick={() => setActiveWorkspaceView('chat')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'chat'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Chat & Search</span>
+          </button>
+          <button
+            onClick={() => setActiveWorkspaceView('documents')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'documents'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>Documents Vault</span>
+          </button>
         </div>
       </div>
 

@@ -150,3 +150,90 @@ class SafetyCheckResult(BaseModel):
     category: Optional[str] = None
     reason: Optional[str] = None
     educational_override: bool = False
+
+
+# ==========================================
+# Stage 4: Document Intelligence Schemas
+# ==========================================
+
+DocumentFormat = Literal["pdf", "docx", "txt", "csv", "xlsx", "png", "jpg", "jpeg", "webp"]
+DocumentStatus = Literal["pending", "processing", "ready", "error"]
+DocumentAction = Literal[
+    "ask",
+    "summarize",
+    "extract_key_points",
+    "compare",
+    "study_notes",
+    "faq",
+    "flashcards",
+    "quiz",
+    "explain_simply",
+    "extract_tables"
+]
+
+
+class DocumentCitation(BaseModel):
+    source_id: int
+    document_id: str
+    filename: str
+    page_number: Optional[int] = None
+    section: Optional[str] = None
+    snippet: str
+    relevance_score: Optional[float] = None
+
+
+class DocumentChunk(BaseModel):
+    id: str
+    document_id: str
+    chunk_index: int
+    page_number: Optional[int] = None
+    section: Optional[str] = None
+    content: str
+    token_count: int
+
+
+class DocumentItem(BaseModel):
+    id: str
+    filename: str
+    original_filename: str
+    file_type: str
+    size_bytes: int
+    created_at: datetime = Field(default_factory=utc_now)
+    status: DocumentStatus = "pending"
+    error_message: Optional[str] = None
+    page_count: Optional[int] = 0
+    total_characters: Optional[int] = 0
+    total_chunks: Optional[int] = 0
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class DocumentListResponse(BaseModel):
+    documents: List[DocumentItem]
+    total_count: int
+
+
+class DocumentDetailResponse(BaseModel):
+    document: DocumentItem
+    preview_text: str
+    chunks: Optional[List[DocumentChunk]] = None
+
+
+class DocumentActionRequest(BaseModel):
+    document_ids: List[str] = Field(..., description="Target document IDs (one or multiple for comparison)")
+    action: DocumentAction = "ask"
+    query: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "gemini-1.5-flash"
+    client_api_key: Optional[str] = None
+    temperature: Optional[float] = Field(0.5, ge=0.0, le=2.0)
+    stream: Optional[bool] = False
+
+
+class DocumentActionResponse(BaseModel):
+    action: DocumentAction
+    document_ids: List[str]
+    result: str
+    citations: List[DocumentCitation] = Field(default_factory=list)
+    provider: str
+    model: str
+

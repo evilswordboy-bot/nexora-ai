@@ -79,3 +79,62 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
   message: string;
 }
+
+// Stage 4: Document Intelligence Types
+export type DocumentFormat = 'pdf' | 'docx' | 'txt' | 'csv' | 'xlsx' | 'png' | 'jpg' | 'jpeg' | 'webp';
+export type DocumentStatus = 'pending' | 'processing' | 'ready' | 'error';
+export type DocumentAction =
+  | 'ask'
+  | 'summarize'
+  | 'extract_key_points'
+  | 'compare'
+  | 'study_notes'
+  | 'faq'
+  | 'flashcards'
+  | 'quiz'
+  | 'explain_simply'
+  | 'extract_tables';
+
+export interface DocumentCitation {
+  source_id: number;
+  document_id: string;
+  filename: string;
+  page_number?: number;
+  section?: string;
+  snippet: string;
+  relevance_score?: number;
+}
+
+export interface DocumentChunk {
+  id: string;
+  document_id: string;
+  chunk_index: number;
+  page_number?: number;
+  section?: string;
+  content: string;
+  token_count: number;
+}
+
+export interface DocumentItem {
+  id: string;
+  filename: string;
+  original_filename: string;
+  file_type: string;
+  size_bytes: number;
+  created_at: string;
+  status: DocumentStatus;
+  error_message?: string;
+  page_count?: number;
+  total_characters?: number;
+  total_chunks?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface DocumentActionResponse {
+  action: DocumentAction;
+  document_ids: string[];
+  result: string;
+  citations: DocumentCitation[];
+  provider: string;
+  model: string;
+}

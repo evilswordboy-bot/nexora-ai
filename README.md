@@ -1,40 +1,39 @@
-# NEXORA AI — Stage 3: Universal Search & Deep Research Engine
+# NEXORA AI — Stage 4: Document Intelligence & Knowledge Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 3** elevates the system into a high-precision research assistant featuring a non-simulated **Universal Search and Deep Research Engine**: multi-engine web search (DuckDuckGo, Tavily, Google Serper, Brave), real-time source grounding, numbered inline citations (`[1]`, `[2]`), an interactive collapsible sources explorer, and a 6-step autonomous deep research pipeline with live execution telemetry.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 4** introduces a production-ready **Document Intelligence and Knowledge Engine**: multi-format file parsing (PDF, DOCX, TXT, CSV, XLSX, and OCR for images), recursive semantic chunking, BM25/TF-IDF passage retrieval, and 10 grounded document intelligence actions with page/section citations.
 
 ---
 
-## 🌟 Stage 3 Core Deliverables
+## 🌟 Stage 4 Core Deliverables
 
-- **Real Web Search & Zero-Hallucination Grounding**:
-  - Genuine web search integration with zero simulated results, fabricated URLs, or fictitious citations.
-  - Multi-engine backend with auto-fallback:
-    - **DuckDuckGo**: High-reliability zero-credential web search available out of the box with HTML scraper fallback.
-    - **Tavily AI Search**: Direct answer and deep content web search.
-    - **Google Serper**: Google-indexed organic results with sitelinks and snippets.
-    - **Brave Search**: Independent web search index.
-- **Three Specialized Interaction Modes**:
-  - **AI Only**: Direct conversational intelligence from configured LLM (fastest latency).
-  - **Web Search**: Real-time web search for breaking news, up-to-date facts, and current events.
-  - **Deep Research**: 6-step autonomous investigation pipeline that breaks complex questions into sub-queries, executes multi-pass searches, scrapes and deduplicates content, and synthesizes an evidence-grounded report.
-- **Source-Grounded Inline Citations & Sources Explorer**:
-  - Numbered clickable inline citations (`[1]`, `[2]`) in markdown linking directly to verified source URLs.
-  - Collapsible **Sources Drawer** attached to messages with website favicons, domain tags, titles, snippets, and published dates.
-  - Honest disclosure whenever external evidence is conflicting or insufficient.
-- **6-Step Deep Research Pipeline**:
-  1. **Question Decomposition**: Breaks complex multi-faceted prompts into focused sub-queries.
-  2. **Multi-Pass Parallel Search**: Executes searches across target vectors.
-  3. **Content Extraction & Scraping**: Safely downloads readable article text.
-  4. **Evidence Deduplication**: Consolidates identical sources and domains.
-  5. **Cross-Examination**: Analyzes consensus, anomalies, and conflicting viewpoints.
-  6. **Structured Synthesis**: Outputs exhaustive findings, inline citations, methodological limitations, and actionable conclusions.
-  - Live progress stepper displayed in the UI during research execution.
-- **Hardened Security & Defenses**:
-  - **SSRF Protection**: `WebpageScraper` verifies IP resolutions to block loopback (`127.0.0.1`), RFC1918 private subnets (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and cloud metadata endpoints (`169.254.169.254`).
-  - **Prompt Injection Defense**: Untrusted external HTML/text is quarantined in structured `<untrusted_web_evidence>` boundaries preventing remote prompt hijacking.
-- **Strict Backward Compatibility**:
-  - Preserves Stage 1 foundation (Tailwind dark theme, conversation management, honest unconfigured states).
-  - Preserves Stage 2 intelligence (SSE streaming, AbortController stop generation controls, auto-titling, adult-content guardrails with educational exemptions).
+- **Multi-Format Document Parsing**:
+  - **PDF Documents**: Extracted with page boundary preservation and metadata using `pypdf`.
+  - **Word DOCX Files**: Preserves heading hierarchy, paragraphs, and inline tables using `python-docx`.
+  - **Spreadsheets (CSV & Excel XLSX)**: Structured parsing into readable markdown tables, row/column statistics, and headers using `openpyxl`.
+  - **Plain Text (TXT)**: Chunked with character and boundary preservation.
+  - **Images & Scanned Documents**: Text extraction with Tesseract OCR fallback using `pillow` and `pytesseract`.
+- **Intelligent RAG & Passage Retrieval**:
+  - `DocumentChunker`: Recursive semantic chunker with configurable token windows and overlapping boundaries.
+  - `LexicalRetriever`: High-speed BM25 / TF-IDF style lexical retriever for localized passage grounding.
+  - Numbered citations (`[1]`, `[2]`) linking back to document filenames, page numbers, and sections.
+- **10 Autonomous Document Intelligence Actions**:
+  1. **Ask (RAG QA)**: Evidence-grounded question answering with page citations.
+  2. **Summarize**: Executive overview with section breakdowns and conclusions.
+  3. **Extract Key Points**: Highlights, timelines, key entities, statistics, and action items.
+  4. **Compare Documents**: Side-by-side comparative matrices, shared themes, and divergent claims across multiple files.
+  5. **Study Notes**: Comprehensive notes with key terms in bold and concept explanations.
+  6. **FAQ**: Generates verified Frequently Asked Questions from document passages.
+  7. **Flashcards**: High-yield Q&A cards for active recall.
+  8. **Quiz**: Multiple-choice examination questions with an answer key and rationale.
+  9. **Simplify (ELI12)**: Plain-language translation of complex legal, technical, or scientific jargon into everyday analogies.
+  10. **Table Analytics**: Numeric observations, outliers, trend breakdowns, and actionable recommendations from datasets.
+- **Dedicated Documents Vault Workspace**:
+  - Interactive workspace with drag-and-drop file upload, file list, stats, multi-select capability, and single-click action runners.
+  - Instant workspace switcher in the header allowing users to toggle between **Chat & Search** and **Documents Vault**.
+- **Privacy & Defensive Quarantine**:
+  - Uploaded document contents are strictly isolated inside `<untrusted_document_context>` XML boundaries with anti-prompt-injection instructions.
+  - Isolated local storage with complete file deletion and cleanup controls.
+  - Full backward compatibility with Stages 1, 2, and 3.
 
 ---
 
@@ -118,7 +117,7 @@ nexora-ai/
 ```bash
 cd backend
 
-# Run automated test suite (18/18 passing)
+# Run automated test suite (25/25 passing)
 python -m pytest tests -v
 
 # Launch the FastAPI server

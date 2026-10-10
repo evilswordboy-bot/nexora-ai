@@ -7,10 +7,11 @@ import { SettingsModal } from './components/modals/SettingsModal';
 import { SetupGuideModal } from './components/modals/SetupGuideModal';
 import { DeleteConfirmModal } from './components/modals/DeleteConfirmModal';
 import { ToastContainer } from './components/ui/Toast';
+import { DocumentsWorkspace } from './components/documents/DocumentsWorkspace';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
-  const { deleteConversation } = useChat();
+  const { deleteConversation, activeWorkspaceView } = useChat();
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
 
   return (
@@ -21,7 +22,7 @@ const MainLayout: React.FC = () => {
       {/* Main Workspace Column */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         <Header />
-        <ChatArea />
+        {activeWorkspaceView === 'documents' ? <DocumentsWorkspace /> : <ChatArea />}
       </div>
 
       {/* Global Modals & Notifications */}

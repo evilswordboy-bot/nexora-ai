@@ -5,6 +5,10 @@ import {
   Conversation,
   SearchResultItem,
   ResearchProgress,
+  DocumentItem,
+  DocumentChunk,
+  DocumentAction,
+  DocumentActionResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -266,6 +270,64 @@ export const api = {
   async clearAllConversations(): Promise<{ message: string }> {
     return request('/conversations', {
       method: 'DELETE',
+    });
+  },
+
+  // Stage 4: Document Intelligence Endpoints
+  async uploadDocument(file: File): Promise<DocumentItem> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE_URL}/documents/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      let errDetail = 'Failed to upload document';
+      try {
+        const errJson = await res.json();
+        errDetail = errJson.detail || errJson.message || errDetail;
+      } catch {
+        const t = await res.text();
+        if (t) errDetail = t;
+      }
+      throw new ApiError(res.status, errDetail);
+    }
+    return await res.json();
+  },
+
+  async listDocuments(): Promise<DocumentItem[]> {
+    const res = await request<{ documents: DocumentItem[]; total_count: number }>('/documents');
+    return res.documents;
+  },
+
+  async getDocumentDetails(documentId: string): Promise<{ document: DocumentItem; preview_text: string; chunks?: DocumentChunk[] }> {
+    return request(`/documents/${documentId}`);
+  },
+
+  async deleteDocument(documentId: string): Promise<void> {
+    return request(`/documents/${documentId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async executeDocumentAction(params: {
+    documentIds: string[];
+    action: DocumentAction;
+    query?: string;
+    settings?: UserSettings;
+  }): Promise<DocumentActionResponse> {
+    const clientApiKey = params.settings ? resolveClientApiKey(params.settings) : undefined;
+    return request<DocumentActionResponse>('/documents/action', {
+      method: 'POST',
+      body: JSON.stringify({
+        document_ids: params.documentIds,
+        action: params.action,
+        query: params.query || '',
+        provider: params.settings?.selectedProvider || 'auto',
+        model: params.settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+        temperature: params.settings?.temperature || 0.5,
+      }),
     });
   },
 };
