@@ -15,6 +15,8 @@ import {
   Sparkles,
   Search,
   Globe,
+  Volume2,
+  Mic,
 } from 'lucide-react';
 
 export const SettingsModal: React.FC = () => {
@@ -28,7 +30,7 @@ export const SettingsModal: React.FC = () => {
     showToast,
   } = useChat();
 
-  const [activeTab, setActiveTab] = useState<'api' | 'search' | 'model' | 'safety' | 'data'>('api');
+  const [activeTab, setActiveTab] = useState<'api' | 'search' | 'model' | 'voice' | 'safety' | 'data'>('api');
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showOpenAiKey, setShowOpenAiKey] = useState(false);
   const [showAnthropicKey, setShowAnthropicKey] = useState(false);
@@ -136,6 +138,18 @@ export const SettingsModal: React.FC = () => {
           >
             <Sparkles className="w-4 h-4" />
             <span>Model Parameters</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('voice')}
+            className={`py-3 flex items-center gap-2 border-b-2 transition-colors ${
+              activeTab === 'voice'
+                ? 'border-cyan-400 text-cyan-300 font-semibold'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Volume2 className="w-4 h-4" />
+            <span>Voice & Audio</span>
           </button>
 
           <button
@@ -485,6 +499,131 @@ export const SettingsModal: React.FC = () => {
                   className="w-full bg-midnight-950 border border-slate-800 rounded-xl p-3 text-slate-200 text-xs focus:border-cyan-500/50 focus:outline-none"
                   placeholder="Define Nexora assistant behavior..."
                 />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'voice' && (
+            <div className="space-y-5">
+              {/* Voice Conversation Mode */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Voice Interaction Mode
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, voiceMode: 'push_to_talk' })}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      form.voiceMode === 'push_to_talk'
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200'
+                        : 'bg-midnight-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="font-semibold text-xs text-slate-200">Push-to-Talk</div>
+                    <div className="text-[11px] text-slate-400 mt-1">Manual microphone press for each prompt.</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, voiceMode: 'voice_chat' })}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      form.voiceMode === 'voice_chat'
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200'
+                        : 'bg-midnight-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="font-semibold text-xs text-slate-200">Voice Chat</div>
+                    <div className="text-[11px] text-slate-400 mt-1">Spoken turns auto-send & responses auto-speak.</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, voiceMode: 'text_and_voice' })}
+                    className={`p-3 rounded-xl border text-left transition-all ${
+                      form.voiceMode === 'text_and_voice'
+                        ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-200'
+                        : 'bg-midnight-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <div className="font-semibold text-xs text-slate-200">Text + Voice</div>
+                    <div className="text-[11px] text-slate-400 mt-1">Displays Markdown visual reply with spoken audio.</div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Voice Synthesizer / Provider Choice */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Voice Synthesis Engine & Voice
+                </label>
+                <select
+                  value={form.selectedVoiceId || 'browser_default'}
+                  onChange={(e) => setForm({ ...form, selectedVoiceId: e.target.value })}
+                  className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <optgroup label="Web Speech Native Synthesizer (Instant, Zero Latency)">
+                    <option value="browser_default">Browser Default Voice</option>
+                    <option value="browser_en_us">Natural English (US)</option>
+                    <option value="browser_en_in">English (India)</option>
+                    <option value="browser_ta_in">Tamil (இந்தியா)</option>
+                    <option value="browser_hi_in">Hindi (हिन्दी)</option>
+                    <option value="browser_te_in">Telugu (తెలుగు)</option>
+                    <option value="browser_ml_in">Malayalam (മലയാളം)</option>
+                    <option value="browser_es_es">Spanish (Español)</option>
+                    <option value="browser_fr_fr">French (Français)</option>
+                    <option value="browser_de_de">German (Deutsch)</option>
+                    <option value="browser_ar_sa">Arabic (العربية)</option>
+                  </optgroup>
+                  <optgroup label="OpenAI High-Fidelity Neural TTS (Requires OpenAI API Key)">
+                    <option value="alloy">Alloy (Balanced, Neutral)</option>
+                    <option value="echo">Echo (Warm, Conversational)</option>
+                    <option value="fable">Fable (Expressive British)</option>
+                    <option value="onyx">Onyx (Deep Authoritative)</option>
+                    <option value="nova">Nova (Energetic Friendly)</option>
+                    <option value="shimmer">Shimmer (Clear Melodious)</option>
+                  </optgroup>
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  NEXORA AI preserves code blocks & markdown while cleaning URLs for pleasant spoken listening.
+                </p>
+              </div>
+
+              {/* Voice Speed */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
+                    Speech Playback Speed ({form.voiceSpeed || 1.0}x)
+                  </label>
+                  <span className="text-xs text-slate-500">
+                    {(form.voiceSpeed || 1.0) < 0.9 ? 'Slower' : (form.voiceSpeed || 1.0) > 1.2 ? 'Faster' : 'Normal'}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.1"
+                  value={form.voiceSpeed || 1.0}
+                  onChange={(e) => setForm({ ...form, voiceSpeed: parseFloat(e.target.value) })}
+                  className="w-full accent-cyan-400 bg-slate-800 h-2 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Auto Speak Toggle */}
+              <div className="pt-2">
+                <label className="flex items-center justify-between p-3.5 rounded-xl bg-midnight-950 border border-slate-800/80 cursor-pointer">
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">Automatically Speak AI Answers</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">Read AI responses aloud as soon as generation completes.</div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={form.autoSpeakAiResponses || false}
+                    onChange={(e) => setForm({ ...form, autoSpeakAiResponses: e.target.checked })}
+                    className="w-4 h-4 rounded border-slate-700 bg-midnight-900 text-cyan-500 focus:ring-cyan-500/20"
+                  />
+                </label>
               </div>
             </div>
           )}

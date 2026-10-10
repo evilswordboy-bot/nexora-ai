@@ -74,6 +74,12 @@ export interface UserSettings {
   braveApiKey: string;
   // Stage 6 Multilingual Settings
   preferredLanguage: string;
+  // Stage 7 Voice Intelligence Settings
+  voiceMode: 'push_to_talk' | 'voice_chat' | 'text_and_voice';
+  selectedVoiceId: string;
+  voiceSpeed: number;
+  autoSpeakAiResponses: boolean;
+  transcriptionLanguage: string;
 }
 
 export interface ToastMessage {
@@ -81,6 +87,35 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
   message: string;
 }
+
+// Stage 7: Voice Intelligence Engine Types
+export type VoiceConversationMode = 'push_to_talk' | 'voice_chat' | 'text_and_voice';
+
+export interface VoiceInfo {
+  id: string;
+  name: string;
+  language_code: string;
+  gender?: string;
+  provider: 'browser' | 'openai' | 'gemini';
+}
+
+export interface TextToSpeechResponse {
+  audio_content?: string | null;
+  content_type: string;
+  clean_spoken_text: string;
+  provider: string;
+  voice_id: string;
+  duration_estimate_seconds: number;
+}
+
+export interface AudioTranscriptionResponse {
+  text: string;
+  detected_language?: string;
+  confidence?: number;
+  provider: string;
+  duration_seconds?: number;
+}
+
 
 // Stage 4: Document Intelligence Types
 export type DocumentFormat = 'pdf' | 'docx' | 'txt' | 'csv' | 'xlsx' | 'png' | 'jpg' | 'jpeg' | 'webp';

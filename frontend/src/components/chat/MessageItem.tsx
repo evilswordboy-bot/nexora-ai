@@ -16,6 +16,9 @@ import {
   ShieldAlert,
   Globe,
   Compass,
+  Volume2,
+  VolumeX,
+  Loader2,
 } from 'lucide-react';
 
 interface MessageItemProps {
@@ -24,12 +27,22 @@ interface MessageItemProps {
 }
 
 export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => {
-  const { regenerateMessage, editAndResend, setSettingsModalOpen, isLoading } = useChat();
+  const {
+    regenerateMessage,
+    editAndResend,
+    setSettingsModalOpen,
+    isLoading,
+    speakMessage,
+    stopSpeaking,
+    currentlySpeakingMessageId,
+    isSpeaking,
+  } = useChat();
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(message.content);
 
   const isUser = message.role === 'user';
+  const isCurrentlySpeaking = currentlySpeakingMessageId === message.id && isSpeaking;
   const isSafetyGuard = message.provider === 'nexora-safety' || message.content.includes('Safety Guardrail');
   const isUnconfigured = message.content.includes('Setup Required') || message.content.includes('No active AI provider');
 
@@ -223,6 +236,37 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
                   </>
                 )}
               </button>
+
+              {/* Stage 7: Listen / Speak Control for Assistant Messages */}
+              {!isUser && !message.isStreaming && message.content && (
+                <button
+                  onClick={() => {
+                    if (isCurrentlySpeaking) {
+                      stopSpeaking();
+                    } else {
+                      speakMessage(message.id, message.content);
+                    }
+                  }}
+                  className={`flex items-center gap-1 text-[11px] transition-colors py-1 px-1.5 rounded ${
+                    isCurrentlySpeaking
+                      ? 'text-cyan-300 bg-cyan-500/20 border border-cyan-500/30 font-medium'
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/40'
+                  }`}
+                  title={isCurrentlySpeaking ? 'Stop speech' : 'Listen to response'}
+                >
+                  {isCurrentlySpeaking ? (
+                    <>
+                      <VolumeX className="w-3 h-3 text-cyan-400 animate-pulse" />
+                      <span>Stop Listening</span>
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3 h-3" />
+                      <span>Listen</span>
+                    </>
+                  )}
+                </button>
+              )}
 
               {isUser && (
                 <button

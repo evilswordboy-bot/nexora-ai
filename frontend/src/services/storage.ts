@@ -21,6 +21,12 @@ export const defaultSettings: UserSettings = {
   serperApiKey: '',
   braveApiKey: '',
   preferredLanguage: 'auto',
+  // Stage 7 Voice Intelligence defaults
+  voiceMode: 'push_to_talk',
+  selectedVoiceId: 'browser_default',
+  voiceSpeed: 1.0,
+  autoSpeakAiResponses: false,
+  transcriptionLanguage: 'auto',
 };
 
 export const storage = {

@@ -11,6 +11,7 @@ import {
 } from '../types';
 import { storage } from '../services/storage';
 import { api } from '../services/api';
+import { speechService } from '../services/speech';
 
 interface ChatContextType {
   conversations: Conversation[];
@@ -54,6 +55,14 @@ interface ChatContextType {
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
+  // Stage 7 Voice Intelligence State
+  isListening: boolean;
+  setIsListening: (listening: boolean) => void;
+  isSpeaking: boolean;
+  setIsSpeaking: (speaking: boolean) => void;
+  currentlySpeakingMessageId: string | null;
+  speakMessage: (messageId: string, text: string) => Promise<void>;
+  stopSpeaking: () => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -77,6 +86,72 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Stage 4, 5 & 6 Workspace Views State
   const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation'>('chat');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
+
+  // Stage 7 Voice Intelligence State
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentlySpeakingMessageId, setCurrentlySpeakingMessageId] = useState<string | null>(null);
+
+  const stopSpeaking = useCallback(() => {
+    speechService.stopSpeaking();
+    setIsSpeaking(false);
+    setCurrentlySpeakingMessageId(null);
+  }, []);
+
+  const speakMessage = useCallback(async (messageId: string, text: string) => {
+    stopSpeaking();
+    setCurrentlySpeakingMessageId(messageId);
+    setIsSpeaking(true);
+
+    try {
+      // 1. Check if backend TTS synthesis is available with audio bytes
+      const ttsRes = await api.synthesizeSpeech({
+        text,
+        voiceId: settings.selectedVoiceId,
+        speed: settings.voiceSpeed,
+        settings,
+      });
+
+      if (ttsRes.audio_content) {
+        // High fidelity audio returned from server (e.g. OpenAI TTS)
+        speechService.playAudioBase64(ttsRes.audio_content, () => {
+          setIsSpeaking(false);
+          setCurrentlySpeakingMessageId(null);
+        });
+      } else {
+        // Synthesize via clean text with Web Speech API
+        const textToSpeak = ttsRes.clean_spoken_text || text;
+        speechService.speakText({
+          text: textToSpeak,
+          lang: settings.preferredLanguage !== 'auto' ? settings.preferredLanguage : undefined,
+          speed: settings.voiceSpeed,
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => {
+            setIsSpeaking(false);
+            setCurrentlySpeakingMessageId(null);
+          },
+          onError: () => {
+            setIsSpeaking(false);
+            setCurrentlySpeakingMessageId(null);
+          },
+        });
+      }
+    } catch (e) {
+      // Direct Web Speech API fallback
+      speechService.speakText({
+        text: text.replace(/```[\s\S]*?```/g, ''),
+        speed: settings.voiceSpeed,
+        onEnd: () => {
+          setIsSpeaking(false);
+          setCurrentlySpeakingMessageId(null);
+        },
+        onError: () => {
+          setIsSpeaking(false);
+          setCurrentlySpeakingMessageId(null);
+        },
+      });
+    }
+  }, [settings, stopSpeaking]);
 
   const toggleSelectDocument = useCallback((docId: string) => {
     setSelectedDocumentIds((prev) =>
@@ -374,6 +449,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
               return c;
             })
           );
+          if (settings.autoSpeakAiResponses || settings.voiceMode === 'voice_chat' || settings.voiceMode === 'text_and_voice') {
+            speakMessage(assistantPlaceholderId, accumulatedContent);
+          }
         },
         onError: (errorMsg) => {
           setResearchProgress(null);
@@ -533,6 +611,13 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         selectedDocumentIds,
         toggleSelectDocument,
         clearSelectedDocuments,
+        isListening,
+        setIsListening,
+        isSpeaking,
+        setIsSpeaking,
+        currentlySpeakingMessageId,
+        speakMessage,
+        stopSpeaking,
       }}
     >
       {children}

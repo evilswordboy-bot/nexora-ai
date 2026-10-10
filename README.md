@@ -1,38 +1,35 @@
-# NEXORA AI — Stage 6: Universal Multilingual Intelligence Engine
+# NEXORA AI — Stage 7: Voice Intelligence Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 6** introduces a production-grade **Universal Multilingual Intelligence Engine**: 90+ language detection with deep native Indic script analysis (Tamil, Hindi, Telugu, Malayalam, Kannada, Bengali, Marathi, etc.), code-switching and Romanized dialect identification (Tanglish, Hinglish), a full-featured **Translation Studio** with multi-tone adaptation (Formal, Casual, Technical, Simplified), parallel sentence-by-sentence alignment, phonetic Latin transliteration, cultural nuance insights, and target language persistence in chat.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 7** introduces a production-ready **Voice Intelligence Engine**: real-time microphone dictation with permission handling, streaming transcript feedback, natural speech sanitization (stripping complex code snippets, citation brackets, and raw URLs), multi-provider text-to-speech synthesis (Web Speech API zero-latency native engines and OpenAI neural voices), 3 voice conversation modes (Push-to-Talk, Voice Chat, Text + Voice), play/pause/stop playback controls, and turn-taking interruption handling.
 
 ---
 
-## 🌟 Stage 6 Core Deliverables
+## 🌟 Stage 7 Core Deliverables
 
-- **Tri-Layer Real-Time Language & Script Detection**:
-  - `LanguageDetector`: Analyzes incoming texts and messages in under 5ms.
-  - **Layer 1 (Native Scripts)**: Exact Unicode block regex ranges for Tamil (`\u0B80-\u0BFF`), Devanagari (`\u0900-\u097F`), Telugu (`\u0C00-\u0C7F`), Malayalam (`\u0D00-\u0D7F`), Kannada (`\u0C80-\u0CFF`), Bengali (`\u0980-\u09FF`), Arabic (`\u0600-\u06FF`), and CJK.
-  - **Layer 2 (Code-Switching & Dialects)**: Lexical dictionaries identify Romanized code-switching such as **Tanglish** (Tamil written in English script) and **Hinglish** (Hindi written in English script).
-  - **Layer 3 (Statistical Fallback)**: Integrated with `langdetect` for global multilingual coverage.
-- **Translation Studio & Multi-Tone Engine**:
-  - Multi-tone adaptation:
-    - **Formal**: Respectful honorifics, grammatically polished structure.
-    - **Casual**: Natural spoken idiom suited for colloquial communication.
-    - **Technical**: Preserves technical terms, code snippets, and proper nouns.
-    - **Simplified**: Plain, direct vocabulary for accessible comprehension.
-  - **Sentence-by-Sentence Alignment**: Parallel paired views linking each source sentence to its target translation.
-  - **Phonetic Latin Transliteration**: Generates readable Romanized pronunciation guides for non-Latin script translations.
-  - **Cultural & Pragmatic Nuance Notes**: Explains untranslatable idioms, honorific distinctions, and regional phrasing choices.
-- **Multilingual AI Chat & Research Integration**:
-  - Automatically responds in the user's detected input language by default.
-  - Injects target language directives into AI chat completions and streaming sessions.
-  - Preserves formatting, code blocks, proper nouns, and markdown structure during language transitions.
-  - Supports Arabic and Hebrew with RTL layout considerations.
-- **Dedicated Translation Workspace UI**:
-  - Interactive workspace accessible via the top navigation bar (**Chat & Search**, **Documents Vault**, **Fact Check**, **Translate**).
-  - Quick-sample buttons for instant testing (Tamil, Hindi, Tanglish, Hinglish).
-  - One-click copy for complete translations and individual aligned sentences.
-- **Honest Multilingual Disclosures**:
-  - Clearly acknowledges the probabilistic nature of LLM translations without claiming absolute perfection across low-resource dialects.
-  - Zero mock responses: uses genuine model synthesis or structured tokenizers.
-
+- **Speech-to-Text & Microphone Dictation**:
+  - Live microphone button in message input bar with permission lifecycle management and visual recording pulse.
+  - Real-time interim transcription display allowing users to see spoken text preview before final turn submission.
+  - Native browser `SpeechRecognition` / `webkitSpeechRecognition` with automatic language detection and manual language selection (Tamil, Hindi, Telugu, English, etc.).
+  - Backend audio transcription endpoint `POST /api/v1/voice/transcribe` with OpenAI Whisper integration and fallback.
+- **Natural Speech Preprocessing & Sanitizer**:
+  - `VoiceEngine.sanitize_for_speech()`:
+    - Omit code blocks (````python...````) and replaces them with clean audio cues: `[Code snippet omitted for speech]`.
+    - Removes inline citation marks (`[1]`, `[2]`).
+    - Strips raw URLs (`https://...` replaced with clean spoken cue `link`).
+    - Cleans Markdown headings, bold/italics syntax while preserving identifier naming (`variable_x`).
+- **AI Voice Responses & Audio Synthesis**:
+  - `POST /api/v1/voice/tts` endpoint generating base64 audio or clean text for client-side Web Speech synthesis.
+  - Play, pause, resume, stop, and playback speed (0.5x – 2.0x) controls.
+  - **Listen** button on assistant message cards with live audio equalizer / mute toggle.
+  - Zero overlapping speech: interrupting with microphone automatically pauses and stops ongoing speech playback.
+- **Three Voice Interaction Modes**:
+  1. **Push-to-Talk**: User explicitly presses microphone button to speak and reviews transcription.
+  2. **Voice Chat**: Continuous turn-taking where completed utterances automatically submit and AI responses auto-play.
+  3. **Text + Voice**: Displays full Markdown responses with citations while simultaneously reading spoken audio.
+- **Privacy & Security**:
+  - Microphone access requested only upon explicit user action.
+  - Zero covert recording; clear UI indicators during active listening.
+  - Backend API keys protected; zero exposure of secrets in browser client.
 
 ---
 

@@ -14,6 +14,9 @@ import {
   TranslationRequest,
   TranslationResponse,
   TranslationTone,
+  VoiceInfo,
+  TextToSpeechResponse,
+  AudioTranscriptionResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -396,5 +399,56 @@ export const api = {
   async getLanguages(): Promise<{ supported_languages: Array<{ code: string; name: string }> }> {
     return request('/multilingual/languages');
   },
+
+  // Stage 7: Voice Intelligence Engine
+  async getVoices(): Promise<VoiceInfo[]> {
+    return request<VoiceInfo[]>('/voice/voices');
+  },
+
+  async synthesizeSpeech(params: {
+    text: string;
+    voiceId?: string;
+    languageCode?: string;
+    speed?: number;
+    settings?: UserSettings;
+  }): Promise<TextToSpeechResponse> {
+    const clientApiKey = params.settings ? resolveClientApiKey(params.settings) : undefined;
+    return request<TextToSpeechResponse>('/voice/tts', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: params.text,
+        voice_id: params.voiceId || params.settings?.selectedVoiceId || 'browser_default',
+        language_code: params.languageCode || 'auto',
+        speed: params.speed ?? params.settings?.voiceSpeed ?? 1.0,
+        provider: params.settings?.selectedProvider || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async transcribeAudio(params: {
+    audioBlob: Blob;
+    language?: string;
+    settings?: UserSettings;
+  }): Promise<AudioTranscriptionResponse> {
+    const formData = new FormData();
+    formData.append('file', params.audioBlob, 'recording.wav');
+    formData.append('language', params.language || 'auto');
+    const clientApiKey = params.settings ? resolveClientApiKey(params.settings) : undefined;
+    if (clientApiKey) {
+      formData.append('client_api_key', clientApiKey);
+    }
+
+    const url = `${BASE_URL}/voice/transcribe`;
+    const res = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new ApiError(res.status, 'Audio transcription request failed.');
+    }
+    return res.json();
+  },
 };
+
 

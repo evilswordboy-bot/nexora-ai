@@ -347,3 +347,44 @@ class TranslationResponse(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+# ==========================================
+# Stage 7: Voice Intelligence Engine Schemas
+# ==========================================
+
+VoiceConversationMode = Literal["push_to_talk", "voice_chat", "text_and_voice"]
+
+class VoiceInfo(BaseModel):
+    id: str
+    name: str
+    language_code: str
+    gender: Optional[str] = "neutral"
+    provider: str = "browser" # 'browser', 'openai', 'gemini'
+
+
+class TextToSpeechRequest(BaseModel):
+    text: str
+    voice_id: Optional[str] = "alloy"
+    language_code: Optional[str] = "auto"
+    speed: Optional[float] = Field(1.0, ge=0.25, le=4.0)
+    provider: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class TextToSpeechResponse(BaseModel):
+    audio_content: Optional[str] = None # Base64 encoded audio or null if browser engine recommended
+    content_type: str = "audio/mpeg"
+    clean_spoken_text: str # Strip code blocks, long URLs, raw markdown symbols for pleasant speech
+    provider: str
+    voice_id: str
+    duration_estimate_seconds: float = 0.0
+
+
+class AudioTranscriptionResponse(BaseModel):
+    text: str
+    detected_language: Optional[str] = "en"
+    confidence: Optional[float] = 1.0
+    provider: str
+    duration_seconds: Optional[float] = 0.0
+
+
+
