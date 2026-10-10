@@ -92,6 +92,21 @@ class AIService:
         research_queries: List[str] = []
         active_request = request
 
+        # Stage 6 Multilingual Intelligence Instruction
+        from app.services.multilingual.detector import LanguageDetector, LANGUAGE_NAMES
+        detected = LanguageDetector.detect_language(latest_user_message)
+        lang_target = request.target_language if (request.target_language and request.target_language != "auto") else detected.detected_language_code
+        lang_name = LANGUAGE_NAMES.get(lang_target, lang_target)
+
+        multilingual_directive = (
+            f"User input detected script/language: {detected.detected_language_name} ({detected.detected_language_code}). "
+            f"Respond fluently in {lang_name} ({lang_target}) while maintaining technical precision, names, numbers, and code blocks intact."
+        )
+
+        existing_prompt = request.system_prompt or ""
+        combined_system = f"{existing_prompt}\n\n{multilingual_directive}".strip()
+        active_request = active_request.model_copy(update={"system_prompt": combined_system})
+
         if request.search_mode == "web_search":
             sources = await search_service.execute_search(
                 query=latest_user_message,
@@ -157,6 +172,21 @@ class AIService:
         sources: List[SearchResultItem] = []
         research_queries: List[str] = []
         active_request = request
+
+        # Stage 6 Multilingual Intelligence Directive
+        from app.services.multilingual.detector import LanguageDetector, LANGUAGE_NAMES
+        detected = LanguageDetector.detect_language(latest_user_message)
+        lang_target = request.target_language if (request.target_language and request.target_language != "auto") else detected.detected_language_code
+        lang_name = LANGUAGE_NAMES.get(lang_target, lang_target)
+
+        multilingual_directive = (
+            f"User input detected script/language: {detected.detected_language_name} ({detected.detected_language_code}). "
+            f"Respond fluently in {lang_name} ({lang_target}) while maintaining technical precision, names, numbers, and code blocks intact."
+        )
+
+        existing_prompt = request.system_prompt or ""
+        combined_system = f"{existing_prompt}\n\n{multilingual_directive}".strip()
+        active_request = active_request.model_copy(update={"system_prompt": combined_system})
 
         if request.search_mode == "web_search":
             yield f"data: {json.dumps({'type': 'research_progress', 'step': 'searching', 'message': 'Searching live web index...'})}\n\n"

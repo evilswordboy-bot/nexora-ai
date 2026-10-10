@@ -20,6 +20,7 @@ export const defaultSettings: UserSettings = {
   tavilyApiKey: '',
   serperApiKey: '',
   braveApiKey: '',
+  preferredLanguage: 'auto',
 };
 
 export const storage = {

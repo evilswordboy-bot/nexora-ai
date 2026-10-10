@@ -77,6 +77,10 @@ class ChatRequest(BaseModel):
     search_engine: Optional[str] = "auto"
     client_search_key: Optional[str] = None
 
+    # Stage 6 Multilingual parameters
+    target_language: Optional[str] = "auto" # 'auto', 'en', 'ta', 'hi', 'te', 'ml', 'kn', 'bn', 'mr', etc.
+    transliteration: Optional[bool] = False
+
     @field_validator("messages")
     @classmethod
     def validate_messages_count(cls, v: List[Message]) -> List[Message]:
@@ -295,4 +299,51 @@ class FactCheckResponse(BaseModel):
     provider: str
     model: str
     created_at: datetime = Field(default_factory=utc_now)
+
+
+# ==========================================
+# Stage 6: Universal Multilingual Schemas
+# ==========================================
+
+TranslationTone = Literal["formal", "casual", "technical", "simplification"]
+
+
+class LanguageDetectionResult(BaseModel):
+    detected_language_code: str
+    detected_language_name: str
+    confidence: float
+    is_mixed_or_code_switched: bool = False
+    secondary_languages: List[str] = Field(default_factory=list)
+    script: str = "Latin"
+
+
+class SentencePair(BaseModel):
+    source_sentence: str
+    translated_sentence: str
+
+
+class TranslationRequest(BaseModel):
+    text: str
+    source_language: Optional[str] = "auto"
+    target_language: str = "en"
+    tone: Optional[TranslationTone] = "formal"
+    transliterate: Optional[bool] = False
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "gemini-1.5-flash"
+    client_api_key: Optional[str] = None
+
+
+class TranslationResponse(BaseModel):
+    original_text: str
+    translated_text: str
+    detected_source_language: str
+    target_language: str
+    tone: TranslationTone
+    sentence_pairs: List[SentencePair] = Field(default_factory=list)
+    transliterated_text: Optional[str] = None
+    cultural_notes: Optional[str] = None
+    provider: str
+    model: str
+    created_at: datetime = Field(default_factory=utc_now)
+
 

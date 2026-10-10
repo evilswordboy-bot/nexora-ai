@@ -10,6 +10,10 @@ import {
   DocumentAction,
   DocumentActionResponse,
   FactCheckResponse,
+  LanguageDetectionResult,
+  TranslationRequest,
+  TranslationResponse,
+  TranslationTone,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -119,6 +123,7 @@ export const api = {
         search_mode: params.settings.searchMode,
         search_engine: params.settings.selectedSearchEngine,
         client_search_key: clientSearchKey || undefined,
+        target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
         stream: false,
       }),
     });
@@ -155,6 +160,7 @@ export const api = {
           search_mode: params.settings.searchMode,
           search_engine: params.settings.selectedSearchEngine,
           client_search_key: clientSearchKey || undefined,
+          target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
           stream: true,
         }),
         signal: params.signal,
@@ -354,4 +360,41 @@ export const api = {
       }),
     });
   },
+
+  // Stage 6: Universal Multilingual Intelligence
+  async detectLanguage(text: string): Promise<LanguageDetectionResult> {
+    return request<LanguageDetectionResult>('/multilingual/detect', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+  },
+
+  async translateText(params: {
+    text: string;
+    sourceLanguage?: string;
+    targetLanguage: string;
+    tone?: TranslationTone;
+    includeTransliteration?: boolean;
+    settings?: UserSettings;
+  }): Promise<TranslationResponse> {
+    const clientApiKey = params.settings ? resolveClientApiKey(params.settings) : undefined;
+    return request<TranslationResponse>('/multilingual/translate', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: params.text,
+        source_language: params.sourceLanguage || 'auto',
+        target_language: params.targetLanguage,
+        tone: params.tone || 'formal',
+        include_transliteration: params.includeTransliteration ?? true,
+        provider: params.settings?.selectedProvider || 'auto',
+        model: params.settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getLanguages(): Promise<{ supported_languages: Array<{ code: string; name: string }> }> {
+    return request('/multilingual/languages');
+  },
 };
+

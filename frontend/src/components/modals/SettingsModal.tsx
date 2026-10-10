@@ -442,6 +442,37 @@ export const SettingsModal: React.FC = () => {
                 />
               </div>
 
+              {/* Preferred Language for Stage 6 Multilingual Engine */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                  Preferred AI Response Language
+                </label>
+                <select
+                  value={form.preferredLanguage || 'auto'}
+                  onChange={(e) => setForm({ ...form, preferredLanguage: e.target.value })}
+                  className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none"
+                >
+                  <option value="auto">Auto-Detect (Match User Language & Tanglish/Hinglish)</option>
+                  <option value="en">English</option>
+                  <option value="ta">Tamil (தமிழ்)</option>
+                  <option value="hi">Hindi (हिन्दी)</option>
+                  <option value="te">Telugu (తెలుగు)</option>
+                  <option value="ml">Malayalam (മലയാളം)</option>
+                  <option value="kn">Kannada (ಕನ್ನಡ)</option>
+                  <option value="bn">Bengali (বাংলা)</option>
+                  <option value="mr">Marathi (मराठी)</option>
+                  <option value="es">Spanish (Español)</option>
+                  <option value="fr">French (Français)</option>
+                  <option value="de">German (Deutsch)</option>
+                  <option value="ja">Japanese (日本語)</option>
+                  <option value="zh">Chinese (中文)</option>
+                  <option value="ar">Arabic (العربية)</option>
+                </select>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  When set, NEXORA AI answers in this language while preserving technical code blocks and proper names.
+                </p>
+              </div>
+
               {/* System Prompt Customizer */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">

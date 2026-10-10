@@ -9,6 +9,7 @@ import { DeleteConfirmModal } from './components/modals/DeleteConfirmModal';
 import { ToastContainer } from './components/ui/Toast';
 import { DocumentsWorkspace } from './components/documents/DocumentsWorkspace';
 import { FactCheckWorkspace } from './components/factcheck/FactCheckWorkspace';
+import { TranslationWorkspace } from './components/translation/TranslationWorkspace';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -27,6 +28,8 @@ const MainLayout: React.FC = () => {
           <DocumentsWorkspace />
         ) : activeWorkspaceView === 'factcheck' ? (
           <FactCheckWorkspace />
+        ) : activeWorkspaceView === 'translation' ? (
+          <TranslationWorkspace />
         ) : (
           <ChatArea />
         )}

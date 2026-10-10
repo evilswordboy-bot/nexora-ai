@@ -1,34 +1,38 @@
-# NEXORA AI — Stage 5: Fact-Checking & Evidence Verification
+# NEXORA AI — Stage 6: Universal Multilingual Intelligence Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 5** introduces a production-ready **Fact-Checking & Evidence Verification Engine**: automated claim extraction (separating factual claims from opinions, predictions, and subjective statements), multi-source evidence corroboration against live web search and user documents, stance detection, classified verdicts with calibrated confidence scoring, missing-context detection, and a dedicated **Fact Check Workspace**.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 6** introduces a production-grade **Universal Multilingual Intelligence Engine**: 90+ language detection with deep native Indic script analysis (Tamil, Hindi, Telugu, Malayalam, Kannada, Bengali, Marathi, etc.), code-switching and Romanized dialect identification (Tanglish, Hinglish), a full-featured **Translation Studio** with multi-tone adaptation (Formal, Casual, Technical, Simplified), parallel sentence-by-sentence alignment, phonetic Latin transliteration, cultural nuance insights, and target language persistence in chat.
 
 ---
 
-## 🌟 Stage 5 Core Deliverables
+## 🌟 Stage 6 Core Deliverables
 
-- **Autonomous Claim Extraction & Linguistic Classification**:
-  - `ClaimExtractor`: Dissects complex narrative text and articles into individual checkable claims.
-  - Distinguishes objective factual assertions (statistics, event timelines, dates, quotes) from subjective opinions, future predictions, and satire.
-- **Multi-Source Evidence Corroboration**:
-  - `EvidenceCollector`: Gathers evidence across live search engines (DuckDuckGo zero-config, Tavily, Google Serper, Brave) and uploaded files in the Stage 4 Documents Vault.
-  - Identifies reputable, primary sources (`.gov`, `.edu`, Reuters, AP, BBC, Nature, Science, Wikipedia) and deduplicates redundant reporting.
-- **Classified Verification Results**:
-  - **Supported**: Reliable evidence establishes the claim.
-  - **Contradicted**: Credible evidence directly refutes or conflicts with the claim.
-  - **Mixed**: Parts of the claim are grounded while other facets are unverified or inaccurate.
-  - **Insufficient Evidence**: Available external sources cannot corroborate or resolve the claim.
-  - **Opinion or Prediction**: Explicitly flagged as non-falsifiable subjective statements.
-- **Calibrated Confidence & Nuance Detection**:
-  - Confidence metric (`high`, `medium`, `low`, `uncertain`) derived from source agreement and independence.
-  - **Misinformation & Context Flags**: Highlights cherry-picked statistics, outdated metrics, correlation-vs-causation errors, and lack of primary attribution without mislabeling genuine debate.
-- **Dedicated Fact Check Workspace**:
-  - Interactive workspace supporting raw narrative text or URL-based article verification.
-  - Claim-by-claim analysis cards with clickable outbound citations and opposing/supporting source comparison.
-  - One-click **Copy Report** generator for executive and research dissemination.
-  - Seamless header navigation between **Chat & Search**, **Documents Vault**, and **Fact Check**.
-- **Defensive Quarantine & Safety**:
-  - Retrieved external evidence is strictly quarantined to prevent remote prompt hijacking.
-  - Full backward compatibility with Stages 1, 2, 3, and 4.
+- **Tri-Layer Real-Time Language & Script Detection**:
+  - `LanguageDetector`: Analyzes incoming texts and messages in under 5ms.
+  - **Layer 1 (Native Scripts)**: Exact Unicode block regex ranges for Tamil (`\u0B80-\u0BFF`), Devanagari (`\u0900-\u097F`), Telugu (`\u0C00-\u0C7F`), Malayalam (`\u0D00-\u0D7F`), Kannada (`\u0C80-\u0CFF`), Bengali (`\u0980-\u09FF`), Arabic (`\u0600-\u06FF`), and CJK.
+  - **Layer 2 (Code-Switching & Dialects)**: Lexical dictionaries identify Romanized code-switching such as **Tanglish** (Tamil written in English script) and **Hinglish** (Hindi written in English script).
+  - **Layer 3 (Statistical Fallback)**: Integrated with `langdetect` for global multilingual coverage.
+- **Translation Studio & Multi-Tone Engine**:
+  - Multi-tone adaptation:
+    - **Formal**: Respectful honorifics, grammatically polished structure.
+    - **Casual**: Natural spoken idiom suited for colloquial communication.
+    - **Technical**: Preserves technical terms, code snippets, and proper nouns.
+    - **Simplified**: Plain, direct vocabulary for accessible comprehension.
+  - **Sentence-by-Sentence Alignment**: Parallel paired views linking each source sentence to its target translation.
+  - **Phonetic Latin Transliteration**: Generates readable Romanized pronunciation guides for non-Latin script translations.
+  - **Cultural & Pragmatic Nuance Notes**: Explains untranslatable idioms, honorific distinctions, and regional phrasing choices.
+- **Multilingual AI Chat & Research Integration**:
+  - Automatically responds in the user's detected input language by default.
+  - Injects target language directives into AI chat completions and streaming sessions.
+  - Preserves formatting, code blocks, proper nouns, and markdown structure during language transitions.
+  - Supports Arabic and Hebrew with RTL layout considerations.
+- **Dedicated Translation Workspace UI**:
+  - Interactive workspace accessible via the top navigation bar (**Chat & Search**, **Documents Vault**, **Fact Check**, **Translate**).
+  - Quick-sample buttons for instant testing (Tamil, Hindi, Tanglish, Hinglish).
+  - One-click copy for complete translations and individual aligned sentences.
+- **Honest Multilingual Disclosures**:
+  - Clearly acknowledges the probabilistic nature of LLM translations without claiming absolute perfection across low-resource dialects.
+  - Zero mock responses: uses genuine model synthesis or structured tokenizers.
+
 
 ---
 

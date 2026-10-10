@@ -9,6 +9,7 @@ from app.api.v1.conversations import router as conversations_router
 from app.api.v1.search import router as search_router
 from app.api.v1.documents import router as documents_router
 from app.api.v1.factcheck import router as factcheck_router
+from app.api.v1.multilingual import router as multilingual_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -47,6 +48,7 @@ app.include_router(conversations_router, prefix="/api/v1")
 app.include_router(search_router, prefix="/api/v1")
 app.include_router(documents_router, prefix="/api/v1")
 app.include_router(factcheck_router, prefix="/api/v1")
+app.include_router(multilingual_router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -72,6 +72,8 @@ export interface UserSettings {
   tavilyApiKey: string;
   serperApiKey: string;
   braveApiKey: string;
+  // Stage 6 Multilingual Settings
+  preferredLanguage: string;
 }
 
 export interface ToastMessage {
@@ -181,3 +183,47 @@ export interface FactCheckResponse {
   model: string;
   created_at: string;
 }
+
+// Stage 6: Universal Multilingual Intelligence Engine Types
+export type TranslationTone = 'formal' | 'casual' | 'technical' | 'simplified';
+
+export interface SentencePair {
+  source_sentence: string;
+  target_sentence: string;
+  transliteration?: string;
+}
+
+export interface LanguageDetectionResult {
+  detected_language: string;
+  language_name: string;
+  confidence: number;
+  script?: string;
+  is_code_switched: boolean;
+  code_switch_types: string[];
+  is_rtl: boolean;
+}
+
+export interface TranslationRequest {
+  text: string;
+  source_language?: string;
+  target_language: string;
+  tone?: TranslationTone;
+  include_transliteration?: boolean;
+  provider?: string;
+  model?: string;
+  client_api_key?: string;
+}
+
+export interface TranslationResponse {
+  source_text: string;
+  source_language: string;
+  target_language: string;
+  tone: TranslationTone;
+  translated_text: string;
+  sentence_pairs: SentencePair[];
+  full_transliteration?: string;
+  nuance_notes?: string;
+  provider: string;
+  model: string;
+}
+
