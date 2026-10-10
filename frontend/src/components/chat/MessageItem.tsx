@@ -129,8 +129,20 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
                 </div>
               )}
 
-              {/* Render Markdown */}
-              <MarkdownRenderer content={message.content} />
+              {/* Empty state while initial tokens are buffered */}
+              {message.isStreaming && !message.content ? (
+                <div className="flex items-center gap-2 py-2 text-xs text-cyan-400 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                  <span>NEXORA is generating live response...</span>
+                </div>
+              ) : (
+                <div className="relative">
+                  <MarkdownRenderer content={message.content} />
+                  {message.isStreaming && (
+                    <span className="inline-block w-2 h-4 ml-1 bg-cyan-400 animate-pulse rounded-sm align-middle shadow-cyan-glow" />
+                  )}
+                </div>
+              )}
 
               {/* Honest Setup Button inside message if unconfigured */}
               {isUnconfigured && (

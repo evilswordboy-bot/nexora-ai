@@ -8,6 +8,7 @@ export interface Message {
   model?: string;
   provider?: string;
   error?: boolean;
+  isStreaming?: boolean;
 }
 
 export interface Conversation {

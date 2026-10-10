@@ -42,6 +42,18 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+function resolveClientApiKey(settings: UserSettings): string {
+  const { selectedProvider, geminiApiKey, openaiApiKey, anthropicApiKey } = settings;
+  if (selectedProvider === 'gemini' || selectedProvider === 'auto') {
+    return geminiApiKey || '';
+  } else if (selectedProvider === 'openai') {
+    return openaiApiKey || '';
+  } else if (selectedProvider === 'anthropic') {
+    return anthropicApiKey || '';
+  }
+  return '';
+}
+
 export const api = {
   async getHealth(): Promise<{ status: string; providers_configured: boolean; configured_providers: string[] }> {
     return request('/health');
@@ -56,16 +68,7 @@ export const api = {
     messages: Message[];
     settings: UserSettings;
   }): Promise<{ id: string; content: string; model: string; provider: string; finish_reason?: string }> {
-    // Determine client API key to pass if configured in client settings
-    let clientApiKey = '';
-    const { selectedProvider, geminiApiKey, openaiApiKey, anthropicApiKey } = params.settings;
-    if (selectedProvider === 'gemini' || selectedProvider === 'auto') {
-      clientApiKey = geminiApiKey || '';
-    } else if (selectedProvider === 'openai') {
-      clientApiKey = openaiApiKey || '';
-    } else if (selectedProvider === 'anthropic') {
-      clientApiKey = anthropicApiKey || '';
-    }
+    const clientApiKey = resolveClientApiKey(params.settings);
 
     return request('/chat', {
       method: 'POST',
@@ -77,8 +80,120 @@ export const api = {
         temperature: params.settings.temperature,
         system_prompt: params.settings.systemPrompt,
         client_api_key: clientApiKey || undefined,
+        stream: false,
       }),
     });
+  },
+
+  async streamChatMessage(params: {
+    conversationId?: string;
+    messages: Message[];
+    settings: UserSettings;
+    signal?: AbortSignal;
+    onStart?: (info: { id: string; model: string; provider: string }) => void;
+    onChunk: (chunk: string) => void;
+    onDone?: (info: { id: string; finish_reason?: string }) => void;
+    onError?: (errorMsg: string) => void;
+  }): Promise<void> {
+    const clientApiKey = resolveClientApiKey(params.settings);
+    const url = `${BASE_URL}/chat/stream`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          conversation_id: params.conversationId,
+          messages: params.messages,
+          provider: params.settings.selectedProvider,
+          model: params.settings.selectedModel,
+          temperature: params.settings.temperature,
+          system_prompt: params.settings.systemPrompt,
+          client_api_key: clientApiKey || undefined,
+          stream: true,
+        }),
+        signal: params.signal,
+      });
+
+      if (!response.ok) {
+        let errorMsg = `Server error (${response.status})`;
+        try {
+          const errData = await response.json();
+          errorMsg = errData.detail || errData.message || errorMsg;
+        } catch {
+          const text = await response.text();
+          if (text) errorMsg = text;
+        }
+        params.onError?.(errorMsg);
+        return;
+      }
+
+      if (!response.body) {
+        params.onError?.('Readable stream not supported by browser environment.');
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || '';
+
+        for (const event of events) {
+          const lines = event.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const dataStr = line.slice(6).trim();
+              if (!dataStr) continue;
+              try {
+                const parsed = JSON.parse(dataStr);
+                if (parsed.type === 'start') {
+                  params.onStart?.(parsed);
+                } else if (parsed.type === 'chunk') {
+                  params.onChunk(parsed.content);
+                } else if (parsed.type === 'done') {
+                  params.onDone?.(parsed);
+                } else if (parsed.type === 'error') {
+                  params.onError?.(parsed.message || 'Stream processing error');
+                }
+              } catch {
+                // Ignore partial JSON parsing glitches
+              }
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        // Explicitly stopped by user
+        return;
+      }
+      params.onError?.(err.message || 'Streaming connection failed.');
+    }
+  },
+
+  async generateTitle(userPrompt: string, conversationId?: string, settings?: UserSettings): Promise<string> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    try {
+      const res = await request<{ title: string }>('/chat/generate-title', {
+        method: 'POST',
+        body: JSON.stringify({
+          user_prompt: userPrompt,
+          conversation_id: conversationId,
+          client_api_key: clientApiKey,
+          provider: settings?.selectedProvider || 'auto',
+        }),
+      });
+      return res.title;
+    } catch {
+      return userPrompt.trim().split('\n')[0].substring(0, 32);
+    }
   },
 
   async getConversations(): Promise<Conversation[]> {

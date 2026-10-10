@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path)
 
 class Settings(BaseModel):
     app_name: str = "NEXORA AI Engine"
-    app_version: str = "1.0.0-stage1"
+    app_version: str = "2.0.0-stage2"
     environment: str = os.getenv("ENVIRONMENT", "development")
     host: str = os.getenv("HOST", "127.0.0.1")
     port: int = int(os.getenv("PORT", "8000"))
@@ -27,9 +27,16 @@ class Settings(BaseModel):
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
-    default_provider: str = os.getenv("DEFAULT_PROVIDER", "unconfigured")
+    # Default Active Model & Provider
+    default_provider: str = os.getenv("DEFAULT_PROVIDER", "auto")
     default_model: str = os.getenv("DEFAULT_MODEL", "gemini-1.5-flash")
 
+    # Conversation Context & Message Limits
+    max_context_messages: int = int(os.getenv("MAX_CONTEXT_MESSAGES", "20"))
+    max_message_chars: int = int(os.getenv("MAX_MESSAGE_CHARS", "32000"))
+    request_timeout_seconds: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "45.0"))
+
+    # Security & Rate Limiting
     rate_limit_per_minute: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
     enable_safety_guardrails: bool = os.getenv("ENABLE_SAFETY_GUARDRAILS", "true").lower() in ("true", "1", "yes")
 

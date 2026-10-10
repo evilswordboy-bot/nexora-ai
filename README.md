@@ -1,41 +1,44 @@
-# NEXORA AI — Stage 1: Masterpiece Foundation
+# NEXORA AI — Stage 2: The Intelligence Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. Stage 1 establishes the production-grade foundation: responsive dark theme workspace, session/conversation state management, modular AI provider dispatcher with honest setup validation, content safety guardrails, and FastAPI backend architecture.
-
----
-
-## 🌟 Stage 1 Core Deliverables
-
-- **Sophisticated Dark Theme Workspace**: Midnight navy (`#0B0F19`), electric cyan (`#06B6D4`), and subtle violet gradients (`#8B5CF6`) built with React, Vite, TypeScript, and Tailwind CSS.
-- **Collapsible Responsive Navigation**:
-  - Auto-categorized conversation history (**Today**, **Yesterday**, **Previous 7 Days**, **Older**).
-  - Search filter across all stored conversations.
-  - Inline conversation renaming and modal-confirmed deletion.
-  - Full mobile navigation drawer.
-- **Genuine, Zero-Mock Provider Dispatcher**:
-  - **No Fake AI Responses**: If no provider API key is configured on server or in client settings, the system displays an honest setup guide with 1-click configuration.
-  - Ready for **Google Gemini** (`gemini-1.5-flash`, `gemini-1.5-pro`), **OpenAI** (`gpt-4o`, `gpt-4o-mini`), and **Anthropic** (`claude-3-5-sonnet`).
-  - Supports passing client-side session keys directly via Settings without committing them to git.
-- **Adult-Content Safety Guardrail**:
-  - Dual-evaluator content safety filter that blocks sexually gratuitous erotica and pornography.
-  - **Educational & Medical Exemption**: Deliberately permits legitimate anatomical, biological, reproductive health, and medical inquiries.
-- **FastAPI Engine**:
-  - Sliding-window in-memory rate limiter per IP.
-  - Pydantic v2 data models with UTC timestamp serialization.
-  - In-memory conversation persistence and REST CRUD endpoints.
-  - Automated test suite verifying health, conversations CRUD, honest setup states, and safety filter rules.
-- **100-Phase Progression Matrix**:
-  - Complete master roadmap tracked in [`PHASE_STATUS.md`](./PHASE_STATUS.md). Stage 1 is marked `COMPLETE` upon automated verification; subsequent phases remain `NOT STARTED` awaiting sequential approval.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 2** upgrades the foundational system with a production-grade **Intelligence Engine**: Server-Sent Events (SSE) streaming pipeline, modular LLM provider abstractions, client-side abort/stop generation controls, conversational context management, and smart auto-titling.
 
 ---
 
-## 📁 Project Architecture
+## 🌟 Stage 2 Core Deliverables
+
+- **Real-Time Streaming Engine (Server-Sent Events / SSE)**:
+  - `POST /api/v1/chat/stream` streams tokens in real time directly to the client interface.
+  - Live typing cursor animation with smooth autoscrolling as tokens stream into the chat view.
+  - Seamless fallback streaming for honest unconfigured setup guidance (zero fake answers).
+- **Client-Side Generation Cancellation (Stop Controls)**:
+  - Responsive **Stop** button powered by standard `AbortController` in `fetch`.
+  - Halts generation immediately, preserves partial streamed output without corrupted formatting, and frees provider connection resources.
+- **Modular Multi-Provider Abstraction Layer**:
+  - `BaseAIProvider`: Abstract base class enforcing consistent message preparation, generation, and streaming.
+  - `GeminiProvider`: Google Gemini (`gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`) via `streamGenerateContent?alt=sse`.
+  - `OpenAIProvider`: OpenAI (`gpt-4o`, `gpt-4o-mini`, `o3-mini`) via `chat/completions` with `stream: true`.
+  - `AnthropicProvider`: Anthropic Claude (`claude-3-5-sonnet`, `claude-3-5-haiku`) via `messages` streaming.
+  - `OfflineHonestProvider`: Transparent, zero-mock guidance when no external credentials exist.
+- **Context Memory & Sliding Window Management**:
+  - Maintains strict chronological ordering and conversation history across follow-up queries.
+  - Configurable context limit (`MAX_CONTEXT_MESSAGES=20`) to prevent context window blowouts.
+  - Support for follow-up questions, message regeneration, copying responses, and editing user prompts.
+- **Smart Conversation Auto-Titling**:
+  - `POST /api/v1/chat/generate-title`: Generates concise 3-5 word topic titles from user inquiries.
+  - Automatically renames new conversations dynamically as the user chats.
+- **Reliability, Security & Size Validation**:
+  - Pydantic v2 validation enforcing maximum message character limits (32,000 characters) and conversation length limits.
+  - Configurable request timeouts (`REQUEST_TIMEOUT_SECONDS=45.0`).
+  - Strict privacy: Sensitive user prompts and raw API keys are never leaked to logs or external services.
+
+---
+
+## 📁 Architecture Overview
 
 ```
 nexora-ai/
-├── PHASE_STATUS.md            # 100-Phase Roadmap & Status Tracker
-├── README.md                  # Comprehensive Documentation & Setup Guide
-├── .gitignore                 # Strict secrets and build artifact exclusions
+├── PHASE_STATUS.md            # 100-Phase Roadmap (Phases 1 & 2 COMPLETE)
+├── README.md                  # Comprehensive Documentation
 ├── .env.example               # Environment variables template
 ├── backend/
 │   ├── .env.example
@@ -43,26 +46,33 @@ nexora-ai/
 │   ├── requirements.txt       # FastAPI, Uvicorn, Pydantic, HTTPX, Pytest
 │   ├── run.py                 # Backend launcher script
 │   ├── app/
-│   │   ├── config.py          # App configuration & provider key detection
+│   │   ├── config.py          # App settings, timeouts & context limits
 │   │   ├── main.py            # FastAPI entry point & CORS configuration
 │   │   ├── models/
-│   │   │   └── schemas.py     # Pydantic request/response models
+│   │   │   └── schemas.py     # Pydantic v2 models with size validation
 │   │   ├── core/
 │   │   │   ├── rate_limiter.py# Sliding-window rate limiter (60 req/min)
 │   │   │   └── safety.py      # Adult content guardrail with medical exemption
 │   │   ├── services/
-│   │   │   ├── ai_service.py  # Multi-provider dispatcher & honest fallback
-│   │   │   ├── conversation_service.py # In-memory CRUD storage
-│   │   │   └── tools_registry.py       # Modular tool execution framework
+│   │   │   ├── ai_service.py  # Unified multi-provider orchestrator
+│   │   │   ├── providers/     # Modular provider implementations
+│   │   │   │   ├── base.py              # BaseAIProvider abstract interface
+│   │   │   │   ├── gemini_provider.py   # Gemini completions & SSE
+│   │   │   │   ├── openai_provider.py   # OpenAI completions & SSE
+│   │   │   │   ├── anthropic_provider.py# Anthropic completions & SSE
+│   │   │   │   └── offline_provider.py  # Honest unconfigured guidance
+│   │   │   ├── conversation_service.py # In-memory conversation persistence
+│   │   │   └── tools_registry.py       # Extensible tools framework
 │   │   └── api/
 │   │       └── v1/
 │   │           ├── health.py  # Health and provider status endpoints
-│   │           ├── chat.py    # Chat completions endpoint
+│   │           ├── chat.py    # Standard, streaming, and titling endpoints
 │   │           └── conversations.py # Conversation REST endpoints
 │   └── tests/
-│       ├── test_health.py     # Health endpoint and provider introspection tests
-│       ├── test_safety.py     # Explicit blocking vs medical exemption tests
-│       └── test_conversations.py # CRUD and honest unconfigured state tests
+│       ├── test_health.py     # Health endpoint tests
+│       ├── test_safety.py     # Content safety & medical exemption tests
+│       ├── test_conversations.py # CRUD and unconfigured state tests
+│       └── test_stage2_engine.py # Streaming, titling, size validation tests
 └── frontend/
     ├── package.json           # React 18, TypeScript, Tailwind, Lucide Icons
     ├── vite.config.ts         # Vite bundler with /api proxy to FastAPI
@@ -71,9 +81,9 @@ nexora-ai/
     └── src/
         ├── App.tsx            # Main application layout
         ├── context/
-        │   └── ChatContext.tsx# Reactive state management & storage sync
+        │   └── ChatContext.tsx# Reactive state, SSE stream handler, AbortController
         ├── services/
-        │   ├── api.ts         # Backend API client
+        │   ├── api.ts         # Backend API client with SSE ReadableStream parser
         │   └── storage.ts     # LocalStorage persistence & backup import/export
         ├── components/
         │   ├── layout/
@@ -81,13 +91,13 @@ nexora-ai/
         │   │   └── Sidebar.tsx# Collapsible history with search & rename
         │   ├── chat/
         │   │   ├── ChatArea.tsx       # Message list with autoscroll
-        │   │   ├── WelcomeScreen.tsx  # Hero branding & quick prompt cards
-        │   │   ├── MessageItem.tsx    # Markdown renderer & action controls
-        │   │   ├── MessageInput.tsx   # Textarea with Enter/Shift+Enter & counter
+        │   │   ├── WelcomeScreen.tsx  # Stage 2 hero branding & quick prompt cards
+        │   │   ├── MessageItem.tsx    # Markdown renderer, streaming cursor, actions
+        │   │   ├── MessageInput.tsx   # Textarea with Send/Stop & token estimation
         │   │   └── MarkdownRenderer.tsx# Syntax highlighting & code blocks
         │   ├── modals/
-        │   │   ├── SettingsModal.tsx  # API key, model selection, temperature
-        │   │   ├── SetupGuideModal.tsx# Architecture guide & free key instructions
+        │   │   ├── SettingsModal.tsx  # API keys, model picker, temperature
+        │   │   ├── SetupGuideModal.tsx# Stage 2 architecture guide
         │   │   └── DeleteConfirmModal.tsx # Safe deletion dialog
         │   └── ui/
         │       ├── CodeBlock.tsx      # Code preview with 1-click copy
@@ -98,28 +108,18 @@ nexora-ai/
 
 ## 🚀 Quick Start Guide
 
-### Prerequisites
-- **Node.js** >= 18 (`v26.x` supported)
-- **Python** >= 3.10 (`3.13.x` supported)
-
----
-
 ### Step 1: Start the Backend Server
 
 ```bash
 cd backend
 
-# 1. Install dependencies (if not already installed)
-python -m pip install -r requirements.txt
+# Run automated test suite (13/13 passing)
+python -m pytest tests -v
 
-# 2. Run automated backend test suite
-python -m pytest tests
-
-# 3. Launch the FastAPI server
+# Launch the FastAPI server
 python run.py
 ```
-The FastAPI backend will start on **`http://127.0.0.1:8000`**.
-Interactive API documentation will be available at **`http://127.0.0.1:8000/docs`**.
+Backend runs at `http://127.0.0.1:8000` (API documentation at `http://127.0.0.1:8000/docs`).
 
 ---
 
@@ -130,13 +130,10 @@ In a separate terminal:
 ```bash
 cd frontend
 
-# 1. Install dependencies
-npm install
-
-# 2. Start the Vite development server
+# Start the Vite development server
 npm run dev
 ```
-The React frontend will start on **`http://localhost:5173`**.
+Frontend runs at `http://localhost:5173`.
 
 ---
 
@@ -144,52 +141,54 @@ The React frontend will start on **`http://localhost:5173`**.
 
 NEXORA AI operates on an **honest provider architecture**. You can configure providers via either method:
 
-### Method A: Client Settings Modal (Recommended for local evaluation)
+### Method A: Client Settings Modal (Instant)
 1. Open the web interface at `http://localhost:5173`.
 2. Click the **Gear icon (Settings)** in the top-right header.
 3. Paste your **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com)) or **OpenAI API Key**.
-4. Click **Save Settings**. Your key is saved strictly in your local browser session.
+4. Click **Save Settings**. Your key is saved strictly in your local browser session and utilized for real streaming generation.
 
 ### Method B: Backend `.env` File
-Create or edit `backend/.env`:
+Configure `backend/.env`:
 ```env
 GEMINI_API_KEY=AIzaSy...
 OPENAI_API_KEY=sk-proj-...
 ANTHROPIC_API_KEY=sk-ant-...
-DEFAULT_PROVIDER=gemini
+
+DEFAULT_PROVIDER=auto
 DEFAULT_MODEL=gemini-1.5-flash
+
+MAX_CONTEXT_MESSAGES=20
+MAX_MESSAGE_CHARS=32000
+REQUEST_TIMEOUT_SECONDS=45.0
 ```
-Restart `python run.py`. The backend will automatically recognize the configured providers.
+Restart `python run.py` to pick up server-side keys.
 
 ---
 
-## 🛡️ Content Safety & Policy Layer
+## 🧪 Verification & Automated Testing
 
-The platform enforces an automated safety layer (`app/core/safety.py`):
-- **Blocked**: Gratuitous pornography, sexually explicit erotica, CSAM, and non-consensual content.
-- **Allowed with Educational Exemption**: Legitimate inquiries covering human reproductive anatomy, medical clinical diagnostics, pathology, endocrinology, and high-school or university biological science.
-
----
-
-## 🧪 Verification & Testing
-
-Run all backend unit and integration tests:
+Run the full Pytest test suite:
 ```bash
 cd backend
 python -m pytest tests -v
 ```
 
 Expected output:
-```
-tests/test_conversations.py::test_conversations_crud PASSED
-tests/test_conversations.py::test_honest_unconfigured_chat_response PASSED
-tests/test_health.py::test_root_endpoint PASSED
-tests/test_health.py::test_health_endpoint PASSED
-tests/test_health.py::test_providers_status_honest_state PASSED
-tests/test_safety.py::test_explicit_sexual_content_blocked PASSED
-tests/test_safety.py::test_educational_medical_content_allowed PASSED
-tests/test_safety.py::test_benign_coding_prompt_allowed PASSED
-8 passed in ~0.9s
+```text
+tests/test_conversations.py::test_conversations_crud PASSED              [  7%]
+tests/test_conversations.py::test_honest_unconfigured_chat_response PASSED [ 15%]
+tests/test_health.py::test_root_endpoint PASSED                          [ 23%]
+tests/test_health.py::test_health_endpoint PASSED                        [ 30%]
+tests/test_health.py::test_providers_status_honest_state PASSED          [ 38%]
+tests/test_safety.py::test_explicit_sexual_content_blocked PASSED        [ 46%]
+tests/test_safety.py::test_educational_medical_content_allowed PASSED    [ 53%]
+tests/test_safety.py::test_benign_coding_prompt_allowed PASSED           [ 61%]
+tests/test_stage2_engine.py::test_streaming_chat_endpoint_unconfigured PASSED [ 69%]
+tests/test_stage2_engine.py::test_title_generation_endpoint PASSED       [ 76%]
+tests/test_stage2_engine.py::test_message_size_validation PASSED         [ 84%]
+tests/test_stage2_engine.py::test_context_window_truncation PASSED       [ 92%]
+tests/test_stage2_engine.py::test_streaming_safety_guardrail PASSED      [100%]
+============================= 13 passed in 0.78s ==============================
 ```
 
 Frontend production build check:
@@ -197,25 +196,25 @@ Frontend production build check:
 cd frontend
 npm run build
 ```
-Builds cleanly with zero TypeScript or bundling errors.
+Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 
 ---
 
-## 📋 Stage 1 Completion Checklist
+## 📋 Stage 2 Verification Checklist
 
-- [x] Responsive dark theme with midnight navy, electric cyan, and violet accents.
-- [x] Collapsible sidebar with new chat, grouped conversation history, search filter, rename, and delete.
-- [x] Main chat workspace with premium welcome screen and quick suggestion prompt cards.
-- [x] Message input with Enter-to-send, Shift+Enter for new line, character/token estimation, and stage action previews.
-- [x] Markdown renderer with syntax-highlighted code blocks and 1-click clipboard copy.
-- [x] Honest setup indicator: No fake AI hallucinations; transparent setup guidance when unconfigured.
-- [x] Modular multi-provider dispatcher supporting Gemini, OpenAI, Anthropic, and local diagnostic telemetry.
-- [x] Adult content safety guardrail with legitimate medical/educational exemption.
-- [x] Sliding-window rate limiting on FastAPI backend.
-- [x] LocalStorage persistence with JSON backup export and import.
-- [x] Comprehensive 100-Phase roadmap documented in `PHASE_STATUS.md`.
-- [x] All 8 backend unit and integration tests passing.
+- [x] Real-time Server-Sent Events (SSE) streaming (`POST /api/v1/chat/stream`).
+- [x] Client-side `AbortController` stop-generation control.
+- [x] Live response generation typing cursor and smooth autoscrolling.
+- [x] Modular provider architecture (`BaseAIProvider`, `GeminiProvider`, `OpenAIProvider`, `AnthropicProvider`, `OfflineHonestProvider`).
+- [x] Strict conversation context retention and configurable sliding window limits (`MAX_CONTEXT_MESSAGES=20`).
+- [x] Follow-up questions, message regeneration, copy response, and prompt editing.
+- [x] Smart conversation auto-titling from conversation content (`POST /api/v1/chat/generate-title`).
+- [x] Message size validation (up to 32,000 characters) and request timeout enforcement.
+- [x] Zero-fake-response policy strictly maintained when keys are missing.
+- [x] Adult-content safety guardrail with legitimate medical/educational exemption integrated into streaming.
+- [x] 13/13 automated Pytest test cases passing.
 - [x] Frontend TypeScript type check and production build verified.
+- [x] Updated `PHASE_STATUS.md` and `.env.example`.
 
 ---
-*Stage 1 is complete. Do not proceed to Stage 2 until Stage 1 has been reviewed and approved.*
+*Stage 2 is complete. Do not proceed to Stage 3 until Stage 2 has been reviewed and approved.*

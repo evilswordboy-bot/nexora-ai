@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Conversation, Message, UserSettings, ProviderStatusResponse, ToastMessage } from '../types';
 import { storage } from '../services/storage';
 import { api } from '../services/api';
@@ -8,6 +8,7 @@ interface ChatContextType {
   activeConversationId: string | null;
   activeConversation: Conversation | null;
   isLoading: boolean;
+  isStreaming: boolean;
   isBackendConnected: boolean;
   providerStatus: ProviderStatusResponse | null;
   settings: UserSettings;
@@ -18,6 +19,7 @@ interface ChatContextType {
   deleteConversation: (id: string) => Promise<void>;
   clearAllConversations: () => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  stopGeneration: () => void;
   regenerateMessage: (messageId: string) => Promise<void>;
   editAndResend: (messageId: string, newContent: string) => Promise<void>;
   searchQuery: string;
@@ -43,6 +45,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [activeConversationId, setActiveConversationId] = useState<string | null>(() => storage.getActiveId());
   const [settings, setSettings] = useState<UserSettings>(() => storage.getSettings());
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
   const [providerStatus, setProviderStatus] = useState<ProviderStatusResponse | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -51,6 +54,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // AbortController ref for canceling active streams
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -101,10 +107,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [conversations, activeConversationId]);
 
   const updateSettings = useCallback((newSettings: Partial<UserSettings>) => {
-    setSettings((prev) => {
-      const updated = { ...prev, ...newSettings };
-      return updated;
-    });
+    setSettings((prev) => ({ ...prev, ...newSettings }));
     showToast('Settings saved', 'success');
   }, [showToast]);
 
@@ -121,11 +124,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveConversationId(newConv.id);
     setMobileMenuOpen(false);
 
-    // Sync to backend if connected
     try {
       await api.createConversation(newConv.title);
     } catch {
-      // Backend offline or local fallback - seamlessly continue
+      // Local storage fallback
     }
 
     return newConv.id;
@@ -147,7 +149,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.updateConversation(id, { title: trimmed });
     } catch {
-      // Offline fallback ok
+      // Local storage fallback
     }
     showToast('Conversation renamed', 'success');
   }, [showToast]);
@@ -160,7 +162,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.deleteConversation(id);
     } catch {
-      // Offline fallback ok
+      // Local storage fallback
     }
     showToast('Conversation deleted', 'info');
   }, [activeConversationId, showToast]);
@@ -172,22 +174,42 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.clearAllConversations();
     } catch {
-      // Offline fallback ok
+      // Local storage fallback
     }
     showToast('All conversations cleared', 'info');
+  }, [showToast]);
+
+  const stopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsLoading(false);
+    setIsStreaming(false);
+
+    // Unset streaming flag on all messages
+    setConversations((prev) =>
+      prev.map((c) => ({
+        ...c,
+        messages: c.messages.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)),
+      }))
+    );
+    showToast('Generation stopped', 'info');
   }, [showToast]);
 
   const sendMessage = useCallback(async (content: string) => {
     if (!content.trim() || isLoading) return;
 
     let targetConvId = activeConversationId;
+    let isBrandNew = false;
 
     // Create a new conversation if none is active
     if (!targetConvId) {
+      isBrandNew = true;
       const newId = 'conv-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6);
       const newConv: Conversation = {
         id: newId,
-        title: content.trim().split('\n')[0].substring(0, 36) || 'New Conversation',
+        title: 'New Conversation',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         messages: [],
@@ -204,17 +226,25 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       timestamp: new Date().toISOString(),
     };
 
+    const assistantPlaceholderId = 'msg-' + Date.now() + '-assistant';
+    const assistantPlaceholder: Message = {
+      id: assistantPlaceholderId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      model: settings.selectedModel,
+      provider: settings.selectedProvider,
+      isStreaming: true,
+    };
+
     // Optimistically update conversation state
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === targetConvId) {
-          const updatedTitle =
-            c.title === 'New Conversation' ? content.trim().split('\n')[0].substring(0, 36) : c.title;
           return {
             ...c,
-            title: updatedTitle,
             updated_at: new Date().toISOString(),
-            messages: [...c.messages, userMessage],
+            messages: [...c.messages, userMessage, assistantPlaceholder],
           };
         }
         return c;
@@ -222,69 +252,143 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     setIsLoading(true);
+    setIsStreaming(true);
+
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
-      // Get complete message chain for context
+      // Gather context messages
       const currentConv = conversations.find((c) => c.id === targetConvId);
       const existingMessages = currentConv ? currentConv.messages : [];
       const messagesToSend = [...existingMessages, userMessage];
 
-      const response = await api.sendChatMessage({
+      let accumulatedContent = '';
+
+      await api.streamChatMessage({
         conversationId: targetConvId,
         messages: messagesToSend,
         settings,
+        signal: abortController.signal,
+        onStart: (info) => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantPlaceholderId
+                      ? { ...m, model: info.model, provider: info.provider }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
+        onChunk: (chunk) => {
+          accumulatedContent += chunk;
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantPlaceholderId
+                      ? { ...m, content: accumulatedContent, isStreaming: true }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
+        onDone: (doneInfo) => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantPlaceholderId
+                      ? { ...m, content: accumulatedContent, isStreaming: false }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
+        onError: (errorMsg) => {
+          setConversations((prev) =>
+            prev.map((c) => {
+              if (c.id === targetConvId) {
+                return {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantPlaceholderId
+                      ? {
+                          ...m,
+                          content: `⚠️ **Generation Error**: ${errorMsg}`,
+                          error: true,
+                          isStreaming: false,
+                        }
+                      : m
+                  ),
+                };
+              }
+              return c;
+            })
+          );
+        },
       });
 
-      const assistantMessage: Message = {
-        id: response.id,
-        role: 'assistant',
-        content: response.content,
-        timestamp: new Date().toISOString(),
-        model: response.model,
-        provider: response.provider,
-      };
-
-      setConversations((prev) =>
-        prev.map((c) => {
-          if (c.id === targetConvId) {
-            return {
-              ...c,
-              updated_at: new Date().toISOString(),
-              messages: [...c.messages, assistantMessage],
-            };
+      // Auto-generate a smart conversation title if title is default
+      const convNow = conversations.find((c) => c.id === targetConvId);
+      if (isBrandNew || (convNow && convNow.title === 'New Conversation')) {
+        api.generateTitle(content, targetConvId, settings).then((smartTitle) => {
+          if (smartTitle) {
+            setConversations((prev) =>
+              prev.map((c) => (c.id === targetConvId ? { ...c, title: smartTitle } : c))
+            );
           }
-          return c;
-        })
-      );
+        });
+      }
     } catch (err: any) {
-      // Honest, transparent error representation
-      const isConnectionErr = err.status === 0 || err.message?.includes('Network');
-      const errorMessage: Message = {
-        id: 'msg-' + Date.now() + '-err',
-        role: 'assistant',
-        content: isConnectionErr
-          ? '🔌 **Backend Offline**\n\nCould not reach the Nexora FastAPI backend at `http://127.0.0.1:8000`. Please ensure the backend is running (`python run.py`) to process messages.'
-          : `⚠️ **Request Error (${err.status || '500'})**\n\n${err.message || 'An unexpected error occurred.'}`,
-        timestamp: new Date().toISOString(),
-        error: true,
-      };
-
-      setConversations((prev) =>
-        prev.map((c) => (c.id === targetConvId ? { ...c, messages: [...c.messages, errorMessage] } : c))
-      );
+      if (err.name !== 'AbortError') {
+        const errorText = `⚠️ **Request Error**: ${err.message || 'Connection failure'}`;
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === targetConvId) {
+              return {
+                ...c,
+                messages: c.messages.map((m) =>
+                  m.id === assistantPlaceholderId
+                    ? { ...m, content: errorText, error: true, isStreaming: false }
+                    : m
+                ),
+              };
+            }
+            return c;
+          })
+        );
+      }
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      abortControllerRef.current = null;
     }
   }, [activeConversationId, conversations, isLoading, settings]);
 
   const regenerateMessage = useCallback(async (messageId: string) => {
     if (!activeConversation || isLoading) return;
 
-    // Find the message index
     const msgIdx = activeConversation.messages.findIndex((m) => m.id === messageId);
     if (msgIdx === -1) return;
 
-    // Determine user prompt that triggered it
     let userPrompt = '';
     if (activeConversation.messages[msgIdx].role === 'assistant') {
       const prevMsg = activeConversation.messages[msgIdx - 1];
@@ -295,7 +399,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!userPrompt) return;
 
-    // Remove the assistant message and re-send
+    // Prune the assistant message
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === activeConversation.id) {
@@ -317,7 +421,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const msgIdx = activeConversation.messages.findIndex((m) => m.id === messageId);
     if (msgIdx === -1) return;
 
-    // Truncate messages after this message
+    // Truncate messages from this point
     setConversations((prev) =>
       prev.map((c) => {
         if (c.id === activeConversation.id) {
@@ -340,6 +444,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         activeConversationId,
         activeConversation,
         isLoading,
+        isStreaming,
         isBackendConnected,
         providerStatus,
         settings,
@@ -350,6 +455,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteConversation,
         clearAllConversations,
         sendMessage,
+        stopGeneration,
         regenerateMessage,
         editAndResend,
         searchQuery,

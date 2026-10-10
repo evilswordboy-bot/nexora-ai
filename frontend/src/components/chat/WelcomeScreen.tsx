@@ -66,12 +66,12 @@ export const WelcomeScreen: React.FC = () => {
             NEXORA AI
           </h1>
           <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/30">
-            Stage 1
+            Stage 2
           </span>
         </div>
 
         <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto">
-          Universal, production-engineered AI assistant platform designed to scale across 100 architectural phases.
+          The Intelligence Engine — Powered by real-time SSE streaming, modular provider routing, and context-aware reasoning.
         </p>
       </div>
 

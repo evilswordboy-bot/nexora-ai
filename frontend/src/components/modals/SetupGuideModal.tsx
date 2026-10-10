@@ -25,7 +25,7 @@ export const SetupGuideModal: React.FC = () => {
               <BookOpen className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">Stage 1 Architecture Guide</h2>
+              <h2 className="text-base font-bold text-slate-100">Stage 2: The Intelligence Engine Guide</h2>
               <p className="text-xs text-slate-400">Nexora AI Universal Assistant Platform</p>
             </div>
           </div>

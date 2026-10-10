@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 
 export const MessageInput: React.FC = () => {
-  const { sendMessage, isLoading, showToast, settings } = useChat();
+  const { sendMessage, stopGeneration, isLoading, isStreaming, showToast, settings } = useChat();
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -58,7 +58,7 @@ export const MessageInput: React.FC = () => {
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Message NEXORA (${settings.selectedModel})...`}
-            disabled={isLoading}
+            disabled={isLoading && !isStreaming}
             className="w-full bg-transparent px-4 pt-3.5 pb-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none resize-none min-h-[46px] max-h-[200px] scrollbar-thin scrollbar-thumb-slate-800 disabled:opacity-50"
           />
 
@@ -103,10 +103,12 @@ export const MessageInput: React.FC = () => {
               {isLoading ? (
                 <button
                   type="button"
-                  className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 border border-red-500/40 flex items-center justify-center hover:bg-red-500/30 transition-colors"
-                  title="Generating response..."
+                  onClick={stopGeneration}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/40 text-xs font-semibold transition-colors"
+                  title="Stop generation"
                 >
                   <Square className="w-3.5 h-3.5 fill-current animate-pulse" />
+                  <span>Stop</span>
                 </button>
               ) : (
                 <button
@@ -130,7 +132,7 @@ export const MessageInput: React.FC = () => {
         {/* Footer info text */}
         <div className="text-center mt-2 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
           <Sparkles className="w-3 h-3 text-cyan-400/80" />
-          <span>Stage 1 Masterpiece • Shift+Enter for new line • Enter to send</span>
+          <span>Stage 2 Intelligence Engine • Real-time SSE streaming • Shift+Enter for new line</span>
         </div>
       </div>
     </div>

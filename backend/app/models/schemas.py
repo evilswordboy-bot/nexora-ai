@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Literal, Dict, Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 def utc_now() -> datetime:
@@ -16,6 +16,13 @@ class Message(BaseModel):
     provider: Optional[str] = None
     error: Optional[bool] = False
     metadata: Optional[Dict[str, Any]] = None
+
+    @field_validator("content")
+    @classmethod
+    def validate_content_size(cls, v: str) -> str:
+        if len(v) > 32000:
+            raise ValueError("Message exceeds maximum permitted character limit of 32,000 characters.")
+        return v
 
 
 class Conversation(BaseModel):
@@ -45,7 +52,17 @@ class ChatRequest(BaseModel):
     temperature: Optional[float] = Field(0.7, ge=0.0, le=2.0)
     max_tokens: Optional[int] = Field(2048, ge=1, le=8192)
     system_prompt: Optional[str] = None
+    stream: Optional[bool] = True
     client_api_key: Optional[str] = None  # Optional key provided securely from user's client settings
+
+    @field_validator("messages")
+    @classmethod
+    def validate_messages_count(cls, v: List[Message]) -> List[Message]:
+        if not v:
+            raise ValueError("At least one message is required.")
+        if len(v) > 100:
+            raise ValueError("Conversation exceeds maximum permitted messages length of 100.")
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -58,6 +75,18 @@ class ChatResponse(BaseModel):
     finish_reason: Optional[str] = "stop"
     usage: Optional[Dict[str, int]] = None
     created_at: datetime = Field(default_factory=utc_now)
+
+
+class TitleGenerationRequest(BaseModel):
+    conversation_id: Optional[str] = None
+    user_prompt: str
+    assistant_response: Optional[str] = None
+    client_api_key: Optional[str] = None
+    provider: Optional[str] = "auto"
+
+
+class TitleGenerationResponse(BaseModel):
+    title: str
 
 
 class ProviderInfo(BaseModel):
