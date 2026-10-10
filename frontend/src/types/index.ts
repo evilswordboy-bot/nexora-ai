@@ -138,3 +138,46 @@ export interface DocumentActionResponse {
   provider: string;
   model: string;
 }
+
+// Stage 5: Fact-Checking & Evidence Verification Types
+export type VerdictClassification =
+  | 'supported'
+  | 'contradicted'
+  | 'mixed'
+  | 'insufficient_evidence'
+  | 'opinion_or_prediction';
+
+export type ConfidenceLevel = 'high' | 'medium' | 'low' | 'uncertain';
+
+export interface EvidenceSource {
+  source_id: number;
+  title: string;
+  url?: string;
+  domain?: string;
+  published_date?: string;
+  snippet: string;
+  stance: 'supporting' | 'opposing' | 'neutral' | 'context';
+  is_primary: boolean;
+}
+
+export interface ClaimVerificationResult {
+  claim_id: number;
+  claim_text: string;
+  verdict: VerdictClassification;
+  confidence: ConfidenceLevel;
+  explanation: string;
+  supporting_evidence: EvidenceSource[];
+  opposing_evidence: EvidenceSource[];
+  missing_context_flags: string[];
+}
+
+export interface FactCheckResponse {
+  input_text: string;
+  extracted_claims_count: number;
+  claims: ClaimVerificationResult[];
+  overall_summary: string;
+  sources_consulted: EvidenceSource[];
+  provider: string;
+  model: string;
+  created_at: string;
+}

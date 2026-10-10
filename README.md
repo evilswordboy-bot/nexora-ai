@@ -1,39 +1,34 @@
-# NEXORA AI — Stage 4: Document Intelligence & Knowledge Engine
+# NEXORA AI — Stage 5: Fact-Checking & Evidence Verification
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 4** introduces a production-ready **Document Intelligence and Knowledge Engine**: multi-format file parsing (PDF, DOCX, TXT, CSV, XLSX, and OCR for images), recursive semantic chunking, BM25/TF-IDF passage retrieval, and 10 grounded document intelligence actions with page/section citations.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 5** introduces a production-ready **Fact-Checking & Evidence Verification Engine**: automated claim extraction (separating factual claims from opinions, predictions, and subjective statements), multi-source evidence corroboration against live web search and user documents, stance detection, classified verdicts with calibrated confidence scoring, missing-context detection, and a dedicated **Fact Check Workspace**.
 
 ---
 
-## 🌟 Stage 4 Core Deliverables
+## 🌟 Stage 5 Core Deliverables
 
-- **Multi-Format Document Parsing**:
-  - **PDF Documents**: Extracted with page boundary preservation and metadata using `pypdf`.
-  - **Word DOCX Files**: Preserves heading hierarchy, paragraphs, and inline tables using `python-docx`.
-  - **Spreadsheets (CSV & Excel XLSX)**: Structured parsing into readable markdown tables, row/column statistics, and headers using `openpyxl`.
-  - **Plain Text (TXT)**: Chunked with character and boundary preservation.
-  - **Images & Scanned Documents**: Text extraction with Tesseract OCR fallback using `pillow` and `pytesseract`.
-- **Intelligent RAG & Passage Retrieval**:
-  - `DocumentChunker`: Recursive semantic chunker with configurable token windows and overlapping boundaries.
-  - `LexicalRetriever`: High-speed BM25 / TF-IDF style lexical retriever for localized passage grounding.
-  - Numbered citations (`[1]`, `[2]`) linking back to document filenames, page numbers, and sections.
-- **10 Autonomous Document Intelligence Actions**:
-  1. **Ask (RAG QA)**: Evidence-grounded question answering with page citations.
-  2. **Summarize**: Executive overview with section breakdowns and conclusions.
-  3. **Extract Key Points**: Highlights, timelines, key entities, statistics, and action items.
-  4. **Compare Documents**: Side-by-side comparative matrices, shared themes, and divergent claims across multiple files.
-  5. **Study Notes**: Comprehensive notes with key terms in bold and concept explanations.
-  6. **FAQ**: Generates verified Frequently Asked Questions from document passages.
-  7. **Flashcards**: High-yield Q&A cards for active recall.
-  8. **Quiz**: Multiple-choice examination questions with an answer key and rationale.
-  9. **Simplify (ELI12)**: Plain-language translation of complex legal, technical, or scientific jargon into everyday analogies.
-  10. **Table Analytics**: Numeric observations, outliers, trend breakdowns, and actionable recommendations from datasets.
-- **Dedicated Documents Vault Workspace**:
-  - Interactive workspace with drag-and-drop file upload, file list, stats, multi-select capability, and single-click action runners.
-  - Instant workspace switcher in the header allowing users to toggle between **Chat & Search** and **Documents Vault**.
-- **Privacy & Defensive Quarantine**:
-  - Uploaded document contents are strictly isolated inside `<untrusted_document_context>` XML boundaries with anti-prompt-injection instructions.
-  - Isolated local storage with complete file deletion and cleanup controls.
-  - Full backward compatibility with Stages 1, 2, and 3.
+- **Autonomous Claim Extraction & Linguistic Classification**:
+  - `ClaimExtractor`: Dissects complex narrative text and articles into individual checkable claims.
+  - Distinguishes objective factual assertions (statistics, event timelines, dates, quotes) from subjective opinions, future predictions, and satire.
+- **Multi-Source Evidence Corroboration**:
+  - `EvidenceCollector`: Gathers evidence across live search engines (DuckDuckGo zero-config, Tavily, Google Serper, Brave) and uploaded files in the Stage 4 Documents Vault.
+  - Identifies reputable, primary sources (`.gov`, `.edu`, Reuters, AP, BBC, Nature, Science, Wikipedia) and deduplicates redundant reporting.
+- **Classified Verification Results**:
+  - **Supported**: Reliable evidence establishes the claim.
+  - **Contradicted**: Credible evidence directly refutes or conflicts with the claim.
+  - **Mixed**: Parts of the claim are grounded while other facets are unverified or inaccurate.
+  - **Insufficient Evidence**: Available external sources cannot corroborate or resolve the claim.
+  - **Opinion or Prediction**: Explicitly flagged as non-falsifiable subjective statements.
+- **Calibrated Confidence & Nuance Detection**:
+  - Confidence metric (`high`, `medium`, `low`, `uncertain`) derived from source agreement and independence.
+  - **Misinformation & Context Flags**: Highlights cherry-picked statistics, outdated metrics, correlation-vs-causation errors, and lack of primary attribution without mislabeling genuine debate.
+- **Dedicated Fact Check Workspace**:
+  - Interactive workspace supporting raw narrative text or URL-based article verification.
+  - Claim-by-claim analysis cards with clickable outbound citations and opposing/supporting source comparison.
+  - One-click **Copy Report** generator for executive and research dissemination.
+  - Seamless header navigation between **Chat & Search**, **Documents Vault**, and **Fact Check**.
+- **Defensive Quarantine & Safety**:
+  - Retrieved external evidence is strictly quarantined to prevent remote prompt hijacking.
+  - Full backward compatibility with Stages 1, 2, 3, and 4.
 
 ---
 
@@ -117,7 +112,7 @@ nexora-ai/
 ```bash
 cd backend
 
-# Run automated test suite (25/25 passing)
+# Run automated test suite (30/30 passing)
 python -m pytest tests -v
 
 # Launch the FastAPI server

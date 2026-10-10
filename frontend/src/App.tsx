@@ -8,6 +8,7 @@ import { SetupGuideModal } from './components/modals/SetupGuideModal';
 import { DeleteConfirmModal } from './components/modals/DeleteConfirmModal';
 import { ToastContainer } from './components/ui/Toast';
 import { DocumentsWorkspace } from './components/documents/DocumentsWorkspace';
+import { FactCheckWorkspace } from './components/factcheck/FactCheckWorkspace';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -22,7 +23,13 @@ const MainLayout: React.FC = () => {
       {/* Main Workspace Column */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         <Header />
-        {activeWorkspaceView === 'documents' ? <DocumentsWorkspace /> : <ChatArea />}
+        {activeWorkspaceView === 'documents' ? (
+          <DocumentsWorkspace />
+        ) : activeWorkspaceView === 'factcheck' ? (
+          <FactCheckWorkspace />
+        ) : (
+          <ChatArea />
+        )}
       </div>
 
       {/* Global Modals & Notifications */}

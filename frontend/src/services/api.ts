@@ -9,6 +9,7 @@ import {
   DocumentChunk,
   DocumentAction,
   DocumentActionResponse,
+  FactCheckResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -327,6 +328,29 @@ export const api = {
         model: params.settings?.selectedModel || 'gemini-1.5-flash',
         client_api_key: clientApiKey,
         temperature: params.settings?.temperature || 0.5,
+      }),
+    });
+  },
+
+  // Stage 5: Fact-Checking & Evidence Verification
+  async verifyClaims(params: {
+    text?: string;
+    url?: string;
+    documentIds?: string[];
+    settings?: UserSettings;
+  }): Promise<FactCheckResponse> {
+    const clientApiKey = params.settings ? resolveClientApiKey(params.settings) : undefined;
+    return request<FactCheckResponse>('/factcheck', {
+      method: 'POST',
+      body: JSON.stringify({
+        text: params.text,
+        url: params.url,
+        document_ids: params.documentIds || [],
+        search_engine: params.settings?.selectedSearchEngine || 'auto',
+        client_search_key: params.settings?.tavilyApiKey || params.settings?.serperApiKey || params.settings?.braveApiKey,
+        provider: params.settings?.selectedProvider || 'auto',
+        model: params.settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
       }),
     });
   },

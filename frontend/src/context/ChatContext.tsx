@@ -48,9 +48,9 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
-  // Stage 4: Documents Workspace
-  activeWorkspaceView: 'chat' | 'documents';
-  setActiveWorkspaceView: (view: 'chat' | 'documents') => void;
+  // Stage 4 & 5 Workspace Views
+  activeWorkspaceView: 'chat' | 'documents' | 'factcheck';
+  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck') => void;
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
@@ -74,8 +74,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Stage 4 Workspace & Selected Documents State
-  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents'>('chat');
+  // Stage 4 & 5 Workspace Views State
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck'>('chat');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
 
   const toggleSelectDocument = useCallback((docId: string) => {

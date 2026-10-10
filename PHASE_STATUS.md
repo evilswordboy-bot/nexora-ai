@@ -12,7 +12,7 @@ Status Key:
 
 ---
 
-## 📊 Stage 1, 2, 3 & 4 Status: COMPLETE (Verified & Validated)
+## 📊 Stage 1, 2, 3, 4 & 5 Status: COMPLETE (Verified & Validated)
 
 | Phase | Description | Status | Verification Notes |
 |---|---|---|---|
@@ -20,6 +20,7 @@ Status Key:
 | **Phase 2** | **The Intelligence Engine: Streaming LLM Pipeline & Context Reasoning** | **COMPLETE** | Real-time Server-Sent Events (SSE) streaming (`POST /api/v1/chat/stream`), client AbortController stop controls, live typing cursor, modular provider architecture (Gemini, OpenAI, Anthropic, Offline), configurable context limits, smart extractive conversation titling, 13/13 Pytest tests passing. |
 | **Phase 21** | **Universal Search & Deep Research Engine (Stage 3)** | **COMPLETE** | Multi-engine web search (DuckDuckGo zero-config fallback, Tavily, Google Serper, Brave), real-time evidence extraction, 6-step deep research autonomous pipeline (query decomposition, parallel vector searches, content scraping, synthesis), SSRF IP blocker, prompt-injection untrusted evidence isolation, interactive numbered citations [1], [2], collapsible sources drawer, 18/18 Pytest tests passing. |
 | **Phase 23** | **Document Intelligence & Knowledge Engine (Stage 4)** | **COMPLETE** | Multi-format parsers (PDF via PyPDF, DOCX via python-docx, TXT, CSV, XLSX via openpyxl, Images with Tesseract OCR), recursive semantic chunker with token overlap, lexical BM25/TF-IDF retriever, RAG QA with page/section citations, 10 specialized intelligence actions (summarize, extract key points, multi-doc comparison, study notes, FAQ, flashcards, quiz, ELI12 simplification, table analytics), prompt-injection XML isolation, Documents Vault workspace, 25/25 Pytest tests passing. |
+| **Phase 29** | **Fact-Checking & Evidence Verification (Stage 5)** | **COMPLETE** | Claim extraction engine (separating factual assertions from opinions, predictions, and satire), multi-source evidence collector across web search and uploaded documents, classified verdicts (Supported, Contradicted, Mixed, Insufficient Evidence, Opinion/Prediction), calibrated confidence levels, missing context & misinformation flags, copyable verification reports, Fact Check workspace, 30/30 Pytest tests passing. |
 
 ---
 
@@ -64,7 +65,7 @@ Status Key:
 | **26** | Multi-Document Synthesis & Research Reports | NOT STARTED | Cross-document contradiction detection, literature review generator, executive briefing |
 | **27** | Semantic Search & Vector Embeddings Cache | NOT STARTED | Qdrant/Chroma vector DB integration, cosine similarity reranking, local caching |
 | **28** | Scholarly Literature Search & Citation Engine | NOT STARTED | ArXiv, PubMed, OpenAlex integration, BibTeX citation generation, peer-review summary |
-| **29** | Fact-Checking & Hallucination Verifier | NOT STARTED | Statement verification against trusted sources, uncertainty scoring, claim debunker |
+| **29** | Fact-Checking & Hallucination Verifier | **COMPLETE** | Statement verification against trusted sources, uncertainty scoring, claim debunker, stance classification |
 | **30** | Offline Knowledge Base & Local Embeddings | NOT STARTED | Fully offline sentence transformers, local SQLite vector search, zero-cloud mode |
 
 ### Tier 4: Developer Tools, Code Generation & Execution (Phases 31–40)

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
-import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen } from 'lucide-react';
+import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Stage 4
+                Stage 5
               </span>
             </div>
           </div>
@@ -72,6 +72,17 @@ export const Header: React.FC = () => {
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>Documents Vault</span>
+          </button>
+          <button
+            onClick={() => setActiveWorkspaceView('factcheck')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'factcheck'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Fact Check</span>
           </button>
         </div>
       </div>

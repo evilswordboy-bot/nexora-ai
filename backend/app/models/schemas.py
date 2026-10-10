@@ -237,3 +237,62 @@ class DocumentActionResponse(BaseModel):
     provider: str
     model: str
 
+
+# ==========================================
+# Stage 5: Fact-Checking & Evidence Verification Schemas
+# ==========================================
+
+VerdictClassification = Literal[
+    "supported",
+    "contradicted",
+    "mixed",
+    "insufficient_evidence",
+    "opinion_or_prediction"
+]
+
+ConfidenceLevel = Literal["high", "medium", "low", "uncertain"]
+
+
+class EvidenceSource(BaseModel):
+    source_id: int
+    title: str
+    url: Optional[str] = None
+    domain: Optional[str] = None
+    published_date: Optional[str] = None
+    snippet: str
+    stance: Literal["supporting", "opposing", "neutral", "context"] = "neutral"
+    is_primary: bool = False
+
+
+class ClaimVerificationResult(BaseModel):
+    claim_id: int
+    claim_text: str
+    verdict: VerdictClassification
+    confidence: ConfidenceLevel
+    explanation: str
+    supporting_evidence: List[EvidenceSource] = Field(default_factory=list)
+    opposing_evidence: List[EvidenceSource] = Field(default_factory=list)
+    missing_context_flags: List[str] = Field(default_factory=list)
+
+
+class FactCheckRequest(BaseModel):
+    text: Optional[str] = None
+    url: Optional[str] = None
+    document_ids: Optional[List[str]] = Field(default_factory=list)
+    search_engine: Optional[str] = "auto"
+    client_search_key: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "gemini-1.5-flash"
+    client_api_key: Optional[str] = None
+
+
+class FactCheckResponse(BaseModel):
+    input_text: str
+    extracted_claims_count: int
+    claims: List[ClaimVerificationResult]
+    overall_summary: str
+    sources_consulted: List[EvidenceSource]
+    provider: str
+    model: str
+    created_at: datetime = Field(default_factory=utc_now)
+
