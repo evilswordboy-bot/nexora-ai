@@ -22,6 +22,12 @@ import {
   LiveQueryRequest,
   LiveQueryResponse,
   LiveCategory,
+  VisionAnalyzeRequest,
+  VisionAnalyzeResponse,
+  OCRRequest,
+  OCRResponse,
+  ImageCompareRequest,
+  ImageCompareResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -114,6 +120,7 @@ export const api = {
     conversationId?: string;
     messages: Message[];
     settings: UserSettings;
+    images?: string[];
   }): Promise<{ id: string; content: string; model: string; provider: string; sources?: SearchResultItem[]; finish_reason?: string }> {
     const clientApiKey = resolveClientApiKey(params.settings);
     const clientSearchKey = resolveClientSearchKey(params.settings);
@@ -132,6 +139,7 @@ export const api = {
         search_engine: params.settings.selectedSearchEngine,
         client_search_key: clientSearchKey || undefined,
         target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
+        images: params.images,
         stream: false,
       }),
     });
@@ -141,6 +149,7 @@ export const api = {
     conversationId?: string;
     messages: Message[];
     settings: UserSettings;
+    images?: string[];
     signal?: AbortSignal;
     onStart?: (info: { id: string; model: string; provider: string }) => void;
     onResearchProgress?: (progress: ResearchProgress) => void;
@@ -169,6 +178,7 @@ export const api = {
           search_engine: params.settings.selectedSearchEngine,
           client_search_key: clientSearchKey || undefined,
           target_language: params.settings.preferredLanguage && params.settings.preferredLanguage !== 'auto' ? params.settings.preferredLanguage : undefined,
+          images: params.images,
           stream: true,
         }),
         signal: params.signal,
@@ -529,6 +539,40 @@ export const api = {
   async clearLiveNotifications(): Promise<void> {
     return request('/realtime/notifications', {
       method: 'DELETE',
+    });
+  },
+
+  // Stage 9 Vision Intelligence Methods
+  async analyzeVision(params: VisionAnalyzeRequest, settings?: UserSettings): Promise<VisionAnalyzeResponse> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<VisionAnalyzeResponse>('/vision/analyze', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        provider: params.provider || settings?.selectedProvider || 'auto',
+        model: params.model || settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: params.client_api_key || clientApiKey,
+      }),
+    });
+  },
+
+  async extractOCR(params: OCRRequest): Promise<OCRResponse> {
+    return request<OCRResponse>('/vision/ocr', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async compareImages(params: ImageCompareRequest, settings?: UserSettings): Promise<ImageCompareResponse> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<ImageCompareResponse>('/vision/compare', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        provider: params.provider || settings?.selectedProvider || 'auto',
+        model: params.model || settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: params.client_api_key || clientApiKey,
+      }),
     });
   },
 };

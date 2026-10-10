@@ -169,6 +169,28 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast }) => 
                 </div>
               )}
 
+              {/* Attached Vision Images Preview */}
+              {message.images && message.images.length > 0 && (
+                <div className="mb-3 flex flex-wrap gap-2.5">
+                  {message.images.map((imgSrc, imgIdx) => (
+                    <div
+                      key={imgIdx}
+                      className="relative group rounded-xl overflow-hidden border border-slate-700/80 bg-midnight-950 shadow-md max-w-[220px] max-h-[160px]"
+                    >
+                      <img
+                        src={imgSrc}
+                        alt={`Attachment ${imgIdx + 1}`}
+                        className="object-cover w-full h-full cursor-pointer transition-transform group-hover:scale-105"
+                        onClick={() => window.open(imgSrc, '_blank')}
+                      />
+                      <div className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded bg-black/70 backdrop-blur-sm text-[10px] text-slate-300 font-mono">
+                        Image {imgIdx + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Render Grounded Sources if available */}
               {!isUser && message.sources && message.sources.length > 0 && (
                 <SourcesSection

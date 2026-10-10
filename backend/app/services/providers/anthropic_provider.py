@@ -19,11 +19,33 @@ class AnthropicProvider(BaseAIProvider):
 
     def _build_payload(self, request: ChatRequest, stream: bool = False) -> Dict[str, Any]:
         context_messages = self.prepare_context_messages(request.messages)
-        messages = [
-            {"role": m.role, "content": m.content}
-            for m in context_messages
-            if m.role in ("user", "assistant")
-        ]
+        messages = []
+        for idx, m in enumerate(context_messages):
+            if m.role in ("user", "assistant"):
+                attached_images = getattr(m, "images", None)
+                if not attached_images and idx == len(context_messages) - 1 and request.images:
+                    attached_images = request.images
+
+                if attached_images and m.role == "user":
+                    content_blocks = [{"type": "text", "text": m.content}]
+                    for img_str in attached_images:
+                        mime = "image/png"
+                        b64_clean = img_str
+                        if "base64," in img_str:
+                            header, b64_clean = img_str.split("base64,", 1)
+                            if "image/" in header:
+                                mime = header.split("data:")[1].split(";")[0].strip()
+                        content_blocks.append({
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": mime,
+                                "data": b64_clean.strip(),
+                            }
+                        })
+                    messages.append({"role": "user", "content": content_blocks})
+                else:
+                    messages.append({"role": m.role, "content": m.content})
 
         model = request.model or "claude-3-5-sonnet-20241022"
         if "claude" not in model:

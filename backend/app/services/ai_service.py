@@ -138,6 +138,37 @@ class AIService:
             )
             active_request = request.model_copy(update={"system_prompt": system_instruction})
 
+        # Stage 9 Vision Intelligence Context Augmentation
+        has_images = bool(request.images) or any(bool(getattr(m, "images", None)) for m in request.messages)
+        if has_images:
+            from app.services.vision.engine import vision_engine
+            img_list = request.images or []
+            if not img_list:
+                for m in reversed(request.messages):
+                    if getattr(m, "images", None):
+                        img_list = m.images
+                        break
+            
+            ocr_texts = []
+            img_metas = []
+            for b64 in img_list:
+                try:
+                    raw_b, _ = vision_engine.parse_base64_image(b64)
+                    meta = vision_engine.extract_image_metadata(raw_b)
+                    img_metas.append(meta)
+                    ocr_t, has_t, _ = vision_engine.perform_ocr(raw_b)
+                    if ocr_t:
+                        ocr_texts.append(ocr_t)
+                except Exception as ve:
+                    logger.warning(f"Vision pre-processing notice: {ve}")
+
+            if ocr_texts:
+                vision_context = "\n".join([vision_engine.quarantine_untrusted_text(t) for t in ocr_texts])
+                current_sys = active_request.system_prompt or ""
+                active_request = active_request.model_copy(update={
+                    "system_prompt": f"{current_sys}\n\n### Machine OCR Context from Attached Images:\n{vision_context}".strip()
+                })
+
         # 3. Provider Generation
         response = await provider.generate(active_request, api_key or "")
         response.sources = sources if sources else None
@@ -225,6 +256,34 @@ class AIService:
                 queries=research_queries,
             )
             active_request = request.model_copy(update={"system_prompt": system_instruction})
+
+        # Stage 9 Vision Intelligence Context Augmentation
+        has_images = bool(request.images) or any(bool(getattr(m, "images", None)) for m in request.messages)
+        if has_images:
+            from app.services.vision.engine import vision_engine
+            img_list = request.images or []
+            if not img_list:
+                for m in reversed(request.messages):
+                    if getattr(m, "images", None):
+                        img_list = m.images
+                        break
+            
+            ocr_texts = []
+            for b64 in img_list:
+                try:
+                    raw_b, _ = vision_engine.parse_base64_image(b64)
+                    ocr_t, _, _ = vision_engine.perform_ocr(raw_b)
+                    if ocr_t:
+                        ocr_texts.append(ocr_t)
+                except Exception as ve:
+                    logger.warning(f"Vision streaming pre-processing notice: {ve}")
+
+            if ocr_texts:
+                vision_context = "\n".join([vision_engine.quarantine_untrusted_text(t) for t in ocr_texts])
+                current_sys = active_request.system_prompt or ""
+                active_request = active_request.model_copy(update={
+                    "system_prompt": f"{current_sys}\n\n### Machine OCR Context from Attached Images:\n{vision_context}".strip()
+                })
 
         # 3. Stream from Chosen Provider
         async for chunk in provider.stream(active_request, api_key or ""):

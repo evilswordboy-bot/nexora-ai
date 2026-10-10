@@ -1,7 +1,7 @@
 import json
 import uuid
 import logging
-from typing import AsyncGenerator, Dict, Any
+from typing import AsyncGenerator, Dict, Any, List
 import httpx
 
 from app.services.providers.base import BaseAIProvider
@@ -21,10 +21,39 @@ class GeminiProvider(BaseAIProvider):
         context_messages = self.prepare_context_messages(request.messages)
         contents = []
 
-        for m in context_messages:
+        for idx, m in enumerate(context_messages):
             if m.role in ("user", "assistant"):
                 role_name = "user" if m.role == "user" else "model"
-                contents.append({"role": role_name, "parts": [{"text": m.content}]})
+                parts: List[Dict[str, Any]] = [{"text": m.content}]
+                
+                # Check for image attachments on the message or request
+                attached_images = getattr(m, "images", None)
+                if not attached_images and idx == len(context_messages) - 1 and request.images:
+                    attached_images = request.images
+
+                if attached_images and role_name == "user":
+                    for img_str in attached_images:
+                        try:
+                            # Parse mime and base64 string
+                            if "base64," in img_str:
+                                header, b64_clean = img_str.split("base64,", 1)
+                                mime = "image/png"
+                                if "image/" in header:
+                                    mime = header.split("data:")[1].split(";")[0].strip()
+                            else:
+                                mime = "image/png"
+                                b64_clean = img_str
+                            
+                            parts.append({
+                                "inline_data": {
+                                    "mime_type": mime,
+                                    "data": b64_clean.strip(),
+                                }
+                            })
+                        except Exception as e:
+                            logger.warning(f"Failed to attach image to Gemini payload: {e}")
+
+                contents.append({"role": role_name, "parts": parts})
 
         payload: Dict[str, Any] = {
             "contents": contents,

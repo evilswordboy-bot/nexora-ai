@@ -1,10 +1,37 @@
-# NEXORA AI — Stage 8: Real-Time Intelligence Engine
+# NEXORA AI — Stage 9: Computer Vision & Visual Intelligence Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 8** introduces a production-ready **Real-Time Intelligence Engine**: freshness-aware live web data retrieval with time-stamped citations, continuous monitored research topics & URL change surveillance, SHA-256 content fingerprinting, automated in-app alerts on content differences, scheduled check tracking, and an interactive **Live Feed Dashboard**.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 9** introduces a production-ready **Computer Vision & Visual Intelligence Engine**: multimodal image understanding across common formats (PNG, JPG, WEBP), technical Pillow validation, PyTesseract OCR with prompt-injection defense quarantining, side-by-side visual image comparison, chat drag-and-drop attachment strip, and an interactive **Vision Intelligence Studio**.
 
 ---
 
-## 🌟 Stage 8 Core Deliverables
+## 🌟 Stage 9 Core Deliverables
+
+- **Multimodal Image Upload & Technical Verification**:
+  - Drag-and-drop and file selection for PNG, JPG, JPEG, and WEBP formats up to 10MB per image.
+  - Image thumbnails preview strip with individual deletion controls and upload progress indicators.
+  - Technical container verification via Pillow (`width`, `height`, `format`, `color_mode`, simplified `aspect_ratio`).
+  - Rejection of corrupted or unsupported image binaries without silent failure.
+- **Multimodal Visual Reasoning & Analysis**:
+  - End-to-end integration with configured vision-capable models (Google Gemini `gemini-1.5-flash`/`gemini-1.5-pro`, OpenAI `gpt-4o`/`gpt-4o-mini`, and Anthropic `claude-3-5-sonnet`).
+  - Specialized visual analysis pipelines for:
+    - **General Scene & Objects**: Comprehensive visual elements and context.
+    - **UI Design & UX Hierarchy**: Layout, button states, typography, accessibility, and navigation trees.
+    - **Charts, Trends & Data Points**: Axes, numerical values, legends, and trend insights.
+    - **Technical Schematics & Circuits**: Wiring lines, pinouts, component designations, and logic diagrams.
+    - **Equations & Deep Text**: Mathematical expressions, chemical formulas, and multilingual text.
+- **Prompt-Injection Quarantined Optical Character Recognition (OCR)**:
+  - Local text extraction via PyTesseract with automatic fallback.
+  - Strict security defense: all extracted visual text is quarantined within `<untrusted_visual_content>` security boundaries with escaping against XML breakout attacks.
+  - Pre-extracted OCR evidence automatically augments multimodal LLM prompts for maximum accuracy.
+- **Side-by-Side Visual Comparison & Diff**:
+  - Compares design revisions, screenshots, or document scans (e.g. Design v1 vs Design v2).
+  - Highlights shared design baseline, resolution variance, textual differences, and layout alterations.
+- **Vision Intelligence Studio Workspace**:
+  - Accessible via top navigation bar (**Chat & Search**, **Vision Studio**, **Documents Vault**, **Fact Check**, **Translate**, **Live Feed**).
+  - 3 interactive panels:
+    1. **Visual Analysis**: Multi-image inspector with customizable categories and inquiry prompts.
+    2. **OCR Extraction**: Dedicated high-contrast text extractor with character/word metrics and copy controls.
+    3. **Image Comparison**: Dual upload canvas for side-by-side visual difference synthesis.
 
 - **Live Information Retrieval & Freshness Tracking**:
   - Reusable backend connector dispatching queries across web search and open data sources.

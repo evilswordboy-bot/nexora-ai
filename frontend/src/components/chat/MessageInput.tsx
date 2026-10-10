@@ -12,6 +12,8 @@ import {
   Cpu,
   Sparkles,
   Volume2,
+  Image as ImageIcon,
+  X as CloseIcon,
 } from 'lucide-react';
 import { speechService } from '../../services/speech';
 
@@ -34,7 +36,10 @@ export const MessageInput: React.FC = () => {
 
   const [content, setContent] = useState('');
   const [interimVoiceText, setInterimVoiceText] = useState('');
+  const [attachedImages, setAttachedImages] = useState<string[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Auto-resize textarea up to 200px
   useEffect(() => {
@@ -44,6 +49,57 @@ export const MessageInput: React.FC = () => {
     }
   }, [content, interimVoiceText]);
 
+  const handleImageFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const allowed = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'];
+
+    Array.from(files).forEach((file) => {
+      if (!allowed.includes(file.type.toLowerCase())) {
+        showToast(`Skipped ${file.name}: only PNG, JPG, JPEG, and WEBP images are supported.`, 'error');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showToast(`Skipped ${file.name}: image exceeds 10MB limit.`, 'error');
+        return;
+      }
+      if (attachedImages.length >= 5) {
+        showToast('Maximum 5 images allowed per message.', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const res = e.target?.result as string;
+        if (res) {
+          setAttachedImages((prev) => (prev.length < 5 ? [...prev, res] : prev));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index: number) => {
+    setAttachedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleImageFiles(e.dataTransfer.files);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
   const handleToggleMic = () => {
     if (isListening) {
       speechService.stopListening();
@@ -52,7 +108,6 @@ export const MessageInput: React.FC = () => {
       return;
     }
 
-    // Interruption handling: Stop ongoing audio response before speaking
     if (isSpeaking) {
       stopSpeaking();
     }
@@ -68,7 +123,6 @@ export const MessageInput: React.FC = () => {
         if (isFinal) {
           setContent((prev) => (prev ? `${prev.trim()} ${transcript}` : transcript));
           setInterimVoiceText('');
-          // If Voice Chat mode is active, automatically send prompt upon turn completion
           if (settings.voiceMode === 'voice_chat') {
             const finalPrompt = content ? `${content.trim()} ${transcript}` : transcript;
             if (finalPrompt.trim()) {
@@ -104,9 +158,10 @@ export const MessageInput: React.FC = () => {
   };
 
   const handleSend = () => {
-    if (!content.trim() || isLoading) return;
-    sendMessage(content.trim());
+    if ((!content.trim() && attachedImages.length === 0) || isLoading) return;
+    sendMessage(content.trim(), attachedImages.length > 0 ? attachedImages : undefined);
     setContent('');
+    setAttachedImages([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
@@ -197,7 +252,51 @@ export const MessageInput: React.FC = () => {
         )}
 
         {/* Input Container Box */}
-        <div className="relative rounded-2xl bg-midnight-900 border border-slate-800 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/30 transition-all shadow-lg">
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          className={`relative rounded-2xl bg-midnight-900 border transition-all shadow-lg ${
+            isDragging
+              ? 'border-cyan-400 bg-cyan-950/20 ring-2 ring-cyan-500/40'
+              : 'border-slate-800 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/30'
+          }`}
+        >
+          {/* Hidden Image File Input */}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={(e) => handleImageFiles(e.target.files)}
+            multiple
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            className="hidden"
+          />
+
+          {/* Attached Images Preview Strip */}
+          {attachedImages.length > 0 && (
+            <div className="p-3 pb-0 flex flex-wrap gap-2.5">
+              {attachedImages.map((imgSrc, idx) => (
+                <div
+                  key={idx}
+                  className="relative group w-16 h-16 rounded-xl overflow-hidden border border-cyan-500/40 bg-midnight-950 shadow-md"
+                >
+                  <img src={imgSrc} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(idx)}
+                    className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-600/90 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Remove image"
+                  >
+                    <CloseIcon className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              ))}
+              <div className="flex items-center text-[11px] text-cyan-400 font-medium">
+                {attachedImages.length}/5 images attached
+              </div>
+            </div>
+          )}
+
           {/* Main Textarea */}
           <textarea
             ref={textareaRef}
@@ -206,7 +305,9 @@ export const MessageInput: React.FC = () => {
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              searchMode === 'deep_research'
+              attachedImages.length > 0
+                ? 'Ask a question or explain instructions for the attached image(s)...'
+                : searchMode === 'deep_research'
                 ? `Ask a complex question for Deep Research investigation...`
                 : searchMode === 'web_search'
                 ? `Search web & ask NEXORA (${settings.selectedModel})...`
@@ -218,8 +319,20 @@ export const MessageInput: React.FC = () => {
 
           {/* Controls Bar */}
           <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
-            {/* Left: Future capabilities preview pills with honest tooltips */}
+            {/* Left: Actions & Attachment Tools */}
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`p-1.5 rounded-lg transition-colors ${
+                  attachedImages.length > 0
+                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30'
+                    : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/60'
+                }`}
+                title="Attach Images for Multimodal Vision (PNG, JPG, WEBP)"
+              >
+                <ImageIcon className="w-4 h-4" />
+              </button>
               <button
                 type="button"
                 onClick={() => setActiveWorkspaceView('documents')}
@@ -264,9 +377,9 @@ export const MessageInput: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSend}
-                  disabled={!content.trim()}
+                  disabled={!content.trim() && attachedImages.length === 0}
                   className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
-                    content.trim()
+                    content.trim() || attachedImages.length > 0
                       ? searchMode === 'deep_research'
                         ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-violet-glow hover:opacity-90'
                         : 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow-cyan-glow hover:opacity-90'
@@ -284,7 +397,7 @@ export const MessageInput: React.FC = () => {
         {/* Footer info text */}
         <div className="text-center text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
           <Sparkles className="w-3 h-3 text-cyan-400/80" />
-          <span>Stage 3 Universal Search & Deep Research • Shift+Enter for new line</span>
+          <span>Stage 9 Visual Intelligence • Multimodal Vision & OCR • Shift+Enter for new line</span>
         </div>
       </div>
     </div>

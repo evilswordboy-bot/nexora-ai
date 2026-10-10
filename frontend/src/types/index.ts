@@ -30,6 +30,7 @@ export interface Message {
   sources?: SearchResultItem[];
   search_mode?: SearchMode;
   research_queries?: string[];
+  images?: string[];
 }
 
 export interface Conversation {
@@ -321,5 +322,82 @@ export interface LiveQueryResponse {
   provider: string;
   model: string;
 }
+
+// Stage 9 Vision Interfaces
+export interface ImageAttachmentMetadata {
+  id: string;
+  filename?: string;
+  format: string;
+  size_bytes: number;
+  width: number;
+  height: number;
+  aspect_ratio: string;
+  color_mode: string;
+  has_text: boolean;
+  ocr_preview?: string;
+}
+
+export type VisionAnalysisType = 'general' | 'ui_diagram' | 'charts_data' | 'technical_circuit' | 'ocr_extract' | 'comparison';
+
+export interface VisionAnalyzeRequest {
+  images: string[];
+  prompt?: string;
+  analysis_type?: VisionAnalysisType;
+  provider?: string;
+  model?: string;
+  client_api_key?: string;
+}
+
+export interface VisionAnalyzeResponse {
+  id: string;
+  prompt: string;
+  analysis: string;
+  extracted_text?: string;
+  image_metadata: ImageAttachmentMetadata[];
+  model: string;
+  provider: string;
+  created_at: string;
+}
+
+export interface OCRRequest {
+  image: string;
+  filename?: string;
+  language_hint?: string;
+  quarantine_output?: boolean;
+}
+
+export interface OCRResponse {
+  text: string;
+  raw_character_count: number;
+  word_count: number;
+  metadata: ImageAttachmentMetadata;
+  is_quarantined: boolean;
+  confidence?: number;
+  created_at: string;
+}
+
+export interface ImageCompareRequest {
+  image1: string;
+  image2: string;
+  image1_label?: string;
+  image2_label?: string;
+  comparison_focus?: 'general' | 'ui_diff' | 'chart_comparison' | 'text_diff';
+  provider?: string;
+  model?: string;
+  client_api_key?: string;
+}
+
+export interface ImageCompareResponse {
+  id: string;
+  comparison_summary: string;
+  similarities: string[];
+  differences: string[];
+  metadata_image1: ImageAttachmentMetadata;
+  metadata_image2: ImageAttachmentMetadata;
+  model: string;
+  provider: string;
+  created_at: string;
+}
+
 
 

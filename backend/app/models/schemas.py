@@ -32,6 +32,8 @@ class Message(BaseModel):
     sources: Optional[List[SearchResultItem]] = None
     search_mode: Optional[SearchMode] = None
     research_queries: Optional[List[str]] = None
+    images: Optional[List[str]] = None  # Base64 data URLs or uploaded paths
+    image_metadata: Optional[List[Dict[str, Any]]] = None
     metadata: Optional[Dict[str, Any]] = None
 
     @field_validator("content")
@@ -80,6 +82,9 @@ class ChatRequest(BaseModel):
     # Stage 6 Multilingual parameters
     target_language: Optional[str] = "auto" # 'auto', 'en', 'ta', 'hi', 'te', 'ml', 'kn', 'bn', 'mr', etc.
     transliteration: Optional[bool] = False
+
+    # Stage 9 Vision parameters
+    images: Optional[List[str]] = None  # Base64 encoded or data URLs passed with the active prompt
 
     @field_validator("messages")
     @classmethod
@@ -448,6 +453,84 @@ class LiveQueryResponse(BaseModel):
     synthesized_answer: str
     provider: str
     model: str
+
+
+# ==========================================
+# Stage 9: Computer Vision & Visual Intelligence Schemas
+# ==========================================
+
+class ImageAttachmentMetadata(BaseModel):
+    id: str
+    filename: Optional[str] = "image.png"
+    format: str # 'png', 'jpeg', 'webp', etc.
+    size_bytes: int
+    width: int
+    height: int
+    aspect_ratio: str
+    color_mode: str # 'RGB', 'RGBA', 'L', etc.
+    has_text: bool = False
+    ocr_preview: Optional[str] = None
+
+
+class VisionAnalyzeRequest(BaseModel):
+    images: List[str] = Field(..., description="List of base64 data URLs or raw base64 strings")
+    prompt: Optional[str] = "Describe and analyze this image in detail."
+    analysis_type: Optional[Literal["general", "ui_diagram", "charts_data", "technical_circuit", "ocr_extract", "comparison"]] = "general"
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "gemini-1.5-flash"
+    client_api_key: Optional[str] = None
+
+
+class VisionAnalyzeResponse(BaseModel):
+    id: str
+    prompt: str
+    analysis: str
+    extracted_text: Optional[str] = None
+    image_metadata: List[ImageAttachmentMetadata]
+    model: str
+    provider: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class OCRRequest(BaseModel):
+    image: str = Field(..., description="Base64 data URL or raw base64 string")
+    filename: Optional[str] = "document_image.png"
+    language_hint: Optional[str] = "auto"
+    quarantine_output: Optional[bool] = True
+
+
+class OCRResponse(BaseModel):
+    text: str
+    raw_character_count: int
+    word_count: int
+    metadata: ImageAttachmentMetadata
+    is_quarantined: bool = True
+    confidence: Optional[float] = None
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class ImageCompareRequest(BaseModel):
+    image1: str = Field(..., description="First image base64")
+    image2: str = Field(..., description="Second image base64")
+    image1_label: Optional[str] = "Image A"
+    image2_label: Optional[str] = "Image B"
+    comparison_focus: Optional[Literal["general", "ui_diff", "chart_comparison", "text_diff"]] = "general"
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "gemini-1.5-flash"
+    client_api_key: Optional[str] = None
+
+
+class ImageCompareResponse(BaseModel):
+    id: str
+    comparison_summary: str
+    similarities: List[str]
+    differences: List[str]
+    metadata_image1: ImageAttachmentMetadata
+    metadata_image2: ImageAttachmentMetadata
+    model: str
+    provider: str
+    created_at: datetime = Field(default_factory=utc_now)
+
 
 
 

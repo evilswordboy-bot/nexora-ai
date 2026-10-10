@@ -31,7 +31,7 @@ interface ChatContextType {
   renameConversation: (id: string, newTitle: string) => Promise<void>;
   deleteConversation: (id: string) => Promise<void>;
   clearAllConversations: () => Promise<void>;
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string, images?: string[]) => Promise<void>;
   stopGeneration: () => void;
   regenerateMessage: (messageId: string) => Promise<void>;
   editAndResend: (messageId: string, newContent: string) => Promise<void>;
@@ -49,9 +49,9 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
-  // Stage 4, 5, 6 & 8 Workspace Views
-  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime';
-  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime') => void;
+  // Workspace Views (Stages 4, 5, 6, 8, 9)
+  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision';
+  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision') => void;
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
@@ -83,8 +83,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Stage 4, 5, 6 & 8 Workspace Views State
-  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime'>('chat');
+  // Workspace Views State (Stages 4, 5, 6, 8, 9)
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision'>('chat');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
 
   // Stage 7 Voice Intelligence State
@@ -305,8 +305,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Generation stopped', 'info');
   }, [showToast]);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || isLoading) return;
+  const sendMessage = useCallback(async (content: string, images?: string[]) => {
+    if ((!content.trim() && (!images || images.length === 0)) || isLoading) return;
 
     let targetConvId = activeConversationId;
     let isBrandNew = false;
@@ -329,9 +329,10 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userMessage: Message = {
       id: 'msg-' + Date.now() + '-user',
       role: 'user',
-      content: content.trim(),
+      content: content.trim() || (images && images.length > 0 ? 'Analyze attached image(s)' : ''),
       timestamp: new Date().toISOString(),
       search_mode: settings.searchMode,
+      images: images && images.length > 0 ? images : undefined,
     };
 
     const assistantPlaceholderId = 'msg-' + Date.now() + '-assistant';
@@ -378,6 +379,7 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
         conversationId: targetConvId,
         messages: messagesToSend,
         settings,
+        images: images && images.length > 0 ? images : undefined,
         signal: abortController.signal,
         onStart: (info) => {
           setConversations((prev) =>

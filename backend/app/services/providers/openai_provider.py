@@ -24,9 +24,23 @@ class OpenAIProvider(BaseAIProvider):
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
 
-        for m in context_messages:
+        for idx, m in enumerate(context_messages):
             if m.role in ("user", "assistant"):
-                messages.append({"role": m.role, "content": m.content})
+                attached_images = getattr(m, "images", None)
+                if not attached_images and idx == len(context_messages) - 1 and request.images:
+                    attached_images = request.images
+
+                if attached_images and m.role == "user":
+                    user_content = [{"type": "text", "text": m.content}]
+                    for img_str in attached_images:
+                        clean_url = img_str if img_str.startswith("data:") else f"data:image/png;base64,{img_str}"
+                        user_content.append({
+                            "type": "image_url",
+                            "image_url": {"url": clean_url}
+                        })
+                    messages.append({"role": "user", "content": user_content})
+                else:
+                    messages.append({"role": m.role, "content": m.content})
 
         model = request.model or "gpt-4o-mini"
         if not ("gpt" in model or "o3" in model or "o1" in model):
