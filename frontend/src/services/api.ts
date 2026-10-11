@@ -55,6 +55,11 @@ import {
   WorkflowStatus,
   WorkflowStepDefinition,
   WorkflowValidationResult,
+  ComputerActionStep,
+  ComputerAuditLogEntry,
+  ComputerCapabilitiesResponse,
+  ComputerExecutionSession,
+  ComputerTargetDomain,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -1197,6 +1202,96 @@ export const api = {
     return request<{ marked_read_count: number }>('/workflows/notifications/read-all', {
       method: 'POST',
     });
+  },
+
+  // Stage 16: Computer Control & Digital Execution Engine Methods
+  async getComputerCapabilities(): Promise<ComputerCapabilitiesResponse> {
+    return request<ComputerCapabilitiesResponse>('/computer/capabilities');
+  },
+
+  async createComputerSession(params: {
+    user_id?: string;
+    goal: string;
+    mode?: 'execute' | 'simulate_only';
+    target_domain?: ComputerTargetDomain;
+    target_url?: string;
+    steps?: ComputerActionStep[];
+    custom_allowed_domains?: string[];
+    auto_start?: boolean;
+  }): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>('/computer/sessions', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        goal: params.goal,
+        mode: params.mode || 'execute',
+        target_domain: params.target_domain || 'browser',
+        target_url: params.target_url,
+        steps: params.steps || [],
+        custom_allowed_domains: params.custom_allowed_domains || [],
+        auto_start: params.auto_start ?? true,
+      }),
+    });
+  },
+
+  async getComputerSessions(userId = 'default_user'): Promise<ComputerExecutionSession[]> {
+    return request<ComputerExecutionSession[]>(
+      `/computer/sessions?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async getComputerSession(sessionId: string): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(`/computer/sessions/${encodeURIComponent(sessionId)}`);
+  },
+
+  async startComputerSession(sessionId: string): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(
+      `/computer/sessions/${encodeURIComponent(sessionId)}/start`,
+      { method: 'POST' }
+    );
+  },
+
+  async approveComputerStep(
+    sessionId: string,
+    params: {
+      step_id: string;
+      approved: boolean;
+      user_note?: string;
+    }
+  ): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(
+      `/computer/sessions/${encodeURIComponent(sessionId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify(params),
+      }
+    );
+  },
+
+  async pauseComputerSession(sessionId: string): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(
+      `/computer/sessions/${encodeURIComponent(sessionId)}/pause`,
+      { method: 'POST' }
+    );
+  },
+
+  async cancelComputerSession(sessionId: string): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(
+      `/computer/sessions/${encodeURIComponent(sessionId)}/cancel`,
+      { method: 'POST' }
+    );
+  },
+
+  async retryComputerSession(sessionId: string): Promise<ComputerExecutionSession> {
+    return request<ComputerExecutionSession>(
+      `/computer/sessions/${encodeURIComponent(sessionId)}/retry`,
+      { method: 'POST' }
+    );
+  },
+
+  async getComputerAuditLogs(sessionId?: string): Promise<ComputerAuditLogEntry[]> {
+    const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
+    return request<ComputerAuditLogEntry[]>(`/computer/audit-logs${q}`);
   },
 };
 

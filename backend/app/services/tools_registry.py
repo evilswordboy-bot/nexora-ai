@@ -308,6 +308,51 @@ class ToolRegistry:
             handler=self._handle_dispatch_external_message,
         )
 
+        # 10. Stage 16: Controlled Browser Automation Tool
+        self.register(
+            tool=ToolDefinition(
+                name="browser_automation_step",
+                description="Opens an approved URL in an isolated Stage 16 browser session, extracts DOM content, and captures a verified viewport screenshot.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "url": {"type": "string", "description": "Approved http/https URL to open"},
+                        "selector": {"type": "string", "default": "h1, p, a"},
+                    },
+                    "required": ["url"],
+                },
+                stage_introduced=16,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_browser_automation_step,
+        )
+
+        # 11. Stage 16: Sandboxed Computer Workspace Task Tool
+        self.register(
+            tool=ToolDefinition(
+                name="computer_workspace_task",
+                description="Executes a read-only diagnostic or file listing inside the Stage 16 sandboxed computer workspace.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "list_workspace_files",
+                            "description": "list_workspace_files | read_workspace_file | run_predefined_diagnostic",
+                        },
+                        "target": {"type": "string", "default": "."},
+                    },
+                },
+                stage_introduced=16,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_computer_workspace_task,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -534,6 +579,74 @@ class ToolRegistry:
             "subject": subject,
             "dispatched": True,
             "summary": f"Approved external message dispatched to '{recipient}' (Subject: '{subject}', Length: {len(body)} chars).",
+        }
+
+    async def _handle_browser_automation_step(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.computer.engine import computer_control_engine
+        from app.models.schemas import ComputerSessionCreateRequest, ComputerActionStep
+
+        url = str(params.get("url", "https://example.com")).strip()
+        selector = str(params.get("selector", "h1, p, a")).strip()
+        session = await computer_control_engine.create_session(
+            ComputerSessionCreateRequest(
+                goal=f"Inspect and extract {selector} from {url}",
+                target_domain="browser",
+                target_url=url,
+                steps=[
+                    ComputerActionStep(
+                        step_id="s1_open",
+                        title=f"Open {url}",
+                        target_domain="browser",
+                        action_type="open_url",
+                        target_url_or_path=url,
+                    ),
+                    ComputerActionStep(
+                        step_id="s2_extract",
+                        title=f"Extract {selector}",
+                        target_domain="browser",
+                        action_type="extract_content",
+                        selector=selector,
+                    ),
+                ],
+                auto_start=True,
+            )
+        )
+        return {
+            "session_id": session.session_id,
+            "status": session.status,
+            "verified": session.verified_completion,
+            "summary": session.final_summary,
+        }
+
+    async def _handle_computer_workspace_task(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.computer.engine import computer_control_engine
+        from app.models.schemas import ComputerSessionCreateRequest, ComputerActionStep
+
+        action = str(params.get("action", "list_workspace_files")).strip()
+        if action not in ("list_workspace_files", "read_workspace_file", "run_predefined_diagnostic"):
+            action = "list_workspace_files"
+        target = str(params.get("target", ".")).strip()
+        session = await computer_control_engine.create_session(
+            ComputerSessionCreateRequest(
+                goal=f"Execute sandboxed computer task {action} on {target}",
+                target_domain="local_os",
+                steps=[
+                    ComputerActionStep(
+                        step_id="s1_local",
+                        title=f"Run {action}",
+                        target_domain="local_os",
+                        action_type=action,  # type: ignore[arg-type]
+                        target_url_or_path=target,
+                    )
+                ],
+                auto_start=True,
+            )
+        )
+        return {
+            "session_id": session.session_id,
+            "status": session.status,
+            "verified": session.verified_completion,
+            "summary": session.final_summary,
         }
 
 

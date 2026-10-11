@@ -972,5 +972,150 @@ export interface WorkflowMetadataResponse {
   };
 }
 
+// Stage 16: Computer Control & Digital Execution Engine Interfaces
+export type ComputerTargetDomain = 'browser' | 'local_os';
+
+export type ComputerActionType =
+  | 'open_url'
+  | 'navigate'
+  | 'click'
+  | 'fill_text'
+  | 'select_option'
+  | 'scroll'
+  | 'capture_screenshot'
+  | 'extract_content'
+  | 'submit_form'
+  | 'list_workspace_files'
+  | 'read_workspace_file'
+  | 'write_workspace_file'
+  | 'delete_workspace_file'
+  | 'run_predefined_diagnostic'
+  | 'open_approved_application';
+
+export type ComputerSessionStatus =
+  | 'PLANNED'
+  | 'SIMULATION_PREVIEW'
+  | 'WAITING_FOR_APPROVAL'
+  | 'RUNNING'
+  | 'PAUSED'
+  | 'VERIFIED_COMPLETED'
+  | 'BLOCKED_BY_SECURITY_BOUNDARY'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export type ComputerStepStatus =
+  | 'PENDING'
+  | 'SIMULATED'
+  | 'WAITING_FOR_APPROVAL'
+  | 'RUNNING'
+  | 'VERIFIED_SUCCEEDED'
+  | 'BLOCKED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface ComputerActionPreview {
+  step_id: string;
+  action_type: ComputerActionType;
+  target_domain: ComputerTargetDomain;
+  target_resource: string;
+  risk_level: 'low' | 'medium' | 'high';
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  parameters_preview: Record<string, any>;
+}
+
+export interface ComputerActionStep {
+  step_id: string;
+  title: string;
+  target_domain: ComputerTargetDomain;
+  action_type: ComputerActionType;
+  target_url_or_path: string;
+  selector?: string | null;
+  input_value?: string | null;
+  params: Record<string, any>;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  checkpoint_name?: string | null;
+  timeout_seconds: number;
+}
+
+export interface ComputerStepResult {
+  step_id: string;
+  title: string;
+  target_domain: ComputerTargetDomain;
+  action_type: ComputerActionType;
+  target_url_or_path: string;
+  selector?: string | null;
+  status: ComputerStepStatus;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  approved?: boolean | null;
+  preview?: ComputerActionPreview | null;
+  verified: boolean;
+  verification_detail: string;
+  output_summary: string;
+  extracted_data: Record<string, any>;
+  screenshot_base64?: string | null;
+  page_title?: string | null;
+  current_url?: string | null;
+  security_boundary_triggered?: string | null;
+  untrusted_content_isolated: boolean;
+  error_message?: string | null;
+  duration_ms: number;
+  executed_at?: string | null;
+}
+
+export interface ComputerExecutionSession {
+  session_id: string;
+  user_id: string;
+  goal: string;
+  mode: 'execute' | 'simulate_only';
+  target_domain: ComputerTargetDomain;
+  browser_driver: string;
+  status: ComputerSessionStatus;
+  target_website?: string | null;
+  active_step_id?: string | null;
+  waiting_approval_step_id?: string | null;
+  steps: ComputerActionStep[];
+  step_results: ComputerStepResult[];
+  checkpoints: string[];
+  latest_screenshot_base64?: string | null;
+  execution_logs: string[];
+  final_summary: string;
+  verified_completion: boolean;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComputerAuditLogEntry {
+  audit_id: string;
+  session_id: string;
+  user_id: string;
+  step_id?: string | null;
+  target_domain: ComputerTargetDomain;
+  action_type: string;
+  target_resource: string;
+  status: string;
+  verified: boolean;
+  detail: string;
+  created_at: string;
+}
+
+export interface ComputerCapabilitiesResponse {
+  stage: number;
+  playwright_package_detected: boolean;
+  active_browser_driver: string;
+  browser_capabilities: string[];
+  local_os_runner_enabled: boolean;
+  local_os_capabilities: string[];
+  workspace_sandbox_dir: string;
+  approved_applications: Record<string, string>;
+  predefined_diagnostics: Record<string, string>;
+  allowed_domains_default: string[];
+  strict_url_allowlist_default: boolean;
+  architecture_disclosure: string;
+}
+
 
 

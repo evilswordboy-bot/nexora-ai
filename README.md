@@ -331,4 +331,15 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 - [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 15 is complete. Do not proceed to Stage 16 until Stage 15 has been reviewed and approved.*
+
+## 📋 Stage 16: Computer Control & Digital Execution Engine Checklist
+
+- [x] **Isolated Browser Automation (`BrowserAutomationRunner` in `backend/app/services/computer/engine.py`)**: Supports `open_url`, `navigate`, `click`, `fill_text`, `select_option`, `scroll`, `capture_screenshot` (verified PNG base64 viewport captures with secrets masked), `extract_content` (quarantined in `<untrusted_webpage_content>`), and `submit_form` with checkpoints and verified completion.
+- [x] **Sandboxed Local Computer Task Runner (`LocalComputerTaskRunner`)**: Strictly separated from browser automation (`target_domain: "browser" | "local_os"`). Confines file operations (`list_workspace_files`, `read_workspace_file`, `write_workspace_file`, `delete_workspace_file`) to `data/computer_workspace`, blocks path traversal (`..`), and limits local tasks to predefined diagnostics (`system_summary`, `workspace_disk_usage`, `python_runtime_check`) and allowlisted applications (`calculator`, `notepad`, `browser_docs`). Clearly discloses that a remote server cannot control a user's physical computer without a local companion agent.
+- [x] **Preview-and-Confirm Approval Gates & Security Boundaries**: Pauses in `WAITING_FOR_APPROVAL` with a structured `ComputerActionPreview` before consequential actions (`submit_form`, `delete_workspace_file`, overwriting files, or opening applications). Detects CAPTCHA (`g-recaptcha`, `cf-turnstile`, `hcaptcha`), MFA prompts, and HTTP 401/403 walls, halting cleanly with `BLOCKED_BY_SECURITY_BOUNDARY` without ever attempting to bypass.
+- [x] **SSRF, URL Allowlist, Secret Redaction & Session Isolation**: Blocks `file://`, loopback (`127.0.0.1`, `localhost`), RFC1918 private LAN IPs, and cloud metadata targets; redacts passwords and API keys (`[REDACTED_SECRET]`) across previews, logs, audit trails, and screenshots; isolates per-session DOM/cookie state; and connects to Stage 11/14/15 via `browser_automation_step` and `computer_workspace_task` in `ToolRegistry`.
+- [x] **101/101 Automated Pytest Tests Passing** across Stages 1–16 (`tests/test_stage16_computer.py`).
+- [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
+
+---
+*Stage 16 is complete. Do not proceed to Stage 17 until Stage 16 has been reviewed and approved.*

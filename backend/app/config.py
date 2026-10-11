@@ -100,6 +100,28 @@ class Settings(BaseModel):
     smtp_password: str = os.getenv("SMTP_PASSWORD", "")
     smtp_from_email: str = os.getenv("SMTP_FROM_EMAIL", "")
 
+    # Stage 16: Computer Control & Digital Execution Engine
+    computer_workspace_dir: str = os.getenv(
+        "COMPUTER_WORKSPACE_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "computer_workspace"),
+    )
+    computer_db_path: str = os.getenv(
+        "COMPUTER_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "computer_workspace" / "nexora_computer.db"),
+    )
+    computer_max_steps_per_task: int = int(os.getenv("COMPUTER_MAX_STEPS_PER_TASK", "12"))
+    computer_step_timeout_seconds: float = float(os.getenv("COMPUTER_STEP_TIMEOUT_SECONDS", "20.0"))
+    computer_enable_local_os_runner: bool = os.getenv("COMPUTER_ENABLE_LOCAL_OS_RUNNER", "true").lower() in ("true", "1", "yes")
+    computer_strict_url_allowlist: bool = os.getenv("COMPUTER_STRICT_URL_ALLOWLIST", "false").lower() in ("true", "1", "yes")
+    computer_allowed_domains: list[str] = [
+        d.strip().lower()
+        for d in os.getenv(
+            "COMPUTER_ALLOWED_DOMAINS",
+            "example.com,wikipedia.org,en.wikipedia.org,github.com,python.org,fastapi.tiangolo.com,developer.mozilla.org,news.ycombinator.com",
+        ).split(",")
+        if d.strip()
+    ]
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

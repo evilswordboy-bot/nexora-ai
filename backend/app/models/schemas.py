@@ -1273,4 +1273,158 @@ class WorkflowRetryRunRequest(BaseModel):
     client_api_key: Optional[str] = None
 
 
+# --- Stage 16: Computer Control & Digital Execution Engine Schemas ---
+ComputerTargetDomain = Literal["browser", "local_os"]
+
+ComputerActionType = Literal[
+    # Browser Automation Actions
+    "open_url",
+    "navigate",
+    "click",
+    "fill_text",
+    "select_option",
+    "scroll",
+    "capture_screenshot",
+    "extract_content",
+    "submit_form",
+    # Sandboxed Local Computer Actions
+    "list_workspace_files",
+    "read_workspace_file",
+    "write_workspace_file",
+    "delete_workspace_file",
+    "run_predefined_diagnostic",
+    "open_approved_application",
+]
+
+ComputerSessionStatus = Literal[
+    "PLANNED",
+    "SIMULATION_PREVIEW",
+    "WAITING_FOR_APPROVAL",
+    "RUNNING",
+    "PAUSED",
+    "VERIFIED_COMPLETED",
+    "BLOCKED_BY_SECURITY_BOUNDARY",
+    "FAILED",
+    "CANCELLED",
+]
+
+ComputerStepStatus = Literal[
+    "PENDING",
+    "SIMULATED",
+    "WAITING_FOR_APPROVAL",
+    "RUNNING",
+    "VERIFIED_SUCCEEDED",
+    "BLOCKED",
+    "FAILED",
+    "CANCELLED",
+]
+
+
+class ComputerActionPreview(BaseModel):
+    step_id: str
+    action_type: ComputerActionType
+    target_domain: ComputerTargetDomain
+    target_resource: str
+    risk_level: Literal["low", "medium", "high"] = "low"
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    parameters_preview: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ComputerActionStep(BaseModel):
+    step_id: str
+    title: str
+    target_domain: ComputerTargetDomain = "browser"
+    action_type: ComputerActionType = "open_url"
+    target_url_or_path: str = ""
+    selector: Optional[str] = None
+    input_value: Optional[str] = None
+    params: Dict[str, Any] = Field(default_factory=dict)
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    checkpoint_name: Optional[str] = None
+    timeout_seconds: float = Field(default=15.0, ge=1.0, le=60.0)
+
+
+class ComputerStepResult(BaseModel):
+    step_id: str
+    title: str
+    target_domain: ComputerTargetDomain
+    action_type: ComputerActionType
+    target_url_or_path: str = ""
+    selector: Optional[str] = None
+    status: ComputerStepStatus = "PENDING"
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approved: Optional[bool] = None
+    preview: Optional[ComputerActionPreview] = None
+    verified: bool = False
+    verification_detail: str = ""
+    output_summary: str = ""
+    extracted_data: Dict[str, Any] = Field(default_factory=dict)
+    screenshot_base64: Optional[str] = None
+    page_title: Optional[str] = None
+    current_url: Optional[str] = None
+    security_boundary_triggered: Optional[str] = None
+    untrusted_content_isolated: bool = False
+    error_message: Optional[str] = None
+    duration_ms: float = 0.0
+    executed_at: Optional[datetime] = None
+
+
+class ComputerExecutionSession(BaseModel):
+    session_id: str
+    user_id: str = "default_user"
+    goal: str
+    mode: Literal["execute", "simulate_only"] = "execute"
+    target_domain: ComputerTargetDomain = "browser"
+    browser_driver: str = "dom_http_pillow_driver"
+    status: ComputerSessionStatus = "PLANNED"
+    target_website: Optional[str] = None
+    active_step_id: Optional[str] = None
+    waiting_approval_step_id: Optional[str] = None
+    steps: List[ComputerActionStep] = Field(default_factory=list)
+    step_results: List[ComputerStepResult] = Field(default_factory=list)
+    checkpoints: List[str] = Field(default_factory=list)
+    latest_screenshot_base64: Optional[str] = None
+    execution_logs: List[str] = Field(default_factory=list)
+    final_summary: str = ""
+    verified_completion: bool = False
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class ComputerAuditLogEntry(BaseModel):
+    audit_id: str
+    session_id: str
+    user_id: str
+    step_id: Optional[str] = None
+    target_domain: ComputerTargetDomain
+    action_type: str
+    target_resource: str
+    status: str
+    verified: bool = False
+    detail: str
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class ComputerSessionCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    goal: str = Field(..., min_length=1, max_length=4000)
+    mode: Literal["execute", "simulate_only"] = "execute"
+    target_domain: ComputerTargetDomain = "browser"
+    target_url: Optional[str] = None
+    steps: List[ComputerActionStep] = Field(default_factory=list)
+    custom_allowed_domains: List[str] = Field(default_factory=list)
+    auto_start: bool = True
+
+
+class ComputerApproveStepRequest(BaseModel):
+    user_id: str = "default_user"
+    step_id: str
+    approved: bool = True
+    user_note: Optional[str] = None
+
+
 
