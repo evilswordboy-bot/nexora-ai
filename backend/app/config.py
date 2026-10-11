@@ -82,6 +82,24 @@ class Settings(BaseModel):
     agent_task_timeout_seconds: float = float(os.getenv("AGENT_TASK_TIMEOUT_SECONDS", "25.0"))
     agent_max_cost_usd_per_run: float = float(os.getenv("AGENT_MAX_COST_USD_PER_RUN", "0.25"))
 
+    # Stage 15: Workflow Automation Engine
+    workflow_db_path: str = os.getenv(
+        "WORKFLOW_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "workflows" / "nexora_workflows.db"),
+    )
+    workflow_max_steps: int = int(os.getenv("WORKFLOW_MAX_STEPS", "15"))
+    workflow_max_step_retries: int = int(os.getenv("WORKFLOW_MAX_STEP_RETRIES", "3"))
+    workflow_step_timeout_seconds: float = float(os.getenv("WORKFLOW_STEP_TIMEOUT_SECONDS", "30.0"))
+    workflow_max_cost_usd_per_run: float = float(os.getenv("WORKFLOW_MAX_COST_USD_PER_RUN", "0.50"))
+    workflow_rate_limit_per_minute: int = int(os.getenv("WORKFLOW_RATE_LIMIT_PER_MINUTE", "20"))
+    workflow_scheduler_poll_seconds: float = float(os.getenv("WORKFLOW_SCHEDULER_POLL_SECONDS", "15.0"))
+    notification_webhook_url: str = os.getenv("NOTIFICATION_WEBHOOK_URL", "")
+    smtp_host: str = os.getenv("SMTP_HOST", "")
+    smtp_port: int = int(os.getenv("SMTP_PORT", "587"))
+    smtp_user: str = os.getenv("SMTP_USER", "")
+    smtp_password: str = os.getenv("SMTP_PASSWORD", "")
+    smtp_from_email: str = os.getenv("SMTP_FROM_EMAIL", "")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

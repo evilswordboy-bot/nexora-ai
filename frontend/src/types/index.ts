@@ -778,5 +778,199 @@ export interface MultiAgentOrchestrationRun {
   updated_at: string;
 }
 
+// Stage 15: Workflow Automation Engine Interfaces
+export type WorkflowStatus = 'DRAFT' | 'ACTIVE' | 'PAUSED' | 'DISABLED';
+export type WorkflowTriggerType = 'manual' | 'scheduled';
+export type WorkflowRecurrenceType = 'once' | 'interval' | 'hourly' | 'daily' | 'weekly';
+export type WorkflowRunStatus =
+  | 'QUEUED'
+  | 'RUNNING'
+  | 'WAITING_FOR_APPROVAL'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'RETRYING';
+export type WorkflowStepStatus =
+  | 'PENDING'
+  | 'RUNNING'
+  | 'WAITING_FOR_APPROVAL'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'SKIPPED'
+  | 'CANCELLED'
+  | 'RETRYING';
+export type WorkflowStepActionType = 'agent' | 'tool' | 'condition_gate' | 'transform';
+export type WorkflowBranchAction = 'skip' | 'fail_workflow' | 'jump_to_step';
+
+export interface WorkflowScheduleConfig {
+  trigger_type: WorkflowTriggerType;
+  recurrence: WorkflowRecurrenceType;
+  interval_minutes: number;
+  timezone: string;
+  start_at?: string | null;
+  next_run_at?: string | null;
+  last_run_at?: string | null;
+  allow_concurrent_runs: boolean;
+}
+
+export interface WorkflowStepDefinition {
+  step_id: string;
+  name: string;
+  description: string;
+  action_type: WorkflowStepActionType;
+  agent_id?: AgentRoleId | null;
+  tool_name?: string | null;
+  prompt_template: string;
+  tool_params: Record<string, any>;
+  input_mapping: Record<string, string>;
+  output_key: string;
+  depends_on: string[];
+  condition_expression: string;
+  on_condition_false: WorkflowBranchAction;
+  jump_to_step_id?: string | null;
+  max_retries: number;
+  retry_delay_seconds: number;
+  timeout_seconds: number;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+}
+
+export interface WorkflowNotificationConfig {
+  in_app_enabled: boolean;
+  email_opt_in: boolean;
+  email_recipient?: string | null;
+  webhook_opt_in: boolean;
+  notify_on_complete: boolean;
+  notify_on_failure: boolean;
+  notify_on_approval_required: boolean;
+}
+
+export interface WorkflowDefinition {
+  workflow_id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  category: string;
+  status: WorkflowStatus;
+  is_template: boolean;
+  schedule: WorkflowScheduleConfig;
+  steps: WorkflowStepDefinition[];
+  notification_config: WorkflowNotificationConfig;
+  max_cost_budget_usd: number;
+  total_runs: number;
+  succeeded_runs: number;
+  failed_runs: number;
+  last_run_status?: WorkflowRunStatus | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkflowValidationIssue {
+  severity: 'error' | 'warning';
+  step_id?: string | null;
+  code: string;
+  message: string;
+}
+
+export interface WorkflowValidationResult {
+  valid: boolean;
+  issues: WorkflowValidationIssue[];
+  execution_order: string[];
+  estimated_max_cost_usd: number;
+  requires_approval_steps: string[];
+}
+
+export interface WorkflowStepExecutionResult {
+  step_id: string;
+  step_name: string;
+  action_type: WorkflowStepActionType;
+  agent_id?: AgentRoleId | null;
+  tool_name?: string | null;
+  status: WorkflowStepStatus;
+  resolved_inputs: Record<string, any>;
+  output_summary: string;
+  output_data: Record<string, any>;
+  untrusted_content_isolated: boolean;
+  condition_evaluated: boolean;
+  condition_detail: string;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  approved?: boolean | null;
+  attempt_count: number;
+  max_retries: number;
+  error_message?: string | null;
+  estimated_cost_usd: number;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_ms: number;
+}
+
+export interface WorkflowExecutionRun {
+  run_id: string;
+  workflow_id: string;
+  workflow_name: string;
+  user_id: string;
+  trigger_source: 'manual' | 'scheduled' | 'test_dry_run' | 'retry';
+  idempotency_key?: string | null;
+  status: WorkflowRunStatus;
+  is_dry_run: boolean;
+  runtime_inputs: Record<string, any>;
+  step_results: WorkflowStepExecutionResult[];
+  completed_steps: number;
+  total_steps: number;
+  progress_percent: number;
+  current_step_id?: string | null;
+  waiting_approval_step_id?: string | null;
+  final_summary: string;
+  error_message?: string | null;
+  total_estimated_cost_usd: number;
+  max_cost_budget_usd: number;
+  queued_at: string;
+  started_at?: string | null;
+  completed_at?: string | null;
+  duration_ms: number;
+}
+
+export interface WorkflowNotificationItem {
+  notification_id: string;
+  user_id: string;
+  workflow_id: string;
+  workflow_name: string;
+  run_id?: string | null;
+  event_type:
+    | 'run_succeeded'
+    | 'run_failed'
+    | 'approval_required'
+    | 'schedule_triggered'
+    | 'run_cancelled'
+    | 'worker_recovery';
+  severity: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  read: boolean;
+  external_channels_attempted: string[];
+  external_delivery_status: string;
+  external_delivery_confirmed: boolean;
+  created_at: string;
+}
+
+export interface WorkflowMetadataResponse {
+  available_agents: SpecializedAgentSpec[];
+  available_tools: ToolDefinitionItem[];
+  supported_timezones: string[];
+  notification_channels: {
+    in_app: boolean;
+    webhook_configured: boolean;
+    smtp_configured: boolean;
+  };
+  limits: {
+    max_steps: number;
+    max_step_retries: number;
+    step_timeout_seconds: number;
+    max_cost_usd_per_run: number;
+    rate_limit_per_minute: number;
+  };
+}
+
 
 

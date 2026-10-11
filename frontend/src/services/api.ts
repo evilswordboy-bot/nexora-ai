@@ -46,6 +46,15 @@ import {
   AgentRoleId,
   SpecializedAgentSpec,
   MultiAgentOrchestrationRun,
+  WorkflowDefinition,
+  WorkflowExecutionRun,
+  WorkflowMetadataResponse,
+  WorkflowNotificationConfig,
+  WorkflowNotificationItem,
+  WorkflowScheduleConfig,
+  WorkflowStatus,
+  WorkflowStepDefinition,
+  WorkflowValidationResult,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -983,6 +992,209 @@ export const api = {
 
   async cancelMultiAgentRun(runId: string): Promise<MultiAgentOrchestrationRun> {
     return request<MultiAgentOrchestrationRun>(`/agents/runs/${encodeURIComponent(runId)}/cancel`, {
+      method: 'POST',
+    });
+  },
+
+  // Stage 15: Workflow Automation Engine Methods
+  async getWorkflowMetadata(): Promise<WorkflowMetadataResponse> {
+    return request<WorkflowMetadataResponse>('/workflows/metadata');
+  },
+
+  async getWorkflowTemplates(): Promise<WorkflowDefinition[]> {
+    return request<WorkflowDefinition[]>('/workflows/templates');
+  },
+
+  async getWorkflows(params?: {
+    userId?: string;
+    includeTemplates?: boolean;
+    status?: string;
+  }): Promise<WorkflowDefinition[]> {
+    const q = new URLSearchParams();
+    q.set('user_id', params?.userId || 'default_user');
+    if (params?.includeTemplates !== undefined) q.set('include_templates', String(params.includeTemplates));
+    if (params?.status) q.set('status', params.status);
+    return request<WorkflowDefinition[]>(`/workflows?${q.toString()}`);
+  },
+
+  async validateWorkflow(params: {
+    steps: WorkflowStepDefinition[];
+    schedule?: WorkflowScheduleConfig;
+    max_cost_budget_usd?: number;
+  }): Promise<WorkflowValidationResult> {
+    return request<WorkflowValidationResult>('/workflows/validate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async createWorkflow(params: {
+    user_id?: string;
+    name: string;
+    description: string;
+    category?: string;
+    status?: WorkflowStatus;
+    schedule: WorkflowScheduleConfig;
+    steps: WorkflowStepDefinition[];
+    notification_config?: WorkflowNotificationConfig;
+    max_cost_budget_usd?: number;
+  }): Promise<WorkflowDefinition> {
+    return request<WorkflowDefinition>('/workflows', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        name: params.name,
+        description: params.description,
+        category: params.category || 'general',
+        status: params.status || 'DRAFT',
+        schedule: params.schedule,
+        steps: params.steps,
+        notification_config: params.notification_config,
+        max_cost_budget_usd: params.max_cost_budget_usd ?? 0.5,
+      }),
+    });
+  },
+
+  async updateWorkflow(
+    workflowId: string,
+    params: {
+      name?: string;
+      description?: string;
+      category?: string;
+      status?: WorkflowStatus;
+      schedule?: WorkflowScheduleConfig;
+      steps?: WorkflowStepDefinition[];
+      notification_config?: WorkflowNotificationConfig;
+      max_cost_budget_usd?: number;
+    }
+  ): Promise<WorkflowDefinition> {
+    return request<WorkflowDefinition>(`/workflows/${encodeURIComponent(workflowId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async setWorkflowStatus(workflowId: string, status: WorkflowStatus): Promise<WorkflowDefinition> {
+    return request<WorkflowDefinition>(`/workflows/${encodeURIComponent(workflowId)}/status`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  async duplicateWorkflow(workflowId: string, userId = 'default_user'): Promise<WorkflowDefinition> {
+    return request<WorkflowDefinition>(
+      `/workflows/${encodeURIComponent(workflowId)}/duplicate?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async deleteWorkflow(workflowId: string): Promise<{ workflow_id: string; deleted: boolean }> {
+    return request<{ workflow_id: string; deleted: boolean }>(
+      `/workflows/${encodeURIComponent(workflowId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async triggerWorkflowRun(
+    workflowId: string,
+    params?: {
+      user_id?: string;
+      trigger_source?: 'manual' | 'scheduled' | 'test_dry_run';
+      is_dry_run?: boolean;
+      runtime_inputs?: Record<string, any>;
+    },
+    settings?: UserSettings
+  ): Promise<WorkflowExecutionRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<WorkflowExecutionRun>(`/workflows/${encodeURIComponent(workflowId)}/run`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params?.user_id || 'default_user',
+        trigger_source: params?.trigger_source || 'manual',
+        is_dry_run: params?.is_dry_run ?? false,
+        runtime_inputs: params?.runtime_inputs || {},
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getWorkflowRuns(params?: {
+    userId?: string;
+    workflowId?: string;
+    status?: string;
+  }): Promise<WorkflowExecutionRun[]> {
+    const q = new URLSearchParams();
+    q.set('user_id', params?.userId || 'default_user');
+    if (params?.workflowId) q.set('workflow_id', params.workflowId);
+    if (params?.status) q.set('status', params.status);
+    return request<WorkflowExecutionRun[]>(`/workflows/runs?${q.toString()}`);
+  },
+
+  async approveWorkflowStep(
+    runId: string,
+    params: {
+      step_id: string;
+      approved: boolean;
+      user_note?: string;
+    },
+    settings?: UserSettings
+  ): Promise<WorkflowExecutionRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<WorkflowExecutionRun>(`/workflows/runs/${encodeURIComponent(runId)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async retryWorkflowRun(
+    runId: string,
+    fromFailedStepOnly = true,
+    settings?: UserSettings
+  ): Promise<WorkflowExecutionRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<WorkflowExecutionRun>(`/workflows/runs/${encodeURIComponent(runId)}/retry`, {
+      method: 'POST',
+      body: JSON.stringify({
+        from_failed_step_only: fromFailedStepOnly,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async cancelWorkflowRun(runId: string): Promise<WorkflowExecutionRun> {
+    return request<WorkflowExecutionRun>(`/workflows/runs/${encodeURIComponent(runId)}/cancel`, {
+      method: 'POST',
+    });
+  },
+
+  async tickWorkflowScheduler(): Promise<WorkflowExecutionRun[]> {
+    return request<WorkflowExecutionRun[]>('/workflows/scheduler/tick', {
+      method: 'POST',
+    });
+  },
+
+  async getWorkflowNotifications(unreadOnly = false): Promise<WorkflowNotificationItem[]> {
+    return request<WorkflowNotificationItem[]>(`/workflows/notifications?unread_only=${unreadOnly}`);
+  },
+
+  async markWorkflowNotificationRead(notificationId: string): Promise<{ notification_id: string; read: boolean }> {
+    return request<{ notification_id: string; read: boolean }>(
+      `/workflows/notifications/${encodeURIComponent(notificationId)}/read`,
+      { method: 'POST' }
+    );
+  },
+
+  async markAllWorkflowNotificationsRead(): Promise<{ marked_read_count: number }> {
+    return request<{ marked_read_count: number }>('/workflows/notifications/read-all', {
       method: 'POST',
     });
   },

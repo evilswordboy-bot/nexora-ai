@@ -1040,4 +1040,237 @@ class MultiAgentRetryRequest(BaseModel):
     client_api_key: Optional[str] = None
 
 
+# --- Stage 15: Workflow Automation Engine Schemas ---
+WorkflowStatus = Literal["DRAFT", "ACTIVE", "PAUSED", "DISABLED"]
+WorkflowTriggerType = Literal["manual", "scheduled"]
+WorkflowRecurrenceType = Literal["once", "interval", "hourly", "daily", "weekly"]
+WorkflowRunStatus = Literal[
+    "QUEUED",
+    "RUNNING",
+    "WAITING_FOR_APPROVAL",
+    "SUCCEEDED",
+    "FAILED",
+    "CANCELLED",
+    "RETRYING",
+]
+WorkflowStepStatus = Literal[
+    "PENDING",
+    "RUNNING",
+    "WAITING_FOR_APPROVAL",
+    "SUCCEEDED",
+    "FAILED",
+    "SKIPPED",
+    "CANCELLED",
+    "RETRYING",
+]
+WorkflowStepActionType = Literal["agent", "tool", "condition_gate", "transform"]
+WorkflowBranchAction = Literal["skip", "fail_workflow", "jump_to_step"]
+
+
+class WorkflowScheduleConfig(BaseModel):
+    trigger_type: WorkflowTriggerType = "manual"
+    recurrence: WorkflowRecurrenceType = "daily"
+    interval_minutes: int = Field(default=60, ge=1, le=10080)
+    timezone: str = "UTC"
+    start_at: Optional[datetime] = None
+    next_run_at: Optional[datetime] = None
+    last_run_at: Optional[datetime] = None
+    allow_concurrent_runs: bool = False
+
+
+class WorkflowStepDefinition(BaseModel):
+    step_id: str
+    name: str
+    description: str = ""
+    action_type: WorkflowStepActionType = "agent"
+    agent_id: Optional[AgentRoleId] = None
+    tool_name: Optional[str] = None
+    prompt_template: str = ""
+    tool_params: Dict[str, Any] = Field(default_factory=dict)
+    input_mapping: Dict[str, str] = Field(default_factory=dict)
+    output_key: str = "output"
+    depends_on: List[str] = Field(default_factory=list)
+    condition_expression: str = "always"
+    on_condition_false: WorkflowBranchAction = "skip"
+    jump_to_step_id: Optional[str] = None
+    max_retries: int = Field(default=1, ge=0, le=5)
+    retry_delay_seconds: float = Field(default=0.1, ge=0.0, le=60.0)
+    timeout_seconds: float = Field(default=25.0, ge=0.1, le=120.0)
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+
+
+class WorkflowNotificationConfig(BaseModel):
+    in_app_enabled: bool = True
+    email_opt_in: bool = False
+    email_recipient: Optional[str] = None
+    webhook_opt_in: bool = False
+    notify_on_complete: bool = True
+    notify_on_failure: bool = True
+    notify_on_approval_required: bool = True
+
+
+class WorkflowDefinition(BaseModel):
+    workflow_id: str
+    user_id: str = "default_user"
+    name: str
+    description: str = ""
+    category: str = "general"
+    status: WorkflowStatus = "DRAFT"
+    is_template: bool = False
+    schedule: WorkflowScheduleConfig = Field(default_factory=WorkflowScheduleConfig)
+    steps: List[WorkflowStepDefinition] = Field(default_factory=list)
+    notification_config: WorkflowNotificationConfig = Field(default_factory=WorkflowNotificationConfig)
+    max_cost_budget_usd: float = Field(default=0.50, ge=0.001, le=10.0)
+    total_runs: int = 0
+    succeeded_runs: int = 0
+    failed_runs: int = 0
+    last_run_status: Optional[WorkflowRunStatus] = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class WorkflowValidationIssue(BaseModel):
+    severity: Literal["error", "warning"] = "error"
+    step_id: Optional[str] = None
+    code: str
+    message: str
+
+
+class WorkflowValidationResult(BaseModel):
+    valid: bool
+    issues: List[WorkflowValidationIssue] = Field(default_factory=list)
+    execution_order: List[str] = Field(default_factory=list)
+    estimated_max_cost_usd: float = 0.0
+    requires_approval_steps: List[str] = Field(default_factory=list)
+
+
+class WorkflowStepExecutionResult(BaseModel):
+    step_id: str
+    step_name: str
+    action_type: WorkflowStepActionType
+    agent_id: Optional[AgentRoleId] = None
+    tool_name: Optional[str] = None
+    status: WorkflowStepStatus = "PENDING"
+    resolved_inputs: Dict[str, Any] = Field(default_factory=dict)
+    output_summary: str = ""
+    output_data: Dict[str, Any] = Field(default_factory=dict)
+    untrusted_content_isolated: bool = False
+    condition_evaluated: bool = True
+    condition_detail: str = ""
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approved: Optional[bool] = None
+    attempt_count: int = 0
+    max_retries: int = 0
+    error_message: Optional[str] = None
+    estimated_cost_usd: float = 0.0
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_ms: float = 0.0
+
+
+class WorkflowExecutionRun(BaseModel):
+    run_id: str
+    workflow_id: str
+    workflow_name: str
+    user_id: str = "default_user"
+    trigger_source: Literal["manual", "scheduled", "test_dry_run", "retry"] = "manual"
+    idempotency_key: Optional[str] = None
+    status: WorkflowRunStatus = "QUEUED"
+    is_dry_run: bool = False
+    runtime_inputs: Dict[str, Any] = Field(default_factory=dict)
+    step_results: List[WorkflowStepExecutionResult] = Field(default_factory=list)
+    completed_steps: int = 0
+    total_steps: int = 0
+    progress_percent: float = 0.0
+    current_step_id: Optional[str] = None
+    waiting_approval_step_id: Optional[str] = None
+    final_summary: str = ""
+    error_message: Optional[str] = None
+    total_estimated_cost_usd: float = 0.0
+    max_cost_budget_usd: float = 0.50
+    queued_at: datetime = Field(default_factory=utc_now)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_ms: float = 0.0
+
+
+class WorkflowNotificationItem(BaseModel):
+    notification_id: str
+    user_id: str = "default_user"
+    workflow_id: str
+    workflow_name: str
+    run_id: Optional[str] = None
+    event_type: Literal[
+        "run_succeeded",
+        "run_failed",
+        "approval_required",
+        "schedule_triggered",
+        "run_cancelled",
+        "worker_recovery",
+    ]
+    severity: Literal["info", "success", "warning", "error"] = "info"
+    title: str
+    message: str
+    read: bool = False
+    external_channels_attempted: List[str] = Field(default_factory=list)
+    external_delivery_status: str = "in_app_only"
+    external_delivery_confirmed: bool = False
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class WorkflowCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    name: str = Field(..., min_length=1, max_length=160)
+    description: str = Field(default="", max_length=2000)
+    category: str = "general"
+    status: WorkflowStatus = "DRAFT"
+    schedule: WorkflowScheduleConfig = Field(default_factory=WorkflowScheduleConfig)
+    steps: List[WorkflowStepDefinition] = Field(default_factory=list)
+    notification_config: WorkflowNotificationConfig = Field(default_factory=WorkflowNotificationConfig)
+    max_cost_budget_usd: float = Field(default=0.50, ge=0.001, le=10.0)
+
+
+class WorkflowUpdateRequest(BaseModel):
+    user_id: str = "default_user"
+    name: Optional[str] = Field(default=None, min_length=1, max_length=160)
+    description: Optional[str] = Field(default=None, max_length=2000)
+    category: Optional[str] = None
+    status: Optional[WorkflowStatus] = None
+    schedule: Optional[WorkflowScheduleConfig] = None
+    steps: Optional[List[WorkflowStepDefinition]] = None
+    notification_config: Optional[WorkflowNotificationConfig] = None
+    max_cost_budget_usd: Optional[float] = Field(default=None, ge=0.001, le=10.0)
+
+
+class WorkflowTriggerRunRequest(BaseModel):
+    user_id: str = "default_user"
+    trigger_source: Literal["manual", "scheduled", "test_dry_run"] = "manual"
+    is_dry_run: bool = False
+    runtime_inputs: Dict[str, Any] = Field(default_factory=dict)
+    idempotency_key: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class WorkflowApproveStepRequest(BaseModel):
+    user_id: str = "default_user"
+    step_id: str
+    approved: bool = True
+    user_note: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class WorkflowRetryRunRequest(BaseModel):
+    user_id: str = "default_user"
+    from_failed_step_only: bool = True
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
 

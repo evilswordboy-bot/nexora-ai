@@ -49,9 +49,9 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
-  // Workspace Views (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14)
-  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents';
-  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents') => void;
+  // Workspace Views (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15)
+  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows';
+  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows') => void;
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
@@ -83,8 +83,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Workspace Views State (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14)
-  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents'>('chat');
+  // Workspace Views State (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15)
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows'>('chat');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
 
   // Stage 7 Voice Intelligence State

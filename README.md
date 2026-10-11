@@ -320,4 +320,15 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 - [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 14 is complete. Do not proceed to Stage 15 until Stage 14 has been reviewed and approved.*
+
+## 📋 Stage 15: Workflow Automation Engine Checklist
+
+- [x] **Visual Workflow Builder & Templates (`/api/v1/workflows/*`, `WorkflowStudio.tsx`)**: Supports manual and scheduled triggers, sequential DAG task steps with dependencies, AI-agent (`research_agent`, `writing_agent`, `document_agent`, `productivity_agent`, etc.) and registered-tool (`calculator`, `web_search`, `document_retrieval`, `fact_check`, `translation`, `realtime_pulse`, `dispatch_external_message`, `delete_document`) actions, condition expressions (`always`, `previous_succeeded`, `contains:`, `not_contains:`, `equals:`), forward branching (`skip`, `fail_workflow`, `jump_to_step`), bounded retries (`0..3`), input/output templating (`{{workflow.input.<key>}}`, `{{steps.<step_id>.output}}`), pre-built templates, duplication, editing, deletion, validation, dry-run testing, activation, pause, and resume controls.
+- [x] **Persistent SQLite Job Scheduler & Execution History (`data/workflows/nexora_workflows.db`)**: Supports IANA time zones (`Asia/Kolkata`, `UTC`, `America/New_York`, etc.), start dates, recurrence rules (`once`, `hourly`, `daily`, `weekly`, `interval`), and calculated `next_run_at` timestamps. Prevents duplicate scheduled runs via slot idempotency keys (`sched:{workflow_id}:{next_run_iso}`), prevents overlapping runs when `allow_concurrent_runs=false`, blocks dependency cycles via Kahn's DAG algorithm, and safely recovers interrupted runs on worker restart (`POST /api/v1/workflows/scheduler/recover`).
+- [x] **Execution Monitoring & Honest Status Reporting**: Tracks `QUEUED`, `RUNNING`, `WAITING_FOR_APPROVAL`, `SUCCEEDED`, `FAILED`, `CANCELLED`, and `RETRYING` states with step-level duration, attempt counts, resolved inputs, and sensitive secret redaction. Never marks a workflow `SUCCEEDED` unless all non-skipped steps actually succeed.
+- [x] **In-App Notification Center & Verified External Delivery**: Records completion, failure, approval requests, and worker recovery alerts in SQLite. External webhook (`NOTIFICATION_WEBHOOK_URL`) and email (`SMTP_HOST`) channels report honest `webhook_not_configured` / `smtp_not_configured` status unless configured and confirmed by the external endpoint.
+- [x] **95/95 Automated Pytest Tests Passing** across Stages 1–15 (`tests/test_stage15_workflows.py`).
+- [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
+
+---
+*Stage 15 is complete. Do not proceed to Stage 16 until Stage 15 has been reviewed and approved.*

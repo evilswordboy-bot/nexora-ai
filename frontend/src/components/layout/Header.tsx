@@ -1,6 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
-import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network, Database, Users } from 'lucide-react';
+import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network, Database, Users, GitBranch } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -43,14 +43,14 @@ export const Header: React.FC = () => {
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Stage 14
+                Stage 15
               </span>
             </div>
           </div>
         </div>
 
         {/* Workspace Switcher */}
-        <div className="hidden md:flex items-center p-1 rounded-xl bg-midnight-950/80 border border-slate-800/80 ml-2">
+        <div className="hidden md:flex items-center p-1 rounded-xl bg-midnight-950/80 border border-slate-800/80 ml-2 overflow-x-auto">
           <button
             onClick={() => setActiveWorkspaceView('chat')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
@@ -61,6 +61,17 @@ export const Header: React.FC = () => {
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Chat & Search</span>
+          </button>
+          <button
+            onClick={() => setActiveWorkspaceView('workflows')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'workflows'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Workflows</span>
           </button>
           <button
             onClick={() => setActiveWorkspaceView('agents')}

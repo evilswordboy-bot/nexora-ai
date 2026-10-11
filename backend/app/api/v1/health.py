@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 14,
-        "stage_title": "Multi-Agent Intelligence System",
+        "stage": 15,
+        "stage_title": "Workflow Automation Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -32,6 +32,7 @@ async def health_check():
             "model_routing": "operational",
             "persistent_memory": "operational",
             "multi_agent_system": "operational",
+            "workflow_automation": "operational",
         },
     }
 
