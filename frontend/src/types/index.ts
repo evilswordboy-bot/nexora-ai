@@ -399,5 +399,87 @@ export interface ImageCompareResponse {
   created_at: string;
 }
 
+// Stage 11: Advanced Reasoning Engine Interfaces
+export type SubtaskStatus = 'PLANNED' | 'IN PROGRESS' | 'BLOCKED' | 'REVIEWING' | 'COMPLETE' | 'FAILED' | 'CANCELLED';
+export type PlanStatus = 'PLANNED' | 'IN PROGRESS' | 'BLOCKED' | 'REVIEWING' | 'COMPLETE' | 'CANCELLED';
+export type TaskComplexity = 'simple' | 'moderate' | 'complex';
+export type RiskLevel = 'low' | 'medium' | 'high';
 
+export interface ToolExecutionRecord {
+  tool_name: string;
+  inputs: Record<string, any>;
+  output_summary: string;
+  raw_output?: any;
+  success: boolean;
+  duration_ms: number;
+  error?: string;
+  untrusted_content_quarantined: boolean;
+  attempt: number;
+  executed_at: string;
+}
 
+export interface ReasoningSubtask {
+  id: string;
+  step_number: number;
+  title: string;
+  description: string;
+  status: SubtaskStatus;
+  depends_on: string[];
+  expected_output: string;
+  completion_criteria: string;
+  tool_name?: string;
+  tool_input: Record<string, any>;
+  tool_executions: ToolExecutionRecord[];
+  result_summary?: string;
+  verification_passed?: boolean;
+  verification_note?: string;
+  requires_approval: boolean;
+  approval_reason?: string;
+  approval_granted?: boolean;
+  retry_count: number;
+  max_retries: number;
+  error_message?: string;
+}
+
+export interface TaskClassification {
+  complexity: TaskComplexity;
+  requires_planning: boolean;
+  required_tools: string[];
+  uncertainty_level: 'low' | 'medium' | 'high';
+  risk_level: RiskLevel;
+  has_consequential_actions: boolean;
+  consequential_action_details?: string;
+  missing_information: string[];
+  rationale: string;
+}
+
+export interface ReasoningPlan {
+  id: string;
+  query: string;
+  classification: TaskClassification;
+  status: PlanStatus;
+  assumptions: string[];
+  clarification_questions: string[];
+  subtasks: ReasoningSubtask[];
+  final_answer?: string;
+  execution_summary?: string;
+  uncertainty_notes: string[];
+  total_tool_calls: number;
+  revision_history: string[];
+  provider: string;
+  model: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ToolDefinitionItem {
+  name: string;
+  description: string;
+  parameters_schema: Record<string, any>;
+  enabled: boolean;
+  stage_introduced: number;
+  requires_approval: boolean;
+  risk_level: string;
+  timeout_seconds: number;
+  treats_output_as_untrusted: boolean;
+}

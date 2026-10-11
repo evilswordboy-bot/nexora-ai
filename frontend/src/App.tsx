@@ -12,6 +12,7 @@ import { FactCheckWorkspace } from './components/factcheck/FactCheckWorkspace';
 import { TranslationWorkspace } from './components/translation/TranslationWorkspace';
 import { RealTimeWorkspace } from './components/realtime/RealTimeWorkspace';
 import { VisionStudio } from './components/vision/VisionStudio';
+import { ReasoningStudio } from './components/reasoning/ReasoningStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -36,6 +37,8 @@ const MainLayout: React.FC = () => {
           <RealTimeWorkspace />
         ) : activeWorkspaceView === 'vision' ? (
           <VisionStudio />
+        ) : activeWorkspaceView === 'reasoning' ? (
+          <ReasoningStudio />
         ) : (
           <ChatArea />
         )}

@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 10,
-        "stage_title": "Foundation Integration & System Audit",
+        "stage": 11,
+        "stage_title": "Advanced Reasoning Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -28,6 +28,7 @@ async def health_check():
             "voice": "operational",
             "realtime_feed": "operational",
             "vision_intelligence": "operational",
+            "reasoning_engine": "operational",
         },
     }
 

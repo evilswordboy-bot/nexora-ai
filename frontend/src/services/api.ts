@@ -28,6 +28,8 @@ import {
   OCRResponse,
   ImageCompareRequest,
   ImageCompareResponse,
+  ReasoningPlan,
+  ToolDefinitionItem,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -579,7 +581,101 @@ export const api = {
       }),
     });
   },
+
+  // Stage 11: Advanced Reasoning Engine Methods
+  async analyzeReasoning(
+    params: {
+      query: string;
+      auto_execute?: boolean;
+      force_plan?: boolean;
+      max_retries?: number;
+      context_notes?: string;
+    },
+    settings?: UserSettings
+  ): Promise<ReasoningPlan> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<ReasoningPlan>('/reasoning/analyze', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: params.query,
+        auto_execute: params.auto_execute ?? true,
+        force_plan: params.force_plan ?? false,
+        max_retries: params.max_retries ?? 2,
+        context_notes: params.context_notes,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getReasoningPlans(): Promise<ReasoningPlan[]> {
+    return request<ReasoningPlan[]>('/reasoning/plans');
+  },
+
+  async getReasoningPlan(planId: string): Promise<ReasoningPlan> {
+    return request<ReasoningPlan>(`/reasoning/plans/${planId}`);
+  },
+
+  async executeReasoningPlan(planId: string): Promise<ReasoningPlan> {
+    return request<ReasoningPlan>(`/reasoning/plans/${planId}/execute`, {
+      method: 'POST',
+    });
+  },
+
+  async approveReasoningSubtask(
+    planId: string,
+    params: {
+      subtask_id: string;
+      approved: boolean;
+      user_note?: string;
+      auto_resume?: boolean;
+    },
+    settings?: UserSettings
+  ): Promise<ReasoningPlan> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<ReasoningPlan>(`/reasoning/plans/${planId}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        auto_resume: params.auto_resume ?? true,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async reviseReasoningPlan(
+    planId: string,
+    params: {
+      revised_goal?: string;
+      clarification_answers?: Record<string, string>;
+      updated_subtask_titles?: string[];
+      auto_execute?: boolean;
+    },
+    settings?: UserSettings
+  ): Promise<ReasoningPlan> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<ReasoningPlan>(`/reasoning/plans/${planId}/revise`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        auto_execute: params.auto_execute ?? true,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'gemini-1.5-flash',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async cancelReasoningPlan(planId: string): Promise<ReasoningPlan> {
+    return request<ReasoningPlan>(`/reasoning/plans/${planId}/cancel`, {
+      method: 'POST',
+    });
+  },
+
+  async getRegisteredTools(): Promise<ToolDefinitionItem[]> {
+    return request<ToolDefinitionItem[]>('/reasoning/tools');
+  },
 };
-
-
-

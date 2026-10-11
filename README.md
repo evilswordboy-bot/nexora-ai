@@ -1,6 +1,26 @@
-# NEXORA AI — Stage 10: Foundation Integration & System Audit
+# NEXORA AI — Stage 11: Advanced Reasoning Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 10** establishes the verified **Foundation Integration & System Audit**: a fully harmonized architecture connecting all 9 preceding capabilities (AI Chat, Web Search, Deep Research, Documents Vault RAG, Fact Checking, Multilingual Translation, Voice Intelligence, Real-Time Live Feed, and Computer Vision) through unified APIs, consistent safety enforcement, shared conversation context, reusable components, and rigorous automated regression verification.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 11** introduces the **Advanced Reasoning & Task-Planning Engine**: an adaptive problem-solving layer that classifies task complexity, answers simple queries directly without unnecessary overhead, decomposes complex requests into dependency-tracked subtasks (`PLANNED`, `IN PROGRESS`, `BLOCKED`, `REVIEWING`, `COMPLETE`), executes real tools via `ToolRegistry` (including a safe AST mathematical calculator, live web search, document vault retrieval, fact-checking, and multilingual translation), verifies subtask outputs with automatic retry recovery, and enforces explicit user approval gates before consequential actions.
+
+---
+
+## 🌟 Stage 11 Core Deliverables
+
+- **Adaptive Problem Decomposition (`AdvancedReasoningEngine`)**:
+  - Classifies incoming requests by complexity (`simple`, `moderate`, `complex`), required tools, uncertainty level, and risk level.
+  - Answers simple questions directly without unnecessary planning overhead.
+  - Decomposes multi-step tasks into structured `ReasoningSubtask` pipelines with explicit `depends_on` dependencies, `expected_output`, and `completion_criteria`.
+  - Tracks live subtask and plan states (`PLANNED`, `IN PROGRESS`, `BLOCKED`, `REVIEWING`, `COMPLETE`, `CANCELLED`).
+  - Supports full plan inspection, goal/parameter revision (`/revise`), and cancellation (`/cancel`).
+- **Modular Tool-Assisted Execution (`ToolRegistry`)**:
+  - Safe AST-based mathematical expression evaluator (`calculator`) supporting arithmetic, powers, roots, trigonometry, logarithms, and percentages without `eval()`.
+  - Integrated real tool handlers for `web_search` (Stage 3), `document_retrieval` (Stage 4), `fact_check` (Stage 5), `translation` (Stage 6), `realtime_pulse` (Stage 8), and consequential tools (`delete_document`, `dispatch_external_message`).
+  - Enforces parameter schema validation, execution timeouts, and `<untrusted_tool_output>` prompt-injection quarantine.
+- **Verification, Retry Recovery & Safety Permissions**:
+  - Evaluates each subtask result against completion criteria (`REVIEWING` -> `COMPLETE`) and retries recoverable failures within configurable limits.
+  - Enforces least-privilege access: high-risk consequential actions automatically pause in `BLOCKED` state and require explicit user authorization (`/approve`) before execution.
+- **Interactive Reasoning Studio UI**:
+  - Accessible via the top navigation bar (**Reasoning** tab) with preset scenarios, live subtask status badges, tool execution telemetry logs, inline approval gates, plan revision controls, and expandable execution audit summaries.
 
 ---
 
@@ -11,14 +31,14 @@
   - Context grounding seamlessly merges Lexical BM25 RAG chunks, OCR textual extracts, and web search evidence within strict prompt-injection security envelopes.
   - Conversation persistence preserves citations, document grounding badges, language directives, and model provenance across chat sessions.
 - **Cross-Engine Safety Guardrail Consistency**:
-  - Unified enforcement of the `AdultContentSafetyGuard` across text chat prompts, multilingual translations, voice text-to-speech audio synthesis, and image OCR text.
+  - Unified enforcement of the `AdultContentSafetyGuard` across text chat prompts, multilingual translations, voice text-to-speech audio synthesis,image OCR text, and reasoning plans.
   - Zero tolerance for severe harm patterns while preserving genuine medical, anatomical, and educational inquiries.
 - **Centralized Subsystem Diagnostics & Health Architecture**:
-  - Enhanced `/api/v1/health` providing real-time subsystem operational diagnostics across `chat`, `search_research`, `documents_vault`, `fact_checking`, `multilingual`, `voice`, `realtime_feed`, and `vision_intelligence`.
+  - Enhanced `/api/v1/health` providing real-time subsystem operational diagnostics across `chat`, `search_research`, `documents_vault`, `fact_checking`, `multilingual`, `voice`, `realtime_feed`, `vision_intelligence`, and `reasoning_engine`.
   - Comprehensive provider configuration transparency (`gemini`, `openai`, `anthropic`, `offline`).
 - **Comprehensive Quality Assurance & Zero Regression**:
-  - 60/60 automated backend Pytest tests passing cleanly across all 10 engine test suites.
-  - Production TypeScript & Vite frontend build passing with 0 errors across 1611 transformed modules.
+  - 67/67 automated backend Pytest tests passing cleanly across all 11 engine test suites.
+  - Production TypeScript & Vite frontend build passing with 0 errors.
   - Elimination of broken navigation, duplicate components, or conflicting client states.
 
 - **Multimodal Image Upload & Technical Verification**:

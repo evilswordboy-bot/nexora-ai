@@ -12,7 +12,7 @@ def test_system_audit_health_subsystems():
     assert response.status_code == 200
     data = response.json()
     assert data["status"] == "healthy"
-    assert data["stage"] == 10
+    assert data["stage"] >= 10
     assert "subsystems" in data
     
     subsystems = data["subsystems"]

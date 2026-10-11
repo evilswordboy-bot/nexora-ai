@@ -535,6 +535,107 @@ class ImageCompareResponse(BaseModel):
     created_at: datetime = Field(default_factory=utc_now)
 
 
+# --- Stage 11: Advanced Reasoning Engine Schemas ---
+SubtaskStatus = Literal["PLANNED", "IN PROGRESS", "BLOCKED", "REVIEWING", "COMPLETE", "FAILED", "CANCELLED"]
+PlanStatus = Literal["PLANNED", "IN PROGRESS", "BLOCKED", "REVIEWING", "COMPLETE", "CANCELLED"]
+TaskComplexity = Literal["simple", "moderate", "complex"]
+RiskLevel = Literal["low", "medium", "high"]
 
 
+class ToolExecutionRecord(BaseModel):
+    tool_name: str
+    inputs: Dict[str, Any] = Field(default_factory=dict)
+    output_summary: str
+    raw_output: Optional[Any] = None
+    success: bool = True
+    duration_ms: float = 0.0
+    error: Optional[str] = None
+    untrusted_content_quarantined: bool = True
+    attempt: int = 1
+    executed_at: datetime = Field(default_factory=utc_now)
+
+
+class ReasoningSubtask(BaseModel):
+    id: str
+    step_number: int
+    title: str
+    description: str
+    status: SubtaskStatus = "PLANNED"
+    depends_on: List[str] = Field(default_factory=list)
+    expected_output: str = ""
+    completion_criteria: str = ""
+    tool_name: Optional[str] = None
+    tool_input: Dict[str, Any] = Field(default_factory=dict)
+    tool_executions: List[ToolExecutionRecord] = Field(default_factory=list)
+    result_summary: Optional[str] = None
+    verification_passed: Optional[bool] = None
+    verification_note: Optional[str] = None
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approval_granted: Optional[bool] = None
+    retry_count: int = 0
+    max_retries: int = 2
+    error_message: Optional[str] = None
+
+
+class TaskClassification(BaseModel):
+    complexity: TaskComplexity
+    requires_planning: bool
+    required_tools: List[str] = Field(default_factory=list)
+    uncertainty_level: Literal["low", "medium", "high"] = "low"
+    risk_level: RiskLevel = "low"
+    has_consequential_actions: bool = False
+    consequential_action_details: Optional[str] = None
+    missing_information: List[str] = Field(default_factory=list)
+    rationale: str = ""
+
+
+class ReasoningPlan(BaseModel):
+    id: str
+    query: str
+    classification: TaskClassification
+    status: PlanStatus = "PLANNED"
+    assumptions: List[str] = Field(default_factory=list)
+    clarification_questions: List[str] = Field(default_factory=list)
+    subtasks: List[ReasoningSubtask] = Field(default_factory=list)
+    final_answer: Optional[str] = None
+    execution_summary: Optional[str] = None
+    uncertainty_notes: List[str] = Field(default_factory=list)
+    total_tool_calls: int = 0
+    revision_history: List[str] = Field(default_factory=list)
+    provider: str = "system"
+    model: str = "nexora-reasoning-v1"
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class ReasoningAnalyzeRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=8000)
+    auto_execute: bool = True
+    force_plan: bool = False
+    max_retries: int = Field(default=2, ge=0, le=5)
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+    context_notes: Optional[str] = None
+
+
+class ReasoningReviseRequest(BaseModel):
+    revised_goal: Optional[str] = None
+    clarification_answers: Optional[Dict[str, str]] = None
+    updated_subtask_titles: Optional[List[str]] = None
+    auto_execute: bool = True
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class ReasoningApprovalRequest(BaseModel):
+    subtask_id: str
+    approved: bool
+    user_note: Optional[str] = None
+    auto_resume: bool = True
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
 
