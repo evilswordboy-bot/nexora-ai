@@ -1427,4 +1427,238 @@ class ComputerApproveStepRequest(BaseModel):
     user_note: Optional[str] = None
 
 
+# --- Stage 17: File Management & Workspace Automation Engine Schemas ---
+FileCategory = Literal[
+    "document",
+    "spreadsheet",
+    "data",
+    "markdown_text",
+    "code",
+    "image",
+    "folder",
+    "other",
+]
+
+FileOperationType = Literal[
+    "create_folder",
+    "create_file",
+    "edit_file",
+    "rename_item",
+    "copy_item",
+    "move_item",
+    "convert_file",
+    "delete_to_trash",
+    "restore_from_trash",
+    "restore_version",
+    "organize_workspace",
+    "cleanup_duplicates",
+    "sync_stage4_vault",
+    "import_browser_session",
+]
+
+FileOperationStatus = Literal[
+    "PLANNED",
+    "SIMULATED",
+    "WAITING_FOR_APPROVAL",
+    "RUNNING",
+    "VERIFIED_SUCCEEDED",
+    "ROLLED_BACK",
+    "FAILED",
+    "CANCELLED",
+]
+
+OrganizeRuleStrategy = Literal[
+    "by_category",
+    "by_extension",
+    "by_date_month",
+    "custom_rules",
+]
+
+
+class WorkspaceFileItem(BaseModel):
+    relative_path: str
+    name: str
+    parent_dir: str = ""
+    is_dir: bool = False
+    extension: str = ""
+    category: FileCategory = "other"
+    size_bytes: int = 0
+    sha256_hash: Optional[str] = None
+    modified_at: datetime = Field(default_factory=utc_now)
+    is_editable_text: bool = False
+    is_processable_document: bool = False
+    supported_conversions: List[str] = Field(default_factory=list)
+    version_count: int = 0
+    indexed_doc_id: Optional[str] = None
+    snippet_match: Optional[str] = None
+
+
+class WorkspaceFileReadResponse(BaseModel):
+    item: WorkspaceFileItem
+    content: str = ""
+    quarantined_content: str = ""
+    untrusted_content_isolated: bool = True
+    parsed_summary: Optional[Dict[str, Any]] = None
+    tables_preview: List[Dict[str, Any]] = Field(default_factory=list)
+    versions: List["WorkspaceFileVersion"] = Field(default_factory=list)
+
+
+class WorkspaceFileVersion(BaseModel):
+    version_id: str
+    user_id: str = "default_user"
+    relative_path: str
+    version_number: int
+    sha256_hash: str
+    size_bytes: int
+    reason: str = "auto_backup_before_edit"
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class WorkspaceTrashItem(BaseModel):
+    trash_id: str
+    user_id: str = "default_user"
+    original_path: str
+    name: str
+    is_dir: bool = False
+    size_bytes: int = 0
+    sha256_hash: Optional[str] = None
+    reason: str = "user_deleted"
+    deleted_at: datetime = Field(default_factory=utc_now)
+
+
+class DuplicateFileGroup(BaseModel):
+    sha256_hash: str
+    size_bytes: int
+    duplicate_count: int
+    wasted_bytes: int
+    primary_file: str
+    duplicate_files: List[str] = Field(default_factory=list)
+
+
+class FilePlannedChange(BaseModel):
+    action: str
+    source_path: str
+    destination_path: Optional[str] = None
+    size_bytes: int = 0
+    reason: str = ""
+    overwrites_existing: bool = False
+
+
+class FileOperationPreview(BaseModel):
+    operation_type: FileOperationType
+    risk_level: Literal["low", "medium", "high"] = "low"
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    affected_count: int = 0
+    total_bytes_affected: int = 0
+    planned_changes: List[FilePlannedChange] = Field(default_factory=list)
+    rollback_supported: bool = True
+
+
+class FileOperationRecord(BaseModel):
+    operation_id: str
+    user_id: str = "default_user"
+    operation_type: FileOperationType
+    status: FileOperationStatus = "PLANNED"
+    summary: str = ""
+    verified: bool = False
+    verification_detail: str = ""
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approved: Optional[bool] = None
+    preview: Optional[FileOperationPreview] = None
+    affected_paths: List[str] = Field(default_factory=list)
+    result_data: Dict[str, Any] = Field(default_factory=dict)
+    rollback_supported: bool = False
+    rolled_back: bool = False
+    error_message: Optional[str] = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class FileCreateFolderRequest(BaseModel):
+    user_id: str = "default_user"
+    relative_path: str = Field(..., min_length=1, max_length=260)
+
+
+class FileWriteRequest(BaseModel):
+    user_id: str = "default_user"
+    relative_path: str = Field(..., min_length=1, max_length=260)
+    content: str = Field(default="", max_length=2_000_000)
+    structured_rows: Optional[List[Dict[str, Any]]] = None
+    overwrite: bool = False
+    confirmed_overwrite: bool = False
+    backup_reason: str = "edit_preserve_original"
+
+
+class FileTransferRequest(BaseModel):
+    user_id: str = "default_user"
+    action: Literal["rename", "copy", "move"] = "rename"
+    source_path: str = Field(..., min_length=1, max_length=260)
+    destination_path: str = Field(..., min_length=1, max_length=260)
+    overwrite: bool = False
+    confirmed_overwrite: bool = False
+
+
+class FileConvertRequest(BaseModel):
+    user_id: str = "default_user"
+    source_path: str = Field(..., min_length=1, max_length=260)
+    target_format: Literal["txt", "md", "csv", "json", "docx", "xlsx"]
+    destination_path: Optional[str] = None
+    overwrite: bool = False
+    confirmed_overwrite: bool = False
+
+
+class FileSearchRequest(BaseModel):
+    user_id: str = "default_user"
+    query: str = ""
+    directory: str = ""
+    extensions: List[str] = Field(default_factory=list)
+    category: Optional[FileCategory] = None
+    search_content: bool = True
+    include_stage4_indexed: bool = True
+    modified_after: Optional[datetime] = None
+    modified_before: Optional[datetime] = None
+    min_size_bytes: Optional[int] = None
+    max_size_bytes: Optional[int] = None
+
+
+class FileOrganizeRequest(BaseModel):
+    user_id: str = "default_user"
+    directory: str = ""
+    strategy: OrganizeRuleStrategy = "by_category"
+    custom_extension_map: Dict[str, str] = Field(default_factory=dict)
+    preview_only: bool = False
+    confirmed: bool = False
+
+
+class FileDeleteRequest(BaseModel):
+    user_id: str = "default_user"
+    paths: List[str] = Field(..., min_length=1)
+    reason: str = "user_requested_cleanup"
+    preview_only: bool = False
+    confirmed: bool = False
+
+
+class FileDuplicateCleanupRequest(BaseModel):
+    user_id: str = "default_user"
+    directory: str = ""
+    preview_only: bool = False
+    confirmed: bool = False
+
+
+class FileOperationApproveRequest(BaseModel):
+    user_id: str = "default_user"
+    approved: bool = True
+    user_note: Optional[str] = None
+
+
+class FileBrowserImportRequest(BaseModel):
+    user_id: str = "default_user"
+    session_id: str
+    target_filename: str = "browser_capture.md"
+    overwrite: bool = True
+    confirmed_overwrite: bool = True
+
+
 

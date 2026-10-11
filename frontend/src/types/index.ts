@@ -1117,5 +1117,165 @@ export interface ComputerCapabilitiesResponse {
   architecture_disclosure: string;
 }
 
+// Stage 17: File Management & Workspace Automation Engine Interfaces
+export type FileCategory =
+  | 'document'
+  | 'spreadsheet'
+  | 'data'
+  | 'markdown_text'
+  | 'code'
+  | 'image'
+  | 'folder'
+  | 'other';
+
+export type FileOperationType =
+  | 'create_folder'
+  | 'create_file'
+  | 'edit_file'
+  | 'rename_item'
+  | 'copy_item'
+  | 'move_item'
+  | 'convert_file'
+  | 'delete_to_trash'
+  | 'restore_from_trash'
+  | 'restore_version'
+  | 'organize_workspace'
+  | 'cleanup_duplicates'
+  | 'sync_stage4_vault'
+  | 'import_browser_session';
+
+export type FileOperationStatus =
+  | 'PLANNED'
+  | 'SIMULATED'
+  | 'WAITING_FOR_APPROVAL'
+  | 'RUNNING'
+  | 'VERIFIED_SUCCEEDED'
+  | 'ROLLED_BACK'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export type OrganizeRuleStrategy =
+  | 'by_category'
+  | 'by_extension'
+  | 'by_date_month'
+  | 'custom_rules';
+
+export interface WorkspaceFileItem {
+  relative_path: string;
+  name: string;
+  parent_dir: string;
+  is_dir: boolean;
+  extension: string;
+  category: FileCategory;
+  size_bytes: number;
+  sha256_hash?: string | null;
+  modified_at: string;
+  is_editable_text: boolean;
+  is_processable_document: boolean;
+  supported_conversions: string[];
+  version_count: number;
+  indexed_doc_id?: string | null;
+  snippet_match?: string | null;
+}
+
+export interface WorkspaceFileVersion {
+  version_id: string;
+  user_id: string;
+  relative_path: string;
+  version_number: number;
+  sha256_hash: string;
+  size_bytes: number;
+  reason: string;
+  created_at: string;
+}
+
+export interface WorkspaceFileReadResponse {
+  item: WorkspaceFileItem;
+  content: string;
+  quarantined_content: string;
+  untrusted_content_isolated: boolean;
+  parsed_summary?: Record<string, any> | null;
+  tables_preview: Record<string, any>[];
+  versions: WorkspaceFileVersion[];
+}
+
+export interface WorkspaceTrashItem {
+  trash_id: string;
+  user_id: string;
+  original_path: string;
+  name: string;
+  is_dir: boolean;
+  size_bytes: number;
+  sha256_hash?: string | null;
+  reason: string;
+  deleted_at: string;
+}
+
+export interface DuplicateFileGroup {
+  sha256_hash: string;
+  size_bytes: number;
+  duplicate_count: number;
+  wasted_bytes: number;
+  primary_file: string;
+  duplicate_files: string[];
+}
+
+export interface FilePlannedChange {
+  action: string;
+  source_path: string;
+  destination_path?: string | null;
+  size_bytes: number;
+  reason: string;
+  overwrites_existing: boolean;
+}
+
+export interface FileOperationPreview {
+  operation_type: FileOperationType;
+  risk_level: 'low' | 'medium' | 'high';
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  affected_count: number;
+  total_bytes_affected: number;
+  planned_changes: FilePlannedChange[];
+  rollback_supported: boolean;
+}
+
+export interface FileOperationRecord {
+  operation_id: string;
+  user_id: string;
+  operation_type: FileOperationType;
+  status: FileOperationStatus;
+  summary: string;
+  verified: boolean;
+  verification_detail: string;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  approved?: boolean | null;
+  preview?: FileOperationPreview | null;
+  affected_paths: string[];
+  result_data: Record<string, any>;
+  rollback_supported: boolean;
+  rolled_back: boolean;
+  error_message?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FileWorkspaceCapabilitiesResponse {
+  stage: number;
+  engine: string;
+  authorized_workspace_root: string;
+  workspace_exists: boolean;
+  max_file_size_bytes: number;
+  max_bulk_files: number;
+  bulk_approval_threshold: number;
+  allowed_extensions: string[];
+  editable_text_extensions: string[];
+  processable_document_extensions: string[];
+  trash_count: number;
+  recent_operations_count: number;
+  security_boundaries: string[];
+}
+
 
 

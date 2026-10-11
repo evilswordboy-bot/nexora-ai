@@ -122,6 +122,26 @@ class Settings(BaseModel):
         if d.strip()
     ]
 
+    # Stage 17: File Management & Workspace Automation Engine
+    file_workspace_dir: str = os.getenv(
+        "FILE_WORKSPACE_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "file_workspace"),
+    )
+    file_workspace_db_path: str = os.getenv(
+        "FILE_WORKSPACE_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "file_workspace" / "nexora_files.db"),
+    )
+    file_workspace_max_file_size_bytes: int = int(
+        os.getenv("FILE_WORKSPACE_MAX_FILE_SIZE_BYTES", str(10 * 1024 * 1024))
+    )
+    file_workspace_max_bulk_files: int = int(os.getenv("FILE_WORKSPACE_MAX_BULK_FILES", "50"))
+    file_workspace_bulk_approval_threshold: int = int(
+        os.getenv("FILE_WORKSPACE_BULK_APPROVAL_THRESHOLD", "3")
+    )
+    file_workspace_max_versions_per_file: int = int(
+        os.getenv("FILE_WORKSPACE_MAX_VERSIONS_PER_FILE", "10")
+    )
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

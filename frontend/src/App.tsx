@@ -18,6 +18,7 @@ import { MemoryStudio } from './components/memory/MemoryStudio';
 import { AgentStudio } from './components/agents/AgentStudio';
 import { WorkflowStudio } from './components/workflows/WorkflowStudio';
 import { ComputerStudio } from './components/computer/ComputerStudio';
+import { FileWorkspaceStudio } from './components/files/FileWorkspaceStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -54,6 +55,8 @@ const MainLayout: React.FC = () => {
           <WorkflowStudio />
         ) : activeWorkspaceView === 'computer' ? (
           <ComputerStudio />
+        ) : activeWorkspaceView === 'files' ? (
+          <FileWorkspaceStudio />
         ) : (
           <ChatArea />
         )}

@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 16,
-        "stage_title": "Computer Control & Digital Execution Engine",
+        "stage": 17,
+        "stage_title": "File Management & Workspace Automation Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -34,6 +34,7 @@ async def health_check():
             "multi_agent_system": "operational",
             "workflow_automation": "operational",
             "computer_control": "operational",
+            "file_workspace": "operational",
         },
     }
 

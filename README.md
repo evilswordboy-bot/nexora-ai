@@ -342,4 +342,16 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 - [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 16 is complete. Do not proceed to Stage 17 until Stage 16 has been reviewed and approved.*
+
+## 📋 Stage 17: File Management & Workspace Automation Engine Checklist
+
+- [x] **Strict Workspace Boundary & Path Security (`FileWorkspaceEngine` in `backend/app/services/files/engine.py`)**: Isolates files per user (`data/file_workspace/<user_id>`), normalizes paths, blocks directory traversal (`..`), drive letters, null bytes, internal system folders (`.nexora_trash`, `.nexora_versions`), forbidden executable extensions (`.exe`, `.ps1`, `.bat`), credential files (`.env`, `id_rsa`), and unauthorized symbolic-link escapes.
+- [x] **File Discovery, Search & Multi-Format Processing**: Lists files/folders with SHA-256 content hashes; searches filenames, extensions, categories, date/size bounds, and full-text content across `.txt`, `.md`, `.csv`, `.json`, `.docx`, `.xlsx`, `.pdf`, plus Stage 4 Document Vault chunks; wraps file content in `<untrusted_file_content>` tags.
+- [x] **Creation, Editing, Conversions & Automatic Version History**: Creates and edits text/Markdown/CSV/JSON/DOCX/XLSX files; preserves originals via immutable backup snapshots in `.nexora_versions` before every overwrite/edit; supports 1-click version restoration with SHA-256 verification; converts between `CSV`, `JSON`, `XLSX`, `MD`, `TXT`, and `DOCX`.
+- [x] **SHA-256 Duplicate Detection, Rule-Based Organization, Recoverable Trash & Rollback**: Detects duplicate files by SHA-256 hash; previews planned changes before bulk organization or cleanup; requires explicit confirmation (`WAITING_FOR_APPROVAL`) before deletes, unconfirmed overwrites, or bulk moves; sends deleted files to Recoverable Trash (`.nexora_trash`) with 1-click restore; and supports 1-click operation rollback.
+- [x] **Cross-Stage Integration & File Workspace Studio UI (`FileWorkspaceStudio.tsx`)**: Syncs workspace files to Stage 4 Document Vault (`/api/v1/files/sync-stage4`), imports Stage 16 Browser Automation captures (`/api/v1/files/import-browser-session`), and registers `workspace_file_manager` and `workspace_bulk_organizer` in `ToolRegistry`.
+- [x] **108/108 Automated Pytest Tests Passing** across Stages 1–17 (`tests/test_stage17_files.py`).
+- [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
+
+---
+*Stage 17 is complete. Do not proceed to Stage 18 until Stage 17 has been reviewed and approved.*

@@ -353,6 +353,61 @@ class ToolRegistry:
             handler=self._handle_computer_workspace_task,
         )
 
+        # 12. Stage 17: Controlled Workspace File Manager Tool
+        self.register(
+            tool=ToolDefinition(
+                name="workspace_file_manager",
+                description="Lists, searches, reads, finds duplicates, creates, or converts files inside the Stage 17 Authorized File Workspace.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "list",
+                            "description": "list | search | read | find_duplicates | create_file | convert_file",
+                        },
+                        "path": {"type": "string", "default": ""},
+                        "query": {"type": "string", "default": ""},
+                        "content": {"type": "string", "default": ""},
+                        "target_format": {"type": "string", "default": "json"},
+                        "user_id": {"type": "string", "default": "default_user"},
+                    },
+                },
+                stage_introduced=17,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_workspace_file_manager,
+        )
+
+        # 13. Stage 17: Consequential Bulk Workspace Organizer & Cleanup Tool (Requires Approval)
+        self.register(
+            tool=ToolDefinition(
+                name="workspace_bulk_organizer",
+                description="Organizes workspace files into structured folders or moves duplicates/selected files to Recoverable Trash. Consequential action requiring explicit user approval.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "organize_workspace",
+                            "description": "organize_workspace | cleanup_duplicates | delete_to_trash",
+                        },
+                        "strategy": {"type": "string", "default": "by_category"},
+                        "directory": {"type": "string", "default": ""},
+                        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
+                        "user_id": {"type": "string", "default": "default_user"},
+                    },
+                },
+                stage_introduced=17,
+                requires_approval=True,
+                risk_level="high",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_workspace_bulk_organizer,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -467,7 +522,7 @@ class ToolRegistry:
         for chunk, score, fname in passages:
             lines.append(f"[{fname} p.{chunk.page_number or 1}]: {chunk.content[:220]}")
             chunks_out.append({
-                "doc_id": chunk.doc_id,
+                "doc_id": getattr(chunk, "document_id", getattr(chunk, "doc_id", "")),
                 "filename": fname,
                 "page_number": chunk.page_number,
                 "score": score,
@@ -647,6 +702,131 @@ class ToolRegistry:
             "status": session.status,
             "verified": session.verified_completion,
             "summary": session.final_summary,
+        }
+
+    async def _handle_workspace_file_manager(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.files.engine import file_workspace_engine
+        from app.models.schemas import (
+            FileSearchRequest,
+            FileWriteRequest,
+            FileConvertRequest,
+        )
+
+        action = str(params.get("action", "list")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        path = str(params.get("path", "")).strip()
+
+        if action == "read":
+            read_res = file_workspace_engine.read_file(user_id=user_id, relative_path=path)
+            return {
+                "action": "read",
+                "relative_path": read_res.item.relative_path,
+                "sha256_hash": read_res.item.sha256_hash,
+                "size_bytes": read_res.item.size_bytes,
+                "summary": read_res.quarantined_content[:800],
+            }
+        if action == "search":
+            query = str(params.get("query", "")).strip()
+            search_res = file_workspace_engine.search_items(
+                FileSearchRequest(user_id=user_id, query=query, directory=path, search_content=True)
+            )
+            names = [it.relative_path for it in search_res["items"][:10]]
+            return {
+                "action": "search",
+                "query": query,
+                "total_matches": search_res["total_matches"],
+                "matches": names,
+                "summary": f"Found {search_res['total_matches']} matching workspace file(s): {', '.join(names)}",
+            }
+        if action == "find_duplicates":
+            dups = file_workspace_engine.find_duplicates(user_id=user_id, directory=path)
+            return {
+                "action": "find_duplicates",
+                "duplicate_groups": len(dups),
+                "groups": [g.model_dump(mode="json") for g in dups],
+                "summary": f"Detected {len(dups)} duplicate file group(s) by SHA-256 content hash.",
+            }
+        if action == "create_file":
+            content = str(params.get("content", ""))
+            op = file_workspace_engine.write_file(
+                FileWriteRequest(
+                    user_id=user_id,
+                    relative_path=path or "generated_note.md",
+                    content=content,
+                    overwrite=False,
+                )
+            )
+            return {
+                "action": "create_file",
+                "operation_id": op.operation_id,
+                "verified": op.verified,
+                "summary": op.summary,
+            }
+        if action == "convert_file":
+            target_fmt = str(params.get("target_format", "json")).strip().lower()
+            op = file_workspace_engine.convert_file(
+                FileConvertRequest(
+                    user_id=user_id,
+                    source_path=path,
+                    target_format=target_fmt,  # type: ignore[arg-type]
+                    overwrite=True,
+                    confirmed_overwrite=True,
+                )
+            )
+            return {
+                "action": "convert_file",
+                "operation_id": op.operation_id,
+                "verified": op.verified,
+                "summary": op.summary,
+            }
+
+        items = file_workspace_engine.list_items(user_id=user_id, directory=path, recursive=True)
+        paths_list = [it.relative_path for it in items[:25]]
+        return {
+            "action": "list",
+            "total_items": len(items),
+            "items": paths_list,
+            "summary": f"Listed {len(items)} item(s) in workspace: {', '.join(paths_list[:10])}",
+        }
+
+    async def _handle_workspace_bulk_organizer(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.files.engine import file_workspace_engine
+        from app.models.schemas import (
+            FileOrganizeRequest,
+            FileDuplicateCleanupRequest,
+            FileDeleteRequest,
+        )
+
+        action = str(params.get("action", "organize_workspace")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        directory = str(params.get("directory", "")).strip()
+
+        if action == "cleanup_duplicates":
+            op = file_workspace_engine.cleanup_duplicates(
+                FileDuplicateCleanupRequest(user_id=user_id, directory=directory, confirmed=True)
+            )
+        elif action == "delete_to_trash":
+            paths = list(params.get("paths") or [])
+            op = file_workspace_engine.delete_to_trash(
+                FileDeleteRequest(user_id=user_id, paths=paths, confirmed=True)
+            )
+        else:
+            strategy = str(params.get("strategy", "by_category")).strip()
+            if strategy not in ("by_category", "by_extension", "by_date_month", "custom_rules"):
+                strategy = "by_category"
+            op = file_workspace_engine.organize_workspace(
+                FileOrganizeRequest(
+                    user_id=user_id,
+                    directory=directory,
+                    strategy=strategy,  # type: ignore[arg-type]
+                    confirmed=True,
+                )
+            )
+        return {
+            "operation_id": op.operation_id,
+            "status": op.status,
+            "verified": op.verified,
+            "summary": op.summary,
         }
 
 

@@ -60,6 +60,15 @@ import {
   ComputerCapabilitiesResponse,
   ComputerExecutionSession,
   ComputerTargetDomain,
+  DuplicateFileGroup,
+  FileCategory,
+  FileOperationRecord,
+  FileWorkspaceCapabilitiesResponse,
+  OrganizeRuleStrategy,
+  WorkspaceFileItem,
+  WorkspaceFileReadResponse,
+  WorkspaceFileVersion,
+  WorkspaceTrashItem,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -1292,6 +1301,300 @@ export const api = {
   async getComputerAuditLogs(sessionId?: string): Promise<ComputerAuditLogEntry[]> {
     const q = sessionId ? `?session_id=${encodeURIComponent(sessionId)}` : '';
     return request<ComputerAuditLogEntry[]>(`/computer/audit-logs${q}`);
+  },
+
+  // Stage 17: File Management & Workspace Automation Engine Methods
+  async getFileWorkspaceCapabilities(userId = 'default_user'): Promise<FileWorkspaceCapabilitiesResponse> {
+    return request<FileWorkspaceCapabilitiesResponse>(
+      `/files/capabilities?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async listWorkspaceFiles(params?: {
+    userId?: string;
+    directory?: string;
+    recursive?: boolean;
+  }): Promise<WorkspaceFileItem[]> {
+    const q = new URLSearchParams();
+    q.set('user_id', params?.userId || 'default_user');
+    if (params?.directory) q.set('directory', params.directory);
+    if (params?.recursive !== undefined) q.set('recursive', String(params.recursive));
+    return request<WorkspaceFileItem[]>(`/files/list?${q.toString()}`);
+  },
+
+  async searchWorkspaceFiles(params: {
+    user_id?: string;
+    query: string;
+    directory?: string;
+    extensions?: string[];
+    category?: FileCategory;
+    search_content?: boolean;
+    include_stage4_indexed?: boolean;
+    min_size_bytes?: number;
+    max_size_bytes?: number;
+  }): Promise<{
+    query: string;
+    total_matches: number;
+    items: WorkspaceFileItem[];
+    stage4_indexed_matches: {
+      doc_id: string;
+      filename: string;
+      page_number: number;
+      score: number;
+      snippet: string;
+    }[];
+  }> {
+    return request('/files/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        query: params.query,
+        directory: params.directory || '',
+        extensions: params.extensions || [],
+        category: params.category,
+        search_content: params.search_content ?? true,
+        include_stage4_indexed: params.include_stage4_indexed ?? true,
+        min_size_bytes: params.min_size_bytes,
+        max_size_bytes: params.max_size_bytes,
+      }),
+    });
+  },
+
+  async readWorkspaceFile(path: string, userId = 'default_user'): Promise<WorkspaceFileReadResponse> {
+    return request<WorkspaceFileReadResponse>(
+      `/files/read?path=${encodeURIComponent(path)}&user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async createWorkspaceFolder(relativePath: string, userId = 'default_user'): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/folders', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        relative_path: relativePath,
+      }),
+    });
+  },
+
+  async writeWorkspaceFile(params: {
+    user_id?: string;
+    relative_path: string;
+    content: string;
+    overwrite?: boolean;
+    confirmed_overwrite?: boolean;
+    backup_reason?: string;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/write', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        relative_path: params.relative_path,
+        content: params.content,
+        overwrite: params.overwrite ?? false,
+        confirmed_overwrite: params.confirmed_overwrite ?? false,
+        backup_reason: params.backup_reason || 'edit_preserve_original',
+      }),
+    });
+  },
+
+  async transferWorkspaceItem(params: {
+    user_id?: string;
+    action: 'rename' | 'copy' | 'move';
+    source_path: string;
+    destination_path: string;
+    overwrite?: boolean;
+    confirmed_overwrite?: boolean;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/transfer', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        action: params.action,
+        source_path: params.source_path,
+        destination_path: params.destination_path,
+        overwrite: params.overwrite ?? false,
+        confirmed_overwrite: params.confirmed_overwrite ?? false,
+      }),
+    });
+  },
+
+  async convertWorkspaceFile(params: {
+    user_id?: string;
+    source_path: string;
+    target_format: 'txt' | 'md' | 'csv' | 'json' | 'docx' | 'xlsx';
+    destination_path?: string;
+    overwrite?: boolean;
+    confirmed_overwrite?: boolean;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/convert', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        source_path: params.source_path,
+        target_format: params.target_format,
+        destination_path: params.destination_path,
+        overwrite: params.overwrite ?? true,
+        confirmed_overwrite: params.confirmed_overwrite ?? true,
+      }),
+    });
+  },
+
+  async findWorkspaceDuplicates(userId = 'default_user', directory = ''): Promise<DuplicateFileGroup[]> {
+    return request<DuplicateFileGroup[]>(
+      `/files/duplicates?user_id=${encodeURIComponent(userId)}&directory=${encodeURIComponent(directory)}`
+    );
+  },
+
+  async cleanupWorkspaceDuplicates(params: {
+    user_id?: string;
+    directory?: string;
+    preview_only?: boolean;
+    confirmed?: boolean;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/duplicates/cleanup', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        directory: params.directory || '',
+        preview_only: params.preview_only ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async organizeWorkspaceFiles(params: {
+    user_id?: string;
+    directory?: string;
+    strategy: OrganizeRuleStrategy;
+    custom_extension_map?: Record<string, string>;
+    preview_only?: boolean;
+    confirmed?: boolean;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/organize', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        directory: params.directory || '',
+        strategy: params.strategy,
+        custom_extension_map: params.custom_extension_map || {},
+        preview_only: params.preview_only ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async deleteWorkspaceItemsToTrash(params: {
+    user_id?: string;
+    paths: string[];
+    reason?: string;
+    preview_only?: boolean;
+    confirmed?: boolean;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/delete', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        paths: params.paths,
+        reason: params.reason || 'user_requested_cleanup',
+        preview_only: params.preview_only ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async listWorkspaceTrash(userId = 'default_user'): Promise<WorkspaceTrashItem[]> {
+    return request<WorkspaceTrashItem[]>(`/files/trash?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async restoreWorkspaceTrashItem(trashId: string, userId = 'default_user'): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>(
+      `/files/trash/${encodeURIComponent(trashId)}/restore?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async listWorkspaceFileVersions(path: string, userId = 'default_user'): Promise<WorkspaceFileVersion[]> {
+    return request<WorkspaceFileVersion[]>(
+      `/files/versions?path=${encodeURIComponent(path)}&user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async restoreWorkspaceFileVersion(
+    versionId: string,
+    relativePath: string,
+    userId = 'default_user'
+  ): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>(
+      `/files/versions/${encodeURIComponent(versionId)}/restore`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: userId,
+          relative_path: relativePath,
+        }),
+      }
+    );
+  },
+
+  async listFileOperations(userId = 'default_user', limit = 50): Promise<FileOperationRecord[]> {
+    return request<FileOperationRecord[]>(
+      `/files/operations?user_id=${encodeURIComponent(userId)}&limit=${limit}`
+    );
+  },
+
+  async approveFileOperation(
+    operationId: string,
+    params: {
+      user_id?: string;
+      approved: boolean;
+      user_note?: string;
+    }
+  ): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>(
+      `/files/operations/${encodeURIComponent(operationId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          approved: params.approved,
+          user_note: params.user_note,
+        }),
+      }
+    );
+  },
+
+  async rollbackFileOperation(operationId: string, userId = 'default_user'): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>(
+      `/files/operations/${encodeURIComponent(operationId)}/rollback?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async syncWorkspaceFileToStage4(relativePath: string, userId = 'default_user'): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/sync-stage4', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: userId,
+        relative_path: relativePath,
+      }),
+    });
+  },
+
+  async importStage16BrowserSessionToFile(params: {
+    user_id?: string;
+    session_id: string;
+    target_filename: string;
+  }): Promise<FileOperationRecord> {
+    return request<FileOperationRecord>('/files/import-browser-session', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        session_id: params.session_id,
+        target_filename: params.target_filename,
+        overwrite: true,
+        confirmed_overwrite: true,
+      }),
+    });
   },
 };
 
