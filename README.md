@@ -306,8 +306,18 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 - [x] **Full User Lifecycle Controls**: Create, view, search by relevance, edit, pin (`pinned`), delete individual memories, or clear all memories via `/api/v1/memory/*` and **Memory Center (`MemoryStudio.tsx`)**.
 - [x] **Natural-Language Memory Commands**: Supports `"Remember this..."`, `"Forget this..."`, `"What do you remember about me?"`, and requires explicit user confirmation (`requires_confirmation: true`) when intent is ambiguous.
 - [x] **Multi-User Isolation & Privacy Guard**: Strict `user_id` scoping prevents cross-user memory access; Sensitive PII/Secret Guard blocks API keys, passwords, SSNs, and payment card numbers from being stored; supports Temporary Chat mode (`temporary_chat: true`) and `<user_memory_context>` prompt-injection quarantine.
-- [x] **82/82 Automated Pytest Tests Passing** across Stages 1–13 (`tests/test_stage13_memory.py`).
+
+---
+
+## 📋 Stage 14: Multi-Agent Intelligence System Checklist
+
+- [x] **Modular Specialized Agent Registry (`GET /api/v1/agents/registry`)**: Registers 8 specialized agents (`research_agent`, `coding_agent`, `education_agent`, `writing_agent`, `data_analyst_agent`, `productivity_agent`, `document_agent`, `language_agent`) with explicit purposes, capabilities, limitations, least-privilege permission scopes (`read_only`, `search_and_retrieve`, `document_read`, `workspace_write_requires_approval`), and dynamic tool availability verification.
+- [x] **Central Multi-Agent Orchestrator (`POST /api/v1/agents/run`)**: Classifies requests or accepts manual agent selection, builds dependency-tracked subtask graphs, executes independent tasks in bounded parallel (`asyncio.Semaphore`) and dependent synthesis tasks sequentially.
+- [x] **Loop, Duplicate Call, Conflict & Cost Safeguards**: Deduplicates identical tool invocations across agents (`duplicate_tool_calls_prevented`), detects conflicting numerical/factual claims (`conflicts_detected`), and enforces strict per-run USD spending caps (`max_cost_budget_usd`).
+- [x] **Epistemic Separation & Shared Context**: Passes isolated user memories (`<user_memory_context>`), preserves source citations and Vault file references, and separates **Verified Facts**, **Working Assumptions**, and **Unresolved Questions**.
+- [x] **Least-Privilege Approval Gate, Retry & Cancellation**: Consequential actions pause in `WAITING_APPROVAL` until approved (`/approve`), with full support for subtask retry (`/retry`) and run cancellation (`/cancel`) in the **Agent Swarm Workspace (`AgentStudio.tsx`)**.
+- [x] **88/88 Automated Pytest Tests Passing** across Stages 1–14 (`tests/test_stage14_agents.py`).
 - [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 13 is complete. Do not proceed to Stage 14 until Stage 13 has been reviewed and approved.*
+*Stage 14 is complete. Do not proceed to Stage 15 until Stage 14 has been reviewed and approved.*

@@ -16,6 +16,7 @@ from app.api.v1.vision import router as vision_router
 from app.api.v1.reasoning import router as reasoning_router
 from app.api.v1.routing import router as routing_router
 from app.api.v1.memory import router as memory_router
+from app.api.v1.agents import router as agents_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -61,6 +62,7 @@ app.include_router(vision_router, prefix="/api/v1")
 app.include_router(reasoning_router, prefix="/api/v1")
 app.include_router(routing_router, prefix="/api/v1")
 app.include_router(memory_router, prefix="/api/v1")
+app.include_router(agents_router, prefix="/api/v1")
 
 
 @app.get("/")

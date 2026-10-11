@@ -76,6 +76,12 @@ class Settings(BaseModel):
     max_memories_per_user: int = int(os.getenv("MAX_MEMORIES_PER_USER", "500"))
     top_k_memories: int = int(os.getenv("TOP_K_MEMORIES", "5"))
 
+    # Stage 14: Multi-Agent Intelligence System
+    agent_max_steps_per_task: int = int(os.getenv("AGENT_MAX_STEPS_PER_TASK", "6"))
+    agent_max_parallel_tasks: int = int(os.getenv("AGENT_MAX_PARALLEL_TASKS", "3"))
+    agent_task_timeout_seconds: float = float(os.getenv("AGENT_TASK_TIMEOUT_SECONDS", "25.0"))
+    agent_max_cost_usd_per_run: float = float(os.getenv("AGENT_MAX_COST_USD_PER_RUN", "0.25"))
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

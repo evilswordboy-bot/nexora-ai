@@ -684,4 +684,99 @@ export interface MemoryCommandResponse {
   pending_candidate?: Record<string, any> | null;
 }
 
+// Stage 14: Multi-Agent Intelligence System Interfaces
+export type AgentRoleId =
+  | 'research_agent'
+  | 'coding_agent'
+  | 'education_agent'
+  | 'writing_agent'
+  | 'data_analyst_agent'
+  | 'productivity_agent'
+  | 'document_agent'
+  | 'language_agent';
+
+export type AgentPermissionScope =
+  | 'read_only'
+  | 'search_and_retrieve'
+  | 'document_read'
+  | 'workspace_write_requires_approval';
+
+export type AgentTaskStatus =
+  | 'PLANNED'
+  | 'RUNNING'
+  | 'WAITING_APPROVAL'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface SpecializedAgentSpec {
+  agent_id: AgentRoleId;
+  name: string;
+  purpose: string;
+  capabilities: string[];
+  limitations: string[];
+  permission_scope: AgentPermissionScope;
+  allowed_tools: string[];
+  requires_approval_for: string[];
+  preferred_task_category: RoutingTaskCategory;
+  available: boolean;
+  unavailable_reason?: string | null;
+}
+
+export interface AgentStructuredFinding {
+  facts: string[];
+  assumptions: string[];
+  unresolved_questions: string[];
+  citations: { title: string; url: string; snippet?: string }[];
+  file_references: string[];
+}
+
+export interface AgentSubtaskRun {
+  subtask_id: string;
+  agent_id: AgentRoleId;
+  agent_name: string;
+  title: string;
+  instruction: string;
+  depends_on: string[];
+  can_run_parallel: boolean;
+  status: AgentTaskStatus;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  approved?: boolean | null;
+  tools_invoked: string[];
+  output_summary: string;
+  structured_finding: AgentStructuredFinding;
+  error_message?: string | null;
+  retry_count: number;
+  estimated_cost_usd: number;
+  latency_ms: number;
+}
+
+export interface MultiAgentOrchestrationRun {
+  run_id: string;
+  user_id: string;
+  goal: string;
+  selection_mode: 'auto' | 'manual';
+  selected_agents: AgentRoleId[];
+  execution_mode: 'sequential' | 'parallel_safe' | 'hybrid';
+  status: AgentTaskStatus;
+  plan_summary: string;
+  subtasks: AgentSubtaskRun[];
+  combined_response: string;
+  consolidated_facts: string[];
+  consolidated_assumptions: string[];
+  unresolved_questions: string[];
+  conflicts_detected: string[];
+  citations: { title: string; url: string; snippet?: string }[];
+  file_references: string[];
+  used_memories: Record<string, any>[];
+  duplicate_tool_calls_prevented: number;
+  total_estimated_cost_usd: number;
+  max_cost_budget_usd: number;
+  total_latency_ms: number;
+  created_at: string;
+  updated_at: string;
+}
+
+
 

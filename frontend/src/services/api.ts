@@ -43,6 +43,9 @@ import {
   MemoryStatusSummary,
   MemorySearchResponse,
   MemoryCommandResponse,
+  AgentRoleId,
+  SpecializedAgentSpec,
+  MultiAgentOrchestrationRun,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -880,6 +883,108 @@ export const api = {
     return request<{ user_id: string; count: number; memories: any[] }>(
       `/memory/export?user_id=${encodeURIComponent(userId)}`
     );
+  },
+
+  // Stage 14: Multi-Agent Intelligence System Methods
+  async getAgentRegistry(): Promise<SpecializedAgentSpec[]> {
+    return request<SpecializedAgentSpec[]>('/agents/registry');
+  },
+
+  async classifyAgentsForGoal(params: {
+    goal: string;
+    document_ids?: string[];
+    target_language?: string;
+  }): Promise<AgentRoleId[]> {
+    return request<AgentRoleId[]>('/agents/classify', {
+      method: 'POST',
+      body: JSON.stringify({
+        goal: params.goal,
+        document_ids: params.document_ids || [],
+        target_language: params.target_language || 'en',
+      }),
+    });
+  },
+
+  async executeMultiAgentRun(
+    params: {
+      goal: string;
+      user_id?: string;
+      selection_mode?: 'auto' | 'manual';
+      manual_agents?: AgentRoleId[];
+      document_ids?: string[];
+      target_language?: string;
+      allow_parallel?: boolean;
+      max_cost_usd?: number;
+      memory_enabled?: boolean;
+    },
+    settings?: UserSettings
+  ): Promise<MultiAgentOrchestrationRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<MultiAgentOrchestrationRun>('/agents/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        goal: params.goal,
+        user_id: params.user_id || 'default_user',
+        selection_mode: params.selection_mode || 'auto',
+        manual_agents: params.manual_agents || [],
+        document_ids: params.document_ids || [],
+        target_language: params.target_language || 'en',
+        allow_parallel: params.allow_parallel ?? true,
+        max_cost_usd: params.max_cost_usd,
+        memory_enabled: params.memory_enabled ?? true,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getMultiAgentRuns(userId = 'default_user'): Promise<MultiAgentOrchestrationRun[]> {
+    return request<MultiAgentOrchestrationRun[]>(`/agents/runs?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async approveMultiAgentSubtask(
+    runId: string,
+    params: {
+      subtask_id: string;
+      approved: boolean;
+      user_note?: string;
+    },
+    settings?: UserSettings
+  ): Promise<MultiAgentOrchestrationRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<MultiAgentOrchestrationRun>(`/agents/runs/${encodeURIComponent(runId)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async retryMultiAgentRun(
+    runId: string,
+    subtaskId?: string,
+    settings?: UserSettings
+  ): Promise<MultiAgentOrchestrationRun> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<MultiAgentOrchestrationRun>(`/agents/runs/${encodeURIComponent(runId)}/retry`, {
+      method: 'POST',
+      body: JSON.stringify({
+        subtask_id: subtaskId,
+        provider: settings?.selectedProvider || 'auto',
+        model: settings?.selectedModel || 'auto',
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async cancelMultiAgentRun(runId: string): Promise<MultiAgentOrchestrationRun> {
+    return request<MultiAgentOrchestrationRun>(`/agents/runs/${encodeURIComponent(runId)}/cancel`, {
+      method: 'POST',
+    });
   },
 };
 

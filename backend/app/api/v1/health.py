@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 13,
-        "stage_title": "Persistent Memory Engine",
+        "stage": 14,
+        "stage_title": "Multi-Agent Intelligence System",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -31,6 +31,7 @@ async def health_check():
             "reasoning_engine": "operational",
             "model_routing": "operational",
             "persistent_memory": "operational",
+            "multi_agent_system": "operational",
         },
     }
 

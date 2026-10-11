@@ -910,3 +910,134 @@ class MemoryStatusSummary(BaseModel):
     )
 
 
+# --- Stage 14: Multi-Agent Intelligence System Schemas ---
+AgentRoleId = Literal[
+    "research_agent",
+    "coding_agent",
+    "education_agent",
+    "writing_agent",
+    "data_analyst_agent",
+    "productivity_agent",
+    "document_agent",
+    "language_agent",
+]
+
+AgentPermissionScope = Literal[
+    "read_only",
+    "search_and_retrieve",
+    "document_read",
+    "workspace_write_requires_approval",
+]
+
+AgentTaskStatus = Literal[
+    "PLANNED",
+    "RUNNING",
+    "WAITING_APPROVAL",
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+]
+
+
+class SpecializedAgentSpec(BaseModel):
+    agent_id: AgentRoleId
+    name: str
+    purpose: str
+    capabilities: List[str] = Field(default_factory=list)
+    limitations: List[str] = Field(default_factory=list)
+    permission_scope: AgentPermissionScope = "read_only"
+    allowed_tools: List[str] = Field(default_factory=list)
+    requires_approval_for: List[str] = Field(default_factory=list)
+    preferred_task_category: RoutingTaskCategory = "general_chat"
+    available: bool = True
+    unavailable_reason: Optional[str] = None
+
+
+class AgentStructuredFinding(BaseModel):
+    facts: List[str] = Field(default_factory=list)
+    assumptions: List[str] = Field(default_factory=list)
+    unresolved_questions: List[str] = Field(default_factory=list)
+    citations: List[Dict[str, str]] = Field(default_factory=list)
+    file_references: List[str] = Field(default_factory=list)
+
+
+class AgentSubtaskRun(BaseModel):
+    subtask_id: str
+    agent_id: AgentRoleId
+    agent_name: str
+    title: str
+    instruction: str
+    depends_on: List[str] = Field(default_factory=list)
+    can_run_parallel: bool = False
+    status: AgentTaskStatus = "PLANNED"
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approved: Optional[bool] = None
+    tools_invoked: List[str] = Field(default_factory=list)
+    output_summary: str = ""
+    structured_finding: AgentStructuredFinding = Field(default_factory=AgentStructuredFinding)
+    error_message: Optional[str] = None
+    retry_count: int = 0
+    estimated_cost_usd: float = 0.0
+    latency_ms: float = 0.0
+
+
+class MultiAgentOrchestrationRun(BaseModel):
+    run_id: str
+    user_id: str = "default_user"
+    goal: str
+    selection_mode: Literal["auto", "manual"] = "auto"
+    selected_agents: List[AgentRoleId] = Field(default_factory=list)
+    execution_mode: Literal["sequential", "parallel_safe", "hybrid"] = "sequential"
+    status: AgentTaskStatus = "PLANNED"
+    plan_summary: str = ""
+    subtasks: List[AgentSubtaskRun] = Field(default_factory=list)
+    combined_response: str = ""
+    consolidated_facts: List[str] = Field(default_factory=list)
+    consolidated_assumptions: List[str] = Field(default_factory=list)
+    unresolved_questions: List[str] = Field(default_factory=list)
+    conflicts_detected: List[str] = Field(default_factory=list)
+    citations: List[Dict[str, str]] = Field(default_factory=list)
+    file_references: List[str] = Field(default_factory=list)
+    used_memories: List[Dict[str, Any]] = Field(default_factory=list)
+    duplicate_tool_calls_prevented: int = 0
+    total_estimated_cost_usd: float = 0.0
+    max_cost_budget_usd: float = 0.25
+    total_latency_ms: float = 0.0
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class MultiAgentRunRequest(BaseModel):
+    goal: str = Field(..., min_length=1, max_length=16000)
+    user_id: str = "default_user"
+    selection_mode: Literal["auto", "manual"] = "auto"
+    manual_agents: List[AgentRoleId] = Field(default_factory=list)
+    document_ids: List[str] = Field(default_factory=list)
+    target_language: str = "en"
+    allow_parallel: bool = True
+    max_cost_usd: Optional[float] = Field(default=None, ge=0.001, le=10.0)
+    memory_enabled: bool = True
+    conversation_context: List[Message] = Field(default_factory=list)
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class MultiAgentApproveRequest(BaseModel):
+    subtask_id: str
+    approved: bool = True
+    user_note: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+class MultiAgentRetryRequest(BaseModel):
+    subtask_id: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = "auto"
+    client_api_key: Optional[str] = None
+
+
+
