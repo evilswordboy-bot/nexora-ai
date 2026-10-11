@@ -1,6 +1,28 @@
-# NEXORA AI — Stage 11: Advanced Reasoning Engine
+# NEXORA AI — Stage 12: Intelligent Model Routing Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 11** introduces the **Advanced Reasoning & Task-Planning Engine**: an adaptive problem-solving layer that classifies task complexity, answers simple queries directly without unnecessary overhead, decomposes complex requests into dependency-tracked subtasks (`PLANNED`, `IN PROGRESS`, `BLOCKED`, `REVIEWING`, `COMPLETE`), executes real tools via `ToolRegistry` (including a safe AST mathematical calculator, live web search, document vault retrieval, fact-checking, and multilingual translation), verifies subtask outputs with automatic retry recovery, and enforces explicit user approval gates before consequential actions.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 12** introduces the **Intelligent Model Routing & Cost Control Engine**: a capability-aware, budget-enforcing orchestration service that dynamically selects among verified AI providers (`gemini`, `openai`, `anthropic`) based on task classification (`coding`, `image_understanding`, `document_analysis`, `deep_research`, `translation`, `voice`, `reasoning`, `general_chat`), required capabilities, context window limits, latency, and cost preferences (`quality_first`, `balanced`, `speed_first`), with bounded fallback recovery and privacy-preserving observability.
+
+---
+
+## 🌟 Stage 12 Core Deliverables
+
+- **Modular Provider & Model Registry (`ProviderModelRegistry`)**:
+  - Registers model capabilities, context window limits (`128K` to `2M` tokens), quality tiers (`frontier`, `balanced`, `fast`), typical latency, timeouts, and published per-1K token pricing metadata.
+  - Supports dynamically adding (`POST /api/v1/routing/models`) and removing (`DELETE /api/v1/routing/models/{model_id}`) models at runtime without rewriting application code.
+  - Strictly protects credentials in backend environment variables and never exposes API keys in registry or telemetry payloads.
+- **Capability-Aware Intelligent Routing (`IntelligentModelRouter`)**:
+  - Classifies prompts into `general_chat`, `coding`, `deep_research`, `document_analysis`, `image_understanding`, `translation`, `voice`, and `reasoning`.
+  - Verifies required capabilities before dispatch (e.g., excluding text-only models like `o3-mini` or `claude-3-5-haiku-20241022` when `image_understanding` is required).
+  - Supports user-selectable `quality_first`, `balanced`, and `speed_first` routing modes.
+- **Bounded Fallback & Reliability**:
+  - Automatically recovers from provider rate limits (`HTTP 429`), timeouts, and upstream outages (`503`) by iterating through a bounded fallback chain (`max_fallbacks`) without infinite retry loops.
+  - Honest unconfigured fallback: never pretends an unconfigured model is available.
+- **Cost & Performance Controls + Security**:
+  - Estimates prompt/completion tokens and USD cost with transparent disclaimers (`is_exact_cost: false`).
+  - Enforces configurable `daily_spending_limit_usd` and `per_request_max_cost_usd` budgets (automatically downgrading to a lower-cost model or blocking over-budget requests).
+  - Blocks prompt-injection attempts trying to override routing security rules or bypass budget limits (`prompt_injection_override_blocked: true`).
+- **Model Router & Observability Studio UI**:
+  - Accessible via the top navigation bar (**Model Router** tab) featuring 3-mode routing preference cards, budget controls, an interactive Route Simulator & Live Dispatch tester, model capability cards, and privacy-preserving usage telemetry.
 
 ---
 

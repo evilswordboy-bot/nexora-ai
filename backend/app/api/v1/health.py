@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 11,
-        "stage_title": "Advanced Reasoning Engine",
+        "stage": 12,
+        "stage_title": "Intelligent Model Routing Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -29,6 +29,7 @@ async def health_check():
             "realtime_feed": "operational",
             "vision_intelligence": "operational",
             "reasoning_engine": "operational",
+            "model_routing": "operational",
         },
     }
 

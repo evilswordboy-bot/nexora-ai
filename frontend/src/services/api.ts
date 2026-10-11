@@ -30,6 +30,13 @@ import {
   ImageCompareResponse,
   ReasoningPlan,
   ToolDefinitionItem,
+  ModelRegistryEntry,
+  RoutingPolicyConfig,
+  RoutingDecision,
+  RoutingUsageSummary,
+  RoutingExecuteResponse,
+  RoutingTaskCategory,
+  RoutingPreference,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -678,4 +685,70 @@ export const api = {
   async getRegisteredTools(): Promise<ToolDefinitionItem[]> {
     return request<ToolDefinitionItem[]>('/reasoning/tools');
   },
+
+  // Stage 12: Intelligent Model Routing Engine Methods
+  async getRegisteredModels(): Promise<ModelRegistryEntry[]> {
+    return request<ModelRegistryEntry[]>('/routing/models');
+  },
+
+  async getRoutingPolicy(): Promise<RoutingPolicyConfig> {
+    return request<RoutingPolicyConfig>('/routing/policy');
+  },
+
+  async updateRoutingPolicy(policy: RoutingPolicyConfig): Promise<RoutingPolicyConfig> {
+    return request<RoutingPolicyConfig>('/routing/policy', {
+      method: 'PUT',
+      body: JSON.stringify(policy),
+    });
+  },
+
+  async simulateRouting(params: {
+    prompt: string;
+    task_category?: RoutingTaskCategory;
+    routing_preference?: RoutingPreference;
+    preferred_provider?: string;
+    preferred_model?: string;
+    has_images?: boolean;
+    has_documents?: boolean;
+    expected_output_tokens?: number;
+  }): Promise<RoutingDecision> {
+    return request<RoutingDecision>('/routing/simulate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async executeRoutedRequest(
+    params: {
+      prompt: string;
+      task_category?: RoutingTaskCategory;
+      routing_preference?: RoutingPreference;
+      preferred_provider?: string;
+      preferred_model?: string;
+      has_images?: boolean;
+      has_documents?: boolean;
+      expected_output_tokens?: number;
+    },
+    settings?: UserSettings
+  ): Promise<RoutingExecuteResponse> {
+    const clientApiKey = settings ? resolveClientApiKey(settings) : undefined;
+    return request<RoutingExecuteResponse>('/routing/execute', {
+      method: 'POST',
+      body: JSON.stringify({
+        ...params,
+        client_api_key: clientApiKey,
+      }),
+    });
+  },
+
+  async getRoutingUsageSummary(): Promise<RoutingUsageSummary> {
+    return request<RoutingUsageSummary>('/routing/usage');
+  },
+
+  async resetRoutingUsageSummary(): Promise<{ cleared: boolean }> {
+    return request<{ cleared: boolean }>('/routing/usage', {
+      method: 'DELETE',
+    });
+  },
 };
+

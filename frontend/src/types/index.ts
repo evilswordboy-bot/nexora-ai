@@ -483,3 +483,132 @@ export interface ToolDefinitionItem {
   timeout_seconds: number;
   treats_output_as_untrusted: boolean;
 }
+
+// Stage 12: Intelligent Model Routing Engine Interfaces
+export type RoutingTaskCategory =
+  | 'general_chat'
+  | 'coding'
+  | 'deep_research'
+  | 'document_analysis'
+  | 'image_understanding'
+  | 'translation'
+  | 'voice'
+  | 'reasoning';
+
+export type RoutingPreference = 'quality_first' | 'balanced' | 'speed_first';
+export type ProviderAvailabilityStatus = 'available' | 'unconfigured' | 'degraded' | 'rate_limited' | 'outage';
+export type ModelQualityTier = 'frontier' | 'balanced' | 'fast';
+
+export interface ModelRegistryEntry {
+  model_id: string;
+  provider: string;
+  display_name: string;
+  supported_capabilities: RoutingTaskCategory[];
+  context_window_tokens: number;
+  max_output_tokens: number;
+  pricing_per_1k_input_usd?: number | null;
+  pricing_per_1k_output_usd?: number | null;
+  pricing_note: string;
+  quality_tier: ModelQualityTier;
+  typical_latency_ms: number;
+  timeout_seconds: number;
+  configured: boolean;
+  availability_status: ProviderAvailabilityStatus;
+  is_default: boolean;
+}
+
+export interface TokenCostEstimate {
+  estimated_prompt_tokens: number;
+  estimated_completion_tokens: number;
+  estimated_total_tokens: number;
+  estimated_cost_usd?: number | null;
+  is_exact_cost: boolean;
+  pricing_available: boolean;
+  cost_note: string;
+}
+
+export interface RoutingFallbackAttempt {
+  provider: string;
+  model_id: string;
+  reason: string;
+  error_code?: string;
+  latency_ms: number;
+}
+
+export interface RoutingDecision {
+  id: string;
+  task_category: RoutingTaskCategory;
+  required_capabilities: RoutingTaskCategory[];
+  routing_preference: RoutingPreference;
+  selected_provider: string;
+  selected_model: string;
+  selection_rationale: string;
+  fallback_chain: string[];
+  fallback_attempts: RoutingFallbackAttempt[];
+  used_fallback: boolean;
+  is_configured: boolean;
+  cost_estimate: TokenCostEstimate;
+  budget_allowed: boolean;
+  budget_warning?: string;
+  security_policy_enforced: boolean;
+  prompt_injection_override_blocked: boolean;
+  decided_at: string;
+}
+
+export interface RoutingPolicyConfig {
+  routing_preference: RoutingPreference;
+  default_provider: string;
+  default_model: string;
+  max_fallbacks: number;
+  daily_spending_limit_usd: number;
+  per_request_max_cost_usd: number;
+  timeout_seconds: number;
+  allow_paid_frontier_models: boolean;
+}
+
+export interface RoutingTelemetryEntry {
+  id: string;
+  task_category: RoutingTaskCategory;
+  routing_preference: RoutingPreference;
+  selected_provider: string;
+  selected_model: string;
+  used_fallback: boolean;
+  fallback_count: number;
+  success: boolean;
+  error_category?: string;
+  latency_ms: number;
+  estimated_tokens: number;
+  estimated_cost_usd: number;
+  timestamp: string;
+}
+
+export interface RoutingUsageSummary {
+  total_requests: number;
+  successful_requests: number;
+  failed_requests: number;
+  fallback_triggered_count: number;
+  total_estimated_tokens: number;
+  total_estimated_cost_usd: number;
+  daily_spending_limit_usd: number;
+  remaining_daily_budget_usd: number;
+  average_latency_ms: number;
+  by_provider: Record<string, number>;
+  by_category: Record<string, number>;
+  by_model: Record<string, number>;
+  recent_telemetry: RoutingTelemetryEntry[];
+  disclaimer: string;
+}
+
+export interface RoutingExecuteResponse {
+  decision: RoutingDecision;
+  response: {
+    id: string;
+    role: string;
+    content: string;
+    model: string;
+    provider: string;
+    finish_reason?: string;
+  };
+  latency_ms: number;
+}
+

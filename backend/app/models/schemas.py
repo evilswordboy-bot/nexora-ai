@@ -639,3 +639,151 @@ class ReasoningApprovalRequest(BaseModel):
     model: Optional[str] = "auto"
     client_api_key: Optional[str] = None
 
+
+# --- Stage 12: Intelligent Model Routing Engine Schemas ---
+RoutingTaskCategory = Literal[
+    "general_chat",
+    "coding",
+    "deep_research",
+    "document_analysis",
+    "image_understanding",
+    "translation",
+    "voice",
+    "reasoning",
+]
+RoutingPreference = Literal["quality_first", "balanced", "speed_first"]
+ProviderAvailabilityStatus = Literal["available", "unconfigured", "degraded", "rate_limited", "outage"]
+ModelQualityTier = Literal["frontier", "balanced", "fast"]
+
+
+class ModelRegistryEntry(BaseModel):
+    model_id: str
+    provider: str
+    display_name: str
+    supported_capabilities: List[RoutingTaskCategory] = Field(default_factory=list)
+    context_window_tokens: int = 128000
+    max_output_tokens: int = 8192
+    pricing_per_1k_input_usd: Optional[float] = None
+    pricing_per_1k_output_usd: Optional[float] = None
+    pricing_note: str = "Estimated published API pricing (USD per 1K tokens)"
+    quality_tier: ModelQualityTier = "balanced"
+    typical_latency_ms: int = 800
+    timeout_seconds: float = 30.0
+    configured: bool = False
+    availability_status: ProviderAvailabilityStatus = "unconfigured"
+    is_default: bool = False
+
+
+class TokenCostEstimate(BaseModel):
+    estimated_prompt_tokens: int = 0
+    estimated_completion_tokens: int = 0
+    estimated_total_tokens: int = 0
+    estimated_cost_usd: Optional[float] = None
+    is_exact_cost: bool = False
+    pricing_available: bool = True
+    cost_note: str = "Token and cost figures are estimates based on character/token heuristics and published rates."
+
+
+class RoutingFallbackAttempt(BaseModel):
+    provider: str
+    model_id: str
+    reason: str
+    error_code: Optional[str] = None
+    latency_ms: float = 0.0
+
+
+class RoutingDecision(BaseModel):
+    id: str
+    task_category: RoutingTaskCategory
+    required_capabilities: List[RoutingTaskCategory] = Field(default_factory=list)
+    routing_preference: RoutingPreference = "balanced"
+    selected_provider: str
+    selected_model: str
+    selection_rationale: str
+    fallback_chain: List[str] = Field(default_factory=list)
+    fallback_attempts: List[RoutingFallbackAttempt] = Field(default_factory=list)
+    used_fallback: bool = False
+    is_configured: bool = False
+    cost_estimate: TokenCostEstimate
+    budget_allowed: bool = True
+    budget_warning: Optional[str] = None
+    security_policy_enforced: bool = True
+    prompt_injection_override_blocked: bool = False
+    decided_at: datetime = Field(default_factory=utc_now)
+
+
+class RoutingPolicyConfig(BaseModel):
+    routing_preference: RoutingPreference = "balanced"
+    default_provider: str = "auto"
+    default_model: str = "gemini-1.5-flash"
+    max_fallbacks: int = Field(default=2, ge=0, le=5)
+    daily_spending_limit_usd: float = Field(default=10.0, ge=0.0)
+    per_request_max_cost_usd: float = Field(default=0.50, ge=0.0)
+    timeout_seconds: float = Field(default=30.0, ge=1.0, le=120.0)
+    allow_paid_frontier_models: bool = True
+
+
+class RoutingTelemetryEntry(BaseModel):
+    id: str
+    task_category: RoutingTaskCategory
+    routing_preference: RoutingPreference
+    selected_provider: str
+    selected_model: str
+    used_fallback: bool = False
+    fallback_count: int = 0
+    success: bool = True
+    error_category: Optional[str] = None
+    latency_ms: float = 0.0
+    estimated_tokens: int = 0
+    estimated_cost_usd: float = 0.0
+    timestamp: datetime = Field(default_factory=utc_now)
+
+
+class RoutingUsageSummary(BaseModel):
+    total_requests: int = 0
+    successful_requests: int = 0
+    failed_requests: int = 0
+    fallback_triggered_count: int = 0
+    total_estimated_tokens: int = 0
+    total_estimated_cost_usd: float = 0.0
+    daily_spending_limit_usd: float = 10.0
+    remaining_daily_budget_usd: float = 10.0
+    average_latency_ms: float = 0.0
+    by_provider: Dict[str, int] = Field(default_factory=dict)
+    by_category: Dict[str, int] = Field(default_factory=dict)
+    by_model: Dict[str, int] = Field(default_factory=dict)
+    recent_telemetry: List[RoutingTelemetryEntry] = Field(default_factory=list)
+    disclaimer: str = "All token and cost metrics are estimates and do not represent billing invoices."
+
+
+class RoutingSimulateRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=16000)
+    task_category: Optional[RoutingTaskCategory] = None
+    required_capabilities: List[RoutingTaskCategory] = Field(default_factory=list)
+    routing_preference: Optional[RoutingPreference] = None
+    preferred_provider: Optional[str] = "auto"
+    preferred_model: Optional[str] = "auto"
+    has_images: bool = False
+    has_documents: bool = False
+    expected_output_tokens: int = Field(default=500, ge=10, le=8192)
+
+
+class RoutingExecuteRequest(BaseModel):
+    prompt: str = Field(..., min_length=1, max_length=16000)
+    task_category: Optional[RoutingTaskCategory] = None
+    required_capabilities: List[RoutingTaskCategory] = Field(default_factory=list)
+    routing_preference: Optional[RoutingPreference] = None
+    preferred_provider: Optional[str] = "auto"
+    preferred_model: Optional[str] = "auto"
+    has_images: bool = False
+    has_documents: bool = False
+    expected_output_tokens: int = Field(default=500, ge=10, le=8192)
+    client_api_key: Optional[str] = None
+
+
+class RoutingExecuteResponse(BaseModel):
+    decision: RoutingDecision
+    response: ChatResponse
+    latency_ms: float
+
+

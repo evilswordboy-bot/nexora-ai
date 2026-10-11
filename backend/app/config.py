@@ -59,6 +59,13 @@ class Settings(BaseModel):
     rate_limit_per_minute: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "60"))
     enable_safety_guardrails: bool = os.getenv("ENABLE_SAFETY_GUARDRAILS", "true").lower() in ("true", "1", "yes")
 
+    # Stage 12: Intelligent Model Routing & Cost Controls
+    default_routing_mode: str = os.getenv("DEFAULT_ROUTING_MODE", "balanced")  # quality_first | balanced | speed_first
+    max_routing_fallbacks: int = int(os.getenv("MAX_ROUTING_FALLBACKS", "2"))
+    daily_spending_limit_usd: float = float(os.getenv("DAILY_SPENDING_LIMIT_USD", "10.0"))
+    per_request_max_cost_usd: float = float(os.getenv("PER_REQUEST_MAX_COST_USD", "0.50"))
+    routing_timeout_seconds: float = float(os.getenv("ROUTING_TIMEOUT_SECONDS", "30.0"))
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():
