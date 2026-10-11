@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 18,
-        "stage_title": "Terminal & Code Execution Engine",
+        "stage": 19,
+        "stage_title": "Git & Version Control Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -36,6 +36,7 @@ async def health_check():
             "computer_control": "operational",
             "file_workspace": "operational",
             "terminal_execution": "operational",
+            "git_version_control": "operational",
         },
     }
 

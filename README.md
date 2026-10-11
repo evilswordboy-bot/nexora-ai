@@ -1,6 +1,27 @@
-# NEXORA AI — Stage 12: Intelligent Model Routing Engine
+# NEXORA AI — Stage 19: Git & Version Control Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 12** introduces the **Intelligent Model Routing & Cost Control Engine**: a capability-aware, budget-enforcing orchestration service that dynamically selects among verified AI providers (`gemini`, `openai`, `anthropic`) based on task classification (`coding`, `image_understanding`, `document_analysis`, `deep_research`, `translation`, `voice`, `reasoning`, `general_chat`), required capabilities, context window limits, latency, and cost preferences (`quality_first`, `balanced`, `speed_first`), with bounded fallback recovery and privacy-preserving observability.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 19** introduces the **Git & Version Control Engine (`GitVersionControlEngine`)**: genuine Git repository management confined within authorized Stage 18 developer workspaces (`data/terminal_workspace/<user_id>/<project_id>`), unified and side-by-side diff inspection, pre-commit secret and `.env` file protection, dirty-worktree branch switch guards, safe merge conflict detection and automatic rollback, AI-powered code review (`verified_defect` vs. `possible_concern`) integrated with Stage 18 unit test execution, and honest Pull Request & remote collaboration workflows.
+
+---
+
+## 🌟 Stage 19 Core Deliverables
+
+- **Genuine Git Repository Integration (`GitVersionControlEngine`)**:
+  - Detects and validates Git installation and repository state (`GET /api/v1/git/capabilities`, `GET /api/v1/git/status`).
+  - Supports repository initialization (`POST /api/v1/git/init`) with automatic `.gitignore` rule recommendations, staging (`POST /api/v1/git/stage`), unstaging (`POST /api/v1/git/unstage`), commit history browsing (`GET /api/v1/git/commits`), and unified + structured side-by-side diff generation (`GET /api/v1/git/diff`).
+- **Safe Change Management & Secret Protection**:
+  - Blocks staging or committing hardcoded API keys (`AIza...`, `sk-...`, `ghp_...`, `glpat-...`, private keys) and `.env` files (`BLOCKED`).
+  - Requires explicit user confirmation (`WAITING_FOR_APPROVAL` -> `POST /api/v1/git/operations/{id}/approve`) before commits, branch merges, or remote synchronization.
+  - Detects uncommitted working-tree changes before branch switches (`BLOCKED`), blocks `--force` pushes, and safely aborts conflicted merges (`git merge --abort`) so workspaces are never left corrupted.
+- **AI-Powered Code Review (`POST /api/v1/git/review`)**:
+  - Analyzes changed files for bugs, security weaknesses, readability issues, and missing test updates.
+  - Clearly distinguishes **Verified Defects** (`verified_defect`: AST syntax errors, hardcoded secrets, literal division by zero, `eval`/`exec`, failing Stage 18 unit tests) from **Possible Concerns** (`possible_concern`: mutable default arguments, bare `except:`, `TODO`/`FIXME` markers, missing test file updates).
+  - Never auto-accepts code review suggestions without user approval.
+- **Collaboration, Remotes & Honest Pull Request Preparation**:
+  - Validates remote repository URLs against SSRF/private IP ranges and allowed hosts (`github.com`, `gitlab.com`, `bitbucket.org`).
+  - Prepares Pull Request records (`POST /api/v1/git/pull-requests`) with branch comparison stats and issue references (`#19`), explicitly distinguishing local PR drafts (`LOCAL_DRAFT_ONLY`) from provider-confirmed remote actions (`REMOTE_CONFIRMED`).
+- **Git & Version Control Studio UI (`GitVersionControlStudio.tsx`)**:
+  - Accessible via the top navigation bar (**Git & VCS** tab) featuring branch selector/creator, working-tree staging controls, Unified & Side-by-Side Diff Viewer, AI Code Review panel, Commit History & Audit Log, and Remote/PR Collaboration panel.
 
 ---
 

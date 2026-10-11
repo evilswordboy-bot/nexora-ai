@@ -1507,3 +1507,222 @@ export interface TerminalCapabilitiesResponse {
   allowlisted_commands: string[];
   approval_required_operations: string[];
 }
+
+// ============================================================================
+// Stage 19: Git & Version Control Engine Types
+// ============================================================================
+
+export type GitOperationType =
+  | 'init_repo'
+  | 'stage_files'
+  | 'unstage_files'
+  | 'commit'
+  | 'create_branch'
+  | 'switch_branch'
+  | 'merge_branch'
+  | 'configure_remote'
+  | 'sync_remote'
+  | 'discard_changes'
+  | 'update_gitignore'
+  | 'create_pull_request';
+
+export type GitOperationStatus =
+  | 'PLANNED'
+  | 'WAITING_FOR_APPROVAL'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'BLOCKED'
+  | 'CANCELLED';
+
+export type GitRemoteProvider = 'github' | 'gitlab' | 'bitbucket' | 'custom';
+
+export interface GitChangedFile {
+  path: string;
+  index_status: string;
+  worktree_status: string;
+  staged: boolean;
+  unstaged: boolean;
+  untracked: boolean;
+  has_secret_warning: boolean;
+  secret_warning_detail?: string | null;
+  is_sensitive_env_file: boolean;
+}
+
+export interface GitBranchInfo {
+  name: string;
+  is_current: boolean;
+  commit_hash: string;
+  last_commit_subject: string;
+}
+
+export interface GitCommitEntry {
+  commit_hash: string;
+  short_hash: string;
+  author_name: string;
+  author_email: string;
+  authored_at: string;
+  subject: string;
+  body: string;
+  files_changed: number;
+}
+
+export interface GitRemoteConfig {
+  name: string;
+  url: string;
+  provider: GitRemoteProvider;
+  token_configured: boolean;
+  sync_status:
+    | 'not_configured'
+    | 'local_only'
+    | 'auth_required'
+    | 'network_disabled'
+    | 'ready_to_sync'
+    | 'synced'
+    | 'sync_failed';
+  ahead_count: number;
+  behind_count: number;
+  last_error?: string | null;
+}
+
+export interface GitSideBySideLine {
+  left_line_no?: number | null;
+  left_content: string;
+  right_line_no?: number | null;
+  right_content: string;
+  change_type: 'context' | 'add' | 'delete' | 'modify';
+}
+
+export interface GitFileDiff {
+  file_path: string;
+  additions: number;
+  deletions: number;
+  is_binary: boolean;
+  unified_patch: string;
+  side_by_side_lines: GitSideBySideLine[];
+}
+
+export interface GitDiffResponse {
+  project_id: string;
+  target_scope: 'unstaged' | 'staged' | 'all_working' | 'branch_compare' | 'commit';
+  base_ref?: string | null;
+  compare_ref?: string | null;
+  total_files_changed: number;
+  total_additions: number;
+  total_deletions: number;
+  unified_diff: string;
+  files: GitFileDiff[];
+  secret_warnings: string[];
+}
+
+export interface GitRepositoryStatusResponse {
+  project_id: string;
+  user_id: string;
+  git_installed: boolean;
+  is_initialized: boolean;
+  current_branch: string;
+  is_clean: boolean;
+  branches: GitBranchInfo[];
+  changed_files: GitChangedFile[];
+  staged_count: number;
+  unstaged_count: number;
+  untracked_count: number;
+  secret_warnings: string[];
+  recommended_gitignore_entries: string[];
+  gitignore_present: boolean;
+  remotes: GitRemoteConfig[];
+  recent_commits: GitCommitEntry[];
+}
+
+export interface GitCodeReviewFinding {
+  finding_id: string;
+  file_path: string;
+  line_number: number;
+  category: 'bug' | 'security' | 'readability' | 'missing_tests';
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  finding_type: 'verified_defect' | 'possible_concern';
+  title: string;
+  description: string;
+  suggested_fix: string;
+  auto_accepted: boolean;
+}
+
+export interface GitCodeReviewResponse {
+  review_id: string;
+  project_id: string;
+  user_id: string;
+  reviewed_files: string[];
+  verified_defects_count: number;
+  possible_concerns_count: number;
+  tests_executed: boolean;
+  tests_passed?: boolean | null;
+  findings: GitCodeReviewFinding[];
+  summary: string;
+  created_at: string;
+}
+
+export interface GitBranchComparisonResponse {
+  project_id: string;
+  base_branch: string;
+  compare_branch: string;
+  ahead_count: number;
+  behind_count: number;
+  can_fast_forward: boolean;
+  has_conflicts: boolean;
+  conflict_files: string[];
+  commits: GitCommitEntry[];
+  diff: GitDiffResponse;
+}
+
+export interface GitPullRequestRecord {
+  pr_id: string;
+  user_id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  source_branch: string;
+  target_branch: string;
+  issue_references: string[];
+  review_summary: string;
+  provider: GitRemoteProvider;
+  status: 'LOCAL_DRAFT_ONLY' | 'WAITING_FOR_APPROVAL' | 'REMOTE_CONFIRMED' | 'REMOTE_FAILED';
+  local_draft_only: boolean;
+  remote_confirmed: boolean;
+  remote_url?: string | null;
+  provider_message: string;
+  created_at: string;
+}
+
+export interface GitOperationRecord {
+  operation_id: string;
+  user_id: string;
+  project_id: string;
+  operation_type: GitOperationType;
+  status: GitOperationStatus;
+  command_display: string;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  approved?: boolean | null;
+  verified: boolean;
+  stdout: string;
+  stderr: string;
+  diff_preview?: string | null;
+  secret_warnings: string[];
+  error_message?: string | null;
+  result_data: Record<string, any>;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface GitCapabilitiesResponse {
+  stage: number;
+  engine: string;
+  git_installed: boolean;
+  git_version?: string | null;
+  default_branch: string;
+  supported_providers: GitRemoteProvider[];
+  remote_token_configured: boolean;
+  allowed_remote_hosts: string[];
+  approval_required_operations: string[];
+  recommended_gitignore_rules: string[];
+}
+

@@ -21,6 +21,7 @@ from app.api.v1.workflows import router as workflows_router
 from app.api.v1.computer import router as computer_router
 from app.api.v1.files import router as files_router
 from app.api.v1.terminal import router as terminal_router
+from app.api.v1.git import router as git_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -71,6 +72,7 @@ app.include_router(workflows_router, prefix="/api/v1")
 app.include_router(computer_router, prefix="/api/v1")
 app.include_router(files_router, prefix="/api/v1")
 app.include_router(terminal_router, prefix="/api/v1")
+app.include_router(git_router, prefix="/api/v1")
 
 
 @app.get("/")

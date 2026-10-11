@@ -457,6 +457,62 @@ class ToolRegistry:
             handler=self._handle_terminal_package_and_command,
         )
 
+        # 16. Stage 19: Git Repository Inspector & Code Review Tool
+        self.register(
+            tool=ToolDefinition(
+                name="git_repository_inspector",
+                description="Inspects Git repository status, branches, recent commits, unified/side-by-side diffs, and runs AI-powered code review (distinguishing verified defects from possible concerns) inside authorized Stage 18/19 workspaces.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "status",
+                            "description": "status | diff | review | commits | branches",
+                        },
+                        "project_id": {"type": "string", "default": "proj_default_py"},
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "file_path": {"type": "string", "default": ""},
+                        "staged": {"type": "boolean", "default": False},
+                        "run_tests": {"type": "boolean", "default": False},
+                    },
+                },
+                stage_introduced=19,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_git_repository_inspector,
+        )
+
+        # 17. Stage 19: Safe Git Commit, Branch, Merge & Remote Sync Tool (Requires Approval)
+        self.register(
+            tool=ToolDefinition(
+                name="git_safe_commit_and_branch",
+                description="Stages files, creates/switches/merges branches, commits changes with secret/env-file scanning, or syncs remotes after explicit user approval.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "commit",
+                            "description": "init | stage | commit | create_branch | switch_branch | merge | sync_remote",
+                        },
+                        "project_id": {"type": "string", "default": "proj_default_py"},
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "message": {"type": "string", "default": "chore: update workspace files"},
+                        "branch_name": {"type": "string", "default": ""},
+                        "paths": {"type": "array", "items": {"type": "string"}, "default": []},
+                    },
+                },
+                stage_introduced=19,
+                requires_approval=True,
+                risk_level="high",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_git_safe_commit_and_branch,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -979,6 +1035,132 @@ class ToolRegistry:
                 f"Terminal command '{command}' finished with status={rec.status}, "
                 f"exit_code={rec.exit_code}: {(rec.stdout or rec.stderr).strip()[:300]}"
             ),
+        }
+
+    async def _handle_git_repository_inspector(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.git.engine import git_version_control_engine
+        from app.models.schemas import GitReviewRequest
+
+        action = str(params.get("action", "status")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        project_id = str(params.get("project_id", "proj_default_py")).strip()
+        file_path = str(params.get("file_path", "")).strip() or None
+        staged = bool(params.get("staged", False))
+        run_tests = bool(params.get("run_tests", False))
+
+        if action == "diff":
+            diff = git_version_control_engine.get_diff(
+                user_id=user_id,
+                project_id=project_id,
+                scope="staged" if staged else "all_working",
+                file_path=file_path,
+            )
+            return {
+                "action": "diff",
+                "project_id": project_id,
+                "staged": staged,
+                "files_count": len(diff.files),
+                "total_additions": diff.total_additions,
+                "total_deletions": diff.total_deletions,
+                "secret_warnings": diff.secret_warnings,
+                "summary": (
+                    f"Git diff ({'staged' if staged else 'working tree'}) for '{project_id}': "
+                    f"{len(diff.files)} file(s), +{diff.total_additions} / -{diff.total_deletions}."
+                ),
+            }
+
+        if action == "review":
+            rev = await git_version_control_engine.review_changes(
+                GitReviewRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    paths=[file_path] if file_path else [],
+                    run_stage18_tests=run_tests,
+                )
+            )
+            return {
+                "action": "review",
+                "review_id": rev.review_id,
+                "project_id": project_id,
+                "verified_defects_count": rev.verified_defects_count,
+                "possible_concerns_count": rev.possible_concerns_count,
+                "summary": rev.summary,
+            }
+
+        status = git_version_control_engine.get_status(user_id=user_id, project_id=project_id)
+        return {
+            "action": "status",
+            "project_id": project_id,
+            "is_initialized": status.is_initialized,
+            "current_branch": status.current_branch,
+            "is_clean": status.is_clean,
+            "staged_count": status.staged_count,
+            "unstaged_count": status.unstaged_count,
+            "untracked_count": status.untracked_count,
+            "recent_commits_count": len(status.recent_commits),
+            "summary": (
+                f"Git status for '{project_id}' (branch '{status.current_branch}'): "
+                f"{'clean' if status.is_clean else f'{len(status.changed_files)} changed file(s)'} "
+                f"(staged={status.staged_count}, unstaged={status.unstaged_count}, untracked={status.untracked_count})."
+            ),
+        }
+
+    async def _handle_git_safe_commit_and_branch(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.git.engine import git_version_control_engine
+        from app.models.schemas import (
+            GitInitRequest,
+            GitStageRequest,
+            GitCommitRequest,
+            GitBranchActionRequest,
+        )
+
+        action = str(params.get("action", "commit")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        project_id = str(params.get("project_id", "proj_default_py")).strip()
+        message = str(params.get("message", "chore: update workspace files")).strip()
+        branch_name = str(params.get("branch_name", "feature/update")).strip()
+        paths = list(params.get("paths") or [])
+
+        if action == "init":
+            op = git_version_control_engine.init_repository(
+                GitInitRequest(user_id=user_id, project_id=project_id)
+            )
+        elif action == "stage":
+            op = git_version_control_engine.stage_files(
+                GitStageRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    paths=paths,
+                    stage_all=len(paths) == 0,
+                )
+            )
+        elif action in ("create_branch", "switch_branch", "merge"):
+            b_act = "create" if action == "create_branch" else ("switch" if action == "switch_branch" else "merge")
+            op = git_version_control_engine.manage_branch(
+                GitBranchActionRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    action=b_act,  # type: ignore[arg-type]
+                    branch_name=branch_name,
+                    confirmed=True,
+                )
+            )
+        else:
+            op = git_version_control_engine.commit_changes(
+                GitCommitRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    message=message,
+                    stage_all=len(paths) == 0,
+                    confirmed=True,
+                )
+            )
+        return {
+            "operation_id": op.operation_id,
+            "operation_type": op.operation_type,
+            "status": op.status,
+            "verified": op.verified,
+            "summary": op.stdout or op.error_message or op.command_display,
         }
 
 

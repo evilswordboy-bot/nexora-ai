@@ -1919,3 +1919,295 @@ class SyncStage17Request(BaseModel):
     user_id: str = "default_user"
     direction: Literal["to_stage17", "from_stage17"] = "to_stage17"
     relative_path: Optional[str] = None
+
+
+# ============================================================================
+# Stage 19: Git & Version Control Engine Schemas
+# ============================================================================
+
+GitOperationType = Literal[
+    "init_repo",
+    "stage_files",
+    "unstage_files",
+    "commit",
+    "create_branch",
+    "switch_branch",
+    "merge_branch",
+    "configure_remote",
+    "sync_remote",
+    "discard_changes",
+    "update_gitignore",
+    "create_pull_request",
+]
+
+GitOperationStatus = Literal[
+    "PLANNED",
+    "WAITING_FOR_APPROVAL",
+    "SUCCEEDED",
+    "FAILED",
+    "BLOCKED",
+    "CANCELLED",
+]
+
+GitRemoteProvider = Literal["github", "gitlab", "bitbucket", "custom"]
+
+
+class GitChangedFile(BaseModel):
+    path: str
+    index_status: str = " "
+    worktree_status: str = " "
+    staged: bool = False
+    unstaged: bool = False
+    untracked: bool = False
+    has_secret_warning: bool = False
+    secret_warning_detail: Optional[str] = None
+    is_sensitive_env_file: bool = False
+
+
+class GitBranchInfo(BaseModel):
+    name: str
+    is_current: bool = False
+    commit_hash: str = ""
+    last_commit_subject: str = ""
+
+
+class GitCommitEntry(BaseModel):
+    commit_hash: str
+    short_hash: str
+    author_name: str
+    author_email: str
+    authored_at: str
+    subject: str
+    body: str = ""
+    files_changed: int = 0
+
+
+class GitRemoteConfig(BaseModel):
+    name: str = "origin"
+    url: str = ""
+    provider: GitRemoteProvider = "github"
+    token_configured: bool = False
+    sync_status: Literal[
+        "not_configured",
+        "local_only",
+        "auth_required",
+        "network_disabled",
+        "ready_to_sync",
+        "synced",
+        "sync_failed",
+    ] = "not_configured"
+    ahead_count: int = 0
+    behind_count: int = 0
+    last_error: Optional[str] = None
+
+
+class GitSideBySideLine(BaseModel):
+    left_line_no: Optional[int] = None
+    left_content: str = ""
+    right_line_no: Optional[int] = None
+    right_content: str = ""
+    change_type: Literal["context", "add", "delete", "modify"] = "context"
+
+
+class GitFileDiff(BaseModel):
+    file_path: str
+    additions: int = 0
+    deletions: int = 0
+    is_binary: bool = False
+    unified_patch: str = ""
+    side_by_side_lines: List[GitSideBySideLine] = Field(default_factory=list)
+
+
+class GitDiffResponse(BaseModel):
+    project_id: str
+    target_scope: Literal["unstaged", "staged", "all_working", "branch_compare", "commit"] = "all_working"
+    base_ref: Optional[str] = None
+    compare_ref: Optional[str] = None
+    total_files_changed: int = 0
+    total_additions: int = 0
+    total_deletions: int = 0
+    unified_diff: str = ""
+    files: List[GitFileDiff] = Field(default_factory=list)
+    secret_warnings: List[str] = Field(default_factory=list)
+
+
+class GitRepositoryStatusResponse(BaseModel):
+    project_id: str
+    user_id: str = "default_user"
+    git_installed: bool = True
+    is_initialized: bool = False
+    current_branch: str = "main"
+    is_clean: bool = True
+    branches: List[GitBranchInfo] = Field(default_factory=list)
+    changed_files: List[GitChangedFile] = Field(default_factory=list)
+    staged_count: int = 0
+    unstaged_count: int = 0
+    untracked_count: int = 0
+    secret_warnings: List[str] = Field(default_factory=list)
+    recommended_gitignore_entries: List[str] = Field(default_factory=list)
+    gitignore_present: bool = False
+    remotes: List[GitRemoteConfig] = Field(default_factory=list)
+    recent_commits: List[GitCommitEntry] = Field(default_factory=list)
+
+
+class GitCodeReviewFinding(BaseModel):
+    finding_id: str
+    file_path: str
+    line_number: int = 1
+    category: Literal["bug", "security", "readability", "missing_tests"] = "bug"
+    severity: Literal["critical", "high", "medium", "low"] = "medium"
+    finding_type: Literal["verified_defect", "possible_concern"] = "possible_concern"
+    title: str
+    description: str
+    suggested_fix: str
+    auto_accepted: bool = False
+
+
+class GitCodeReviewResponse(BaseModel):
+    review_id: str
+    project_id: str
+    user_id: str = "default_user"
+    reviewed_files: List[str] = Field(default_factory=list)
+    verified_defects_count: int = 0
+    possible_concerns_count: int = 0
+    tests_executed: bool = False
+    tests_passed: Optional[bool] = None
+    findings: List[GitCodeReviewFinding] = Field(default_factory=list)
+    summary: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class GitBranchComparisonResponse(BaseModel):
+    project_id: str
+    base_branch: str
+    compare_branch: str
+    ahead_count: int = 0
+    behind_count: int = 0
+    can_fast_forward: bool = True
+    has_conflicts: bool = False
+    conflict_files: List[str] = Field(default_factory=list)
+    commits: List[GitCommitEntry] = Field(default_factory=list)
+    diff: GitDiffResponse
+
+
+class GitPullRequestRecord(BaseModel):
+    pr_id: str
+    user_id: str = "default_user"
+    project_id: str
+    title: str
+    description: str
+    source_branch: str
+    target_branch: str = "main"
+    issue_references: List[str] = Field(default_factory=list)
+    review_summary: str = ""
+    provider: GitRemoteProvider = "github"
+    status: Literal["LOCAL_DRAFT_ONLY", "WAITING_FOR_APPROVAL", "REMOTE_CONFIRMED", "REMOTE_FAILED"] = "LOCAL_DRAFT_ONLY"
+    local_draft_only: bool = True
+    remote_confirmed: bool = False
+    remote_url: Optional[str] = None
+    provider_message: str = ""
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class GitOperationRecord(BaseModel):
+    operation_id: str
+    user_id: str = "default_user"
+    project_id: str
+    operation_type: GitOperationType
+    status: GitOperationStatus = "PLANNED"
+    command_display: str = ""
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    approved: Optional[bool] = None
+    verified: bool = False
+    stdout: str = ""
+    stderr: str = ""
+    diff_preview: Optional[str] = None
+    secret_warnings: List[str] = Field(default_factory=list)
+    error_message: Optional[str] = None
+    result_data: Dict[str, Any] = Field(default_factory=dict)
+    created_at: datetime = Field(default_factory=utc_now)
+    completed_at: Optional[datetime] = None
+
+
+class GitInitRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    default_branch: str = "main"
+    author_name: Optional[str] = None
+    author_email: Optional[str] = None
+    create_gitignore: bool = True
+    initial_commit: bool = True
+
+
+class GitStageRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    paths: List[str] = Field(default_factory=list)
+    stage_all: bool = False
+    allow_sensitive: bool = False
+
+
+class GitCommitRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    message: str = Field(..., min_length=1, max_length=500)
+    description: str = Field(default="", max_length=2000)
+    stage_all: bool = False
+    confirmed: bool = False
+    allow_secret_override: bool = False
+
+
+class GitBranchActionRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    action: Literal["create", "switch", "merge"] = "create"
+    branch_name: str = Field(..., min_length=1, max_length=100)
+    source_branch: Optional[str] = None
+    checkout_on_create: bool = True
+    allow_dirty_switch: bool = False
+    confirmed: bool = False
+
+
+class GitRemoteConfigRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    name: str = "origin"
+    url: str = Field(..., min_length=1, max_length=400)
+    provider: GitRemoteProvider = "github"
+
+
+class GitRemoteSyncRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    remote_name: str = "origin"
+    action: Literal["fetch", "pull", "push"] = "push"
+    branch: Optional[str] = None
+    force: bool = False
+    allow_network: bool = False
+    confirmed: bool = False
+
+
+class GitReviewRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    paths: List[str] = Field(default_factory=list)
+    run_stage18_tests: bool = True
+
+
+class GitPullRequestCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(default="", max_length=4000)
+    source_branch: str
+    target_branch: str = "main"
+    issue_references: List[str] = Field(default_factory=list)
+    submit_to_remote: bool = False
+    confirmed: bool = False
+
+
+class GitApproveOperationRequest(BaseModel):
+    user_id: str = "default_user"
+    approved: bool = True
+    user_note: Optional[str] = None

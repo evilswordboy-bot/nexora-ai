@@ -78,6 +78,15 @@ import {
   ProjectTemplateType,
   TerminalCapabilitiesResponse,
   TerminalExecutionRecord,
+  GitBranchComparisonResponse,
+  GitCapabilitiesResponse,
+  GitCodeReviewResponse,
+  GitCommitEntry,
+  GitDiffResponse,
+  GitOperationRecord,
+  GitPullRequestRecord,
+  GitRemoteProvider,
+  GitRepositoryStatusResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -1871,5 +1880,304 @@ export const api = {
       }),
     });
   },
+
+  // =========================================================================
+  // Stage 19: Git & Version Control Engine
+  // =========================================================================
+
+  async getGitCapabilities(userId = 'default_user'): Promise<GitCapabilitiesResponse> {
+    return request<GitCapabilitiesResponse>(
+      `/git/capabilities?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async getGitRepositoryStatus(
+    projectId = 'proj_default_py',
+    userId = 'default_user'
+  ): Promise<GitRepositoryStatusResponse> {
+    return request<GitRepositoryStatusResponse>(
+      `/git/status?project_id=${encodeURIComponent(projectId)}&user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async initGitRepository(params: {
+    user_id?: string;
+    project_id: string;
+    default_branch?: string;
+    author_name?: string;
+    author_email?: string;
+    create_gitignore?: boolean;
+    initial_commit?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/init', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        default_branch: params.default_branch || 'main',
+        author_name: params.author_name,
+        author_email: params.author_email,
+        create_gitignore: params.create_gitignore ?? true,
+        initial_commit: params.initial_commit ?? true,
+      }),
+    });
+  },
+
+  async stageGitFiles(params: {
+    user_id?: string;
+    project_id: string;
+    paths?: string[];
+    stage_all?: boolean;
+    allow_sensitive?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/stage', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        paths: params.paths || [],
+        stage_all: params.stage_all ?? false,
+        allow_sensitive: params.allow_sensitive ?? false,
+      }),
+    });
+  },
+
+  async unstageGitFiles(params: {
+    user_id?: string;
+    project_id: string;
+    paths?: string[];
+    stage_all?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/unstage', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        paths: params.paths || [],
+        stage_all: params.stage_all ?? false,
+      }),
+    });
+  },
+
+  async getGitDiff(params: {
+    user_id?: string;
+    project_id: string;
+    scope?: 'unstaged' | 'staged' | 'all_working' | 'branch_compare' | 'commit';
+    file_path?: string;
+    base_ref?: string;
+    compare_ref?: string;
+  }): Promise<GitDiffResponse> {
+    const q = new URLSearchParams({
+      user_id: params.user_id || 'default_user',
+      project_id: params.project_id,
+      scope: params.scope || 'all_working',
+    });
+    if (params.file_path) q.set('file_path', params.file_path);
+    if (params.base_ref) q.set('base_ref', params.base_ref);
+    if (params.compare_ref) q.set('compare_ref', params.compare_ref);
+    return request<GitDiffResponse>(`/git/diff?${q.toString()}`);
+  },
+
+  async commitGitChanges(params: {
+    user_id?: string;
+    project_id: string;
+    message: string;
+    description?: string;
+    stage_all?: boolean;
+    confirmed?: boolean;
+    allow_secret_override?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/commit', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        message: params.message,
+        description: params.description || '',
+        stage_all: params.stage_all ?? false,
+        confirmed: params.confirmed ?? false,
+        allow_secret_override: params.allow_secret_override ?? false,
+      }),
+    });
+  },
+
+  async listGitCommits(
+    projectId: string,
+    userId = 'default_user',
+    limit = 25
+  ): Promise<{ project_id: string; commits: GitCommitEntry[]; total: number }> {
+    return request(
+      `/git/commits?project_id=${encodeURIComponent(projectId)}&user_id=${encodeURIComponent(userId)}&limit=${limit}`
+    );
+  },
+
+  async manageGitBranch(params: {
+    user_id?: string;
+    project_id: string;
+    action: 'create' | 'switch' | 'merge';
+    branch_name: string;
+    source_branch?: string;
+    checkout_on_create?: boolean;
+    allow_dirty_switch?: boolean;
+    confirmed?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/branches', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        action: params.action,
+        branch_name: params.branch_name,
+        source_branch: params.source_branch,
+        checkout_on_create: params.checkout_on_create ?? true,
+        allow_dirty_switch: params.allow_dirty_switch ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async compareGitBranches(params: {
+    user_id?: string;
+    project_id: string;
+    base_branch: string;
+    compare_branch: string;
+  }): Promise<GitBranchComparisonResponse> {
+    const q = new URLSearchParams({
+      user_id: params.user_id || 'default_user',
+      project_id: params.project_id,
+      base_branch: params.base_branch,
+      compare_branch: params.compare_branch,
+    });
+    return request<GitBranchComparisonResponse>(`/git/compare?${q.toString()}`);
+  },
+
+  async configureGitRemote(params: {
+    user_id?: string;
+    project_id: string;
+    name?: string;
+    url: string;
+    provider?: GitRemoteProvider;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/remotes', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        name: params.name || 'origin',
+        url: params.url,
+        provider: params.provider || 'github',
+      }),
+    });
+  },
+
+  async syncGitRemote(params: {
+    user_id?: string;
+    project_id: string;
+    remote_name?: string;
+    action: 'fetch' | 'pull' | 'push';
+    branch?: string;
+    force?: boolean;
+    allow_network?: boolean;
+    confirmed?: boolean;
+  }): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>('/git/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        remote_name: params.remote_name || 'origin',
+        action: params.action,
+        branch: params.branch,
+        force: params.force ?? false,
+        allow_network: params.allow_network ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async reviewGitChanges(params: {
+    user_id?: string;
+    project_id: string;
+    paths?: string[];
+    run_stage18_tests?: boolean;
+  }): Promise<GitCodeReviewResponse> {
+    return request<GitCodeReviewResponse>('/git/review', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        paths: params.paths || [],
+        run_stage18_tests: params.run_stage18_tests ?? true,
+      }),
+    });
+  },
+
+  async listGitPullRequests(
+    projectId: string,
+    userId = 'default_user'
+  ): Promise<{ pull_requests: GitPullRequestRecord[]; total: number }> {
+    return request(
+      `/git/pull-requests?project_id=${encodeURIComponent(projectId)}&user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async createGitPullRequest(params: {
+    user_id?: string;
+    project_id: string;
+    title: string;
+    description?: string;
+    source_branch: string;
+    target_branch?: string;
+    issue_references?: string[];
+    submit_to_remote?: boolean;
+    confirmed?: boolean;
+  }): Promise<GitPullRequestRecord> {
+    return request<GitPullRequestRecord>('/git/pull-requests', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        title: params.title,
+        description: params.description || '',
+        source_branch: params.source_branch,
+        target_branch: params.target_branch || 'main',
+        issue_references: params.issue_references || [],
+        submit_to_remote: params.submit_to_remote ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async listGitOperations(
+    projectId?: string,
+    userId = 'default_user',
+    limit = 30
+  ): Promise<{ operations: GitOperationRecord[]; total: number }> {
+    const q = new URLSearchParams({ user_id: userId, limit: String(limit) });
+    if (projectId) q.set('project_id', projectId);
+    return request(`/git/operations?${q.toString()}`);
+  },
+
+  async approveGitOperation(
+    operationId: string,
+    params: {
+      user_id?: string;
+      approved: boolean;
+      user_note?: string;
+    }
+  ): Promise<GitOperationRecord> {
+    return request<GitOperationRecord>(
+      `/git/operations/${encodeURIComponent(operationId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          approved: params.approved,
+          user_note: params.user_note,
+        }),
+      }
+    );
+  },
 };
+
 

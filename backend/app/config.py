@@ -169,6 +169,27 @@ class Settings(BaseModel):
         "TERMINAL_DEFAULT_ALLOW_NETWORK", "false"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 19: Git & Version Control Engine
+    git_db_path: str = os.getenv(
+        "GIT_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "terminal_workspace" / "nexora_git.db"),
+    )
+    git_default_author_name: str = os.getenv("GIT_DEFAULT_AUTHOR_NAME", "Nexora Developer")
+    git_default_author_email: str = os.getenv("GIT_DEFAULT_AUTHOR_EMAIL", "developer@nexora.local")
+    git_default_branch: str = os.getenv("GIT_DEFAULT_BRANCH", "main")
+    git_command_timeout_seconds: float = float(
+        os.getenv("GIT_COMMAND_TIMEOUT_SECONDS", "10.0")
+    )
+    git_provider_token: str = os.getenv("GIT_PROVIDER_TOKEN", "")
+    git_allowed_remote_hosts: list[str] = [
+        h.strip().lower()
+        for h in os.getenv(
+            "GIT_ALLOWED_REMOTE_HOSTS",
+            "github.com,gitlab.com,bitbucket.org,codeberg.org",
+        ).split(",")
+        if h.strip()
+    ]
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():
