@@ -612,3 +612,76 @@ export interface RoutingExecuteResponse {
   latency_ms: number;
 }
 
+// Stage 13: Persistent Memory Engine Interfaces
+export type MemoryCategory =
+  | 'preferences'
+  | 'profile'
+  | 'project_context'
+  | 'conversation_summaries'
+  | 'temporary_context';
+
+export interface MemoryItem {
+  id: string;
+  user_id: string;
+  category: MemoryCategory;
+  key: string;
+  content: string;
+  tags: string[];
+  pinned: boolean;
+  is_temporary: boolean;
+  encrypted_at_rest: boolean;
+  source: string;
+  relevance_score?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MemoryPrivacySettings {
+  user_id: string;
+  memory_enabled: boolean;
+  temporary_chat_mode: boolean;
+  auto_summarize_conversations: boolean;
+  encrypt_at_rest: boolean;
+  block_sensitive_pii: boolean;
+}
+
+export interface MemoryStatusSummary {
+  user_id: string;
+  storage_backend: string;
+  db_healthy: boolean;
+  schema_version: number;
+  settings: MemoryPrivacySettings;
+  total_persistent_memories: number;
+  total_temporary_memories: number;
+  pinned_count: number;
+  by_category: Record<string, number>;
+  external_provider_disclosure: string;
+}
+
+export interface MemorySearchResponse {
+  user_id: string;
+  query: string;
+  total_matched: number;
+  total_count: number;
+  memories: MemoryItem[];
+  memory_enabled: boolean;
+  storage_backend: string;
+  external_provider_disclosure: string;
+}
+
+export interface MemoryCommandResponse {
+  action_taken:
+    | 'saved'
+    | 'deleted'
+    | 'listed'
+    | 'confirmation_required'
+    | 'rejected_sensitive'
+    | 'memory_disabled_or_temp'
+    | 'no_command_detected';
+  message: string;
+  affected_memories: MemoryItem[];
+  requires_confirmation: boolean;
+  pending_candidate?: Record<string, any> | null;
+}
+
+

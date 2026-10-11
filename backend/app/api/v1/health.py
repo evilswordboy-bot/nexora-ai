@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 12,
-        "stage_title": "Intelligent Model Routing Engine",
+        "stage": 13,
+        "stage_title": "Persistent Memory Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -30,6 +30,7 @@ async def health_check():
             "vision_intelligence": "operational",
             "reasoning_engine": "operational",
             "model_routing": "operational",
+            "persistent_memory": "operational",
         },
     }
 

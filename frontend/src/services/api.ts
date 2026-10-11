@@ -37,6 +37,12 @@ import {
   RoutingExecuteResponse,
   RoutingTaskCategory,
   RoutingPreference,
+  MemoryCategory,
+  MemoryItem,
+  MemoryPrivacySettings,
+  MemoryStatusSummary,
+  MemorySearchResponse,
+  MemoryCommandResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -749,6 +755,131 @@ export const api = {
     return request<{ cleared: boolean }>('/routing/usage', {
       method: 'DELETE',
     });
+  },
+
+  // Stage 13: Persistent Memory Engine Methods
+  async getMemoryStatus(userId = 'default_user'): Promise<MemoryStatusSummary> {
+    return request<MemoryStatusSummary>(`/memory/status?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async getMemorySettings(userId = 'default_user'): Promise<MemoryPrivacySettings> {
+    return request<MemoryPrivacySettings>(`/memory/settings?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async updateMemorySettings(settings: MemoryPrivacySettings): Promise<MemoryPrivacySettings> {
+    return request<MemoryPrivacySettings>('/memory/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    });
+  },
+
+  async getMemoryItems(params?: {
+    userId?: string;
+    category?: MemoryCategory;
+    includeTemporary?: boolean;
+  }): Promise<MemoryItem[]> {
+    const q = new URLSearchParams();
+    q.set('user_id', params?.userId || 'default_user');
+    if (params?.category) q.set('category', params.category);
+    if (params?.includeTemporary !== undefined) q.set('include_temporary', String(params.includeTemporary));
+    return request<MemoryItem[]>(`/memory/items?${q.toString()}`);
+  },
+
+  async createMemoryItem(params: {
+    user_id?: string;
+    category?: MemoryCategory;
+    key?: string;
+    content: string;
+    tags?: string[];
+    pinned?: boolean;
+  }): Promise<MemoryItem> {
+    return request<MemoryItem>('/memory/items', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        category: params.category,
+        key: params.key,
+        content: params.content,
+        tags: params.tags || [],
+        pinned: params.pinned ?? false,
+      }),
+    });
+  },
+
+  async updateMemoryItem(
+    memoryId: string,
+    params: {
+      user_id?: string;
+      category?: MemoryCategory;
+      key?: string;
+      content?: string;
+      tags?: string[];
+      pinned?: boolean;
+    }
+  ): Promise<MemoryItem> {
+    return request<MemoryItem>(`/memory/items/${encodeURIComponent(memoryId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        ...params,
+      }),
+    });
+  },
+
+  async deleteMemoryItem(memoryId: string, userId = 'default_user'): Promise<{ deleted: boolean }> {
+    return request<{ deleted: boolean }>(
+      `/memory/items/${encodeURIComponent(memoryId)}?user_id=${encodeURIComponent(userId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async clearAllMemories(userId = 'default_user'): Promise<{ cleared: boolean; removed_count: number }> {
+    return request<{ cleared: boolean; removed_count: number }>(
+      `/memory/clear?user_id=${encodeURIComponent(userId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async searchMemories(params: {
+    user_id?: string;
+    query: string;
+    category?: MemoryCategory;
+    include_temporary?: boolean;
+    top_k?: number;
+  }): Promise<MemorySearchResponse> {
+    return request<MemorySearchResponse>('/memory/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        query: params.query,
+        category: params.category,
+        include_temporary: params.include_temporary ?? true,
+        top_k: params.top_k ?? 10,
+      }),
+    });
+  },
+
+  async executeMemoryCommand(params: {
+    user_id?: string;
+    text: string;
+    confirm_ambiguous?: boolean;
+    temporary_chat?: boolean;
+  }): Promise<MemoryCommandResponse> {
+    return request<MemoryCommandResponse>('/memory/command', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        text: params.text,
+        confirm_ambiguous: params.confirm_ambiguous ?? false,
+        temporary_chat: params.temporary_chat ?? false,
+      }),
+    });
+  },
+
+  async exportMemoryBackup(userId = 'default_user'): Promise<{ user_id: string; count: number; memories: any[] }> {
+    return request<{ user_id: string; count: number; memories: any[] }>(
+      `/memory/export?user_id=${encodeURIComponent(userId)}`
+    );
   },
 };
 

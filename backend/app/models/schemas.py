@@ -89,6 +89,11 @@ class ChatRequest(BaseModel):
     # Stage 4 Document Vault Context parameters
     document_ids: Optional[List[str]] = None  # IDs of active documents for grounded RAG chat
 
+    # Stage 13 Persistent Memory parameters
+    user_id: Optional[str] = "default_user"
+    memory_enabled: Optional[bool] = True
+    temporary_chat: Optional[bool] = False
+
     @field_validator("messages")
     @classmethod
     def validate_messages_count(cls, v: List[Message]) -> List[Message]:
@@ -111,6 +116,8 @@ class ChatResponse(BaseModel):
     sources: Optional[List[SearchResultItem]] = None
     search_mode: Optional[SearchMode] = None
     research_queries: Optional[List[str]] = None
+    used_memories: Optional[List[Dict[str, Any]]] = None
+    memory_disclosure: Optional[str] = None
     created_at: datetime = Field(default_factory=utc_now)
 
 
@@ -785,5 +792,121 @@ class RoutingExecuteResponse(BaseModel):
     decision: RoutingDecision
     response: ChatResponse
     latency_ms: float
+
+
+# --- Stage 13: Persistent Memory Engine Schemas ---
+MemoryCategory = Literal[
+    "preferences",
+    "profile",
+    "project_context",
+    "conversation_summaries",
+    "temporary_context",
+]
+
+
+class MemoryItem(BaseModel):
+    id: str
+    user_id: str = "default_user"
+    category: MemoryCategory = "profile"
+    key: str
+    content: str
+    tags: List[str] = Field(default_factory=list)
+    pinned: bool = False
+    is_temporary: bool = False
+    encrypted_at_rest: bool = True
+    source: str = "user_explicit"
+    relevance_score: Optional[float] = None
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class MemoryCreateRequest(BaseModel):
+    user_id: str = Field(default="default_user", min_length=1, max_length=120)
+    category: Optional[MemoryCategory] = None
+    key: Optional[str] = None
+    content: str = Field(..., min_length=1, max_length=4000)
+    tags: List[str] = Field(default_factory=list)
+    pinned: bool = False
+    source: str = "user_explicit"
+    confirmed: bool = True
+
+
+class MemoryUpdateRequest(BaseModel):
+    user_id: str = Field(default="default_user", min_length=1, max_length=120)
+    category: Optional[MemoryCategory] = None
+    key: Optional[str] = None
+    content: Optional[str] = Field(default=None, min_length=1, max_length=4000)
+    tags: Optional[List[str]] = None
+    pinned: Optional[bool] = None
+
+
+class MemorySearchRequest(BaseModel):
+    user_id: str = "default_user"
+    query: str = ""
+    category: Optional[MemoryCategory] = None
+    include_temporary: bool = True
+    top_k: int = Field(default=10, ge=1, le=100)
+
+
+class MemorySearchResponse(BaseModel):
+    user_id: str
+    query: str
+    total_matched: int = 0
+    total_count: int = 0
+    memories: List[MemoryItem]
+    memory_enabled: bool = True
+    storage_backend: str = "sqlite3"
+    external_provider_disclosure: str = (
+        "Retrieved memories are injected inside <user_memory_context> tags as contextual data only "
+        "and are transmitted to the selected external AI provider only when generating a response."
+    )
+
+
+class MemoryCommandRequest(BaseModel):
+    user_id: str = "default_user"
+    text: str = Field(..., min_length=1, max_length=4000)
+    confirm_ambiguous: bool = False
+    temporary_chat: bool = False
+
+
+class MemoryCommandResponse(BaseModel):
+    action_taken: Literal[
+        "saved",
+        "deleted",
+        "listed",
+        "confirmation_required",
+        "rejected_sensitive",
+        "memory_disabled_or_temp",
+        "no_command_detected",
+    ]
+    message: str
+    affected_memories: List[MemoryItem] = Field(default_factory=list)
+    requires_confirmation: bool = False
+    pending_candidate: Optional[Dict[str, Any]] = None
+
+
+class MemoryPrivacySettings(BaseModel):
+    user_id: str = "default_user"
+    memory_enabled: bool = True
+    temporary_chat_mode: bool = False
+    auto_summarize_conversations: bool = False
+    encrypt_at_rest: bool = True
+    block_sensitive_pii: bool = True
+
+
+class MemoryStatusSummary(BaseModel):
+    user_id: str
+    storage_backend: str = "sqlite3"
+    db_healthy: bool = True
+    schema_version: int = 1
+    settings: MemoryPrivacySettings
+    total_persistent_memories: int = 0
+    total_temporary_memories: int = 0
+    pinned_count: int = 0
+    by_category: Dict[str, int] = Field(default_factory=dict)
+    external_provider_disclosure: str = (
+        "Saved memories are stored locally in encrypted SQLite storage. When Memory is enabled, "
+        "relevant memories may be sent as read-only context to your configured AI provider."
+    )
 
 

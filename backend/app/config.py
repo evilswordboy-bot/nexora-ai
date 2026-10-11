@@ -66,6 +66,16 @@ class Settings(BaseModel):
     per_request_max_cost_usd: float = float(os.getenv("PER_REQUEST_MAX_COST_USD", "0.50"))
     routing_timeout_seconds: float = float(os.getenv("ROUTING_TIMEOUT_SECONDS", "30.0"))
 
+    # Stage 13: Persistent Memory Engine
+    memory_db_path: str = os.getenv(
+        "MEMORY_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "memory" / "nexora_memory.db"),
+    )
+    memory_enabled_by_default: bool = os.getenv("MEMORY_ENABLED_BY_DEFAULT", "true").lower() in ("true", "1", "yes")
+    memory_encryption_secret: str = os.getenv("MEMORY_ENCRYPTION_SECRET", "nexora-stage13-local-at-rest-secret")
+    max_memories_per_user: int = int(os.getenv("MAX_MEMORIES_PER_USER", "500"))
+    top_k_memories: int = int(os.getenv("TOP_K_MEMORIES", "5"))
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

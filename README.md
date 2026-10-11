@@ -298,21 +298,16 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 
 ---
 
-## 📋 Stage 2 Verification Checklist
+## 📋 Stage 13: Persistent Memory Engine & Privacy Checklist
 
-- [x] Real-time Server-Sent Events (SSE) streaming (`POST /api/v1/chat/stream`).
-- [x] Client-side `AbortController` stop-generation control.
-- [x] Live response generation typing cursor and smooth autoscrolling.
-- [x] Modular provider architecture (`BaseAIProvider`, `GeminiProvider`, `OpenAIProvider`, `AnthropicProvider`, `OfflineHonestProvider`).
-- [x] Strict conversation context retention and configurable sliding window limits (`MAX_CONTEXT_MESSAGES=20`).
-- [x] Follow-up questions, message regeneration, copy response, and prompt editing.
-- [x] Smart conversation auto-titling from conversation content (`POST /api/v1/chat/generate-title`).
-- [x] Message size validation (up to 32,000 characters) and request timeout enforcement.
-- [x] Zero-fake-response policy strictly maintained when keys are missing.
-- [x] Adult-content safety guardrail with legitimate medical/educational exemption integrated into streaming.
-- [x] 13/13 automated Pytest test cases passing.
-- [x] Frontend TypeScript type check and production build verified.
-- [x] Updated `PHASE_STATUS.md` and `.env.example`.
+- [x] **SQLite Persistent Storage (`data/memory/nexora_memory.db`)**: Schema migration tracking (`schema_migrations`), automatic fallback recovery to `:memory:` if disk path is unavailable, and portable JSON backup export (`GET /api/v1/memory/export`).
+- [x] **Authenticated At-Rest Encryption (`enc:v1:...`)**: Standard-library `HMAC-SHA256` stream cipher encrypts and verifies integrity of saved memory facts on disk.
+- [x] **Modular Memory Categories**: Separate storage and filtering for `preferences`, `profile`, `project_context`, `conversation_summaries`, and volatile `temporary_context` (RAM only, never written to disk).
+- [x] **Full User Lifecycle Controls**: Create, view, search by relevance, edit, pin (`pinned`), delete individual memories, or clear all memories via `/api/v1/memory/*` and **Memory Center (`MemoryStudio.tsx`)**.
+- [x] **Natural-Language Memory Commands**: Supports `"Remember this..."`, `"Forget this..."`, `"What do you remember about me?"`, and requires explicit user confirmation (`requires_confirmation: true`) when intent is ambiguous.
+- [x] **Multi-User Isolation & Privacy Guard**: Strict `user_id` scoping prevents cross-user memory access; Sensitive PII/Secret Guard blocks API keys, passwords, SSNs, and payment card numbers from being stored; supports Temporary Chat mode (`temporary_chat: true`) and `<user_memory_context>` prompt-injection quarantine.
+- [x] **82/82 Automated Pytest Tests Passing** across Stages 1–13 (`tests/test_stage13_memory.py`).
+- [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 2 is complete. Do not proceed to Stage 3 until Stage 2 has been reviewed and approved.*
+*Stage 13 is complete. Do not proceed to Stage 14 until Stage 13 has been reviewed and approved.*

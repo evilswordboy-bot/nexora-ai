@@ -57,3 +57,9 @@ lerna-debug.log*
 *.swo
 .DS_Store
 Thumbs.db
+
+# Local Runtime Databases
+*.db
+*.db-journal
+*.db-wal
+backend/data/memory/

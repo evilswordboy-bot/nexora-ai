@@ -14,6 +14,7 @@ import { RealTimeWorkspace } from './components/realtime/RealTimeWorkspace';
 import { VisionStudio } from './components/vision/VisionStudio';
 import { ReasoningStudio } from './components/reasoning/ReasoningStudio';
 import { RoutingStudio } from './components/routing/RoutingStudio';
+import { MemoryStudio } from './components/memory/MemoryStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -42,6 +43,8 @@ const MainLayout: React.FC = () => {
           <ReasoningStudio />
         ) : activeWorkspaceView === 'routing' ? (
           <RoutingStudio />
+        ) : activeWorkspaceView === 'memory' ? (
+          <MemoryStudio />
         ) : (
           <ChatArea />
         )}

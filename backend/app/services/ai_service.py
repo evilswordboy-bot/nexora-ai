@@ -199,11 +199,74 @@ class AIService:
                     "system_prompt": f"{current_sys}\n\n### Machine OCR Context from Attached Images:\n{vision_context}".strip()
                 })
 
+        # Stage 13 Persistent Memory Engine Context Augmentation
+        used_memories_meta = None
+        memory_disclosure = None
+        if request.memory_enabled and not request.temporary_chat:
+            try:
+                from app.services.memory.engine import memory_engine
+                from app.models.schemas import MemoryCommandRequest
+
+                cmd_res = memory_engine.process_memory_command(
+                    MemoryCommandRequest(
+                        user_id=request.user_id or "default_user",
+                        text=latest_user_message,
+                        temporary_chat=request.temporary_chat,
+                    )
+                )
+                retrieved_memories = memory_engine.retrieve_relevant_memories(
+                    user_id=request.user_id or "default_user",
+                    query=latest_user_message,
+                    top_k=settings.top_k_memories,
+                    temporary_chat=request.temporary_chat,
+                )
+                if cmd_res.action_taken != "no_command_detected" and cmd_res.affected_memories:
+                    seen_ids = {m.id for m in retrieved_memories}
+                    for am in cmd_res.affected_memories:
+                        if am.id not in seen_ids:
+                            retrieved_memories.insert(0, am)
+                            seen_ids.add(am.id)
+
+                if retrieved_memories or cmd_res.action_taken != "no_command_detected":
+                    mem_block = memory_engine.format_memory_context_for_prompt(retrieved_memories)
+                    cmd_note = (
+                        f"\n[Memory Engine Action ({cmd_res.action_taken})]: {cmd_res.message}"
+                        if cmd_res.action_taken != "no_command_detected"
+                        else ""
+                    )
+                    current_sys = active_request.system_prompt or ""
+                    active_request = active_request.model_copy(update={
+                        "system_prompt": f"{current_sys}\n\n### Persistent Memory Context:\n{mem_block}{cmd_note}".strip()
+                    })
+                    used_memories_meta = [
+                        {
+                            "id": m.id,
+                            "category": m.category,
+                            "key": m.key,
+                            "content": m.content,
+                            "pinned": m.pinned,
+                        }
+                        for m in retrieved_memories
+                    ]
+                    if provider_name == "offline":
+                        memory_disclosure = f"Local memory active ({len(retrieved_memories)} item(s) retrieved; processed locally)."
+                    else:
+                        memory_disclosure = (
+                            f"Personalization active: {len(retrieved_memories)} relevant memory item(s) shared with "
+                            f"configured provider '{provider_name}'."
+                        )
+            except Exception as me:
+                logger.warning(f"Memory engine notice: {me}")
+        elif request.temporary_chat:
+            memory_disclosure = "Temporary Chat active: Persistent memory reading and saving are disabled for this session."
+
         # 3. Provider Generation
         response = await provider.generate(active_request, api_key or "")
         response.sources = sources if sources else None
         response.search_mode = request.search_mode
         response.research_queries = research_queries if research_queries else None
+        response.used_memories = used_memories_meta
+        response.memory_disclosure = memory_disclosure
         return response
 
     async def stream_response(self, request: ChatRequest) -> AsyncGenerator[str, None]:
@@ -343,6 +406,39 @@ class AIService:
                 active_request = active_request.model_copy(update={
                     "system_prompt": f"{current_sys}\n\n### Machine OCR Context from Attached Images:\n{vision_context}".strip()
                 })
+
+        # Stage 13 Persistent Memory Engine Streaming Context Augmentation
+        if request.memory_enabled and not request.temporary_chat:
+            try:
+                from app.services.memory.engine import memory_engine
+                from app.models.schemas import MemoryCommandRequest
+
+                cmd_res = memory_engine.process_memory_command(
+                    MemoryCommandRequest(
+                        user_id=request.user_id or "default_user",
+                        text=latest_user_message,
+                        temporary_chat=request.temporary_chat,
+                    )
+                )
+                retrieved_memories = memory_engine.retrieve_relevant_memories(
+                    user_id=request.user_id or "default_user",
+                    query=latest_user_message,
+                    top_k=settings.top_k_memories,
+                    temporary_chat=request.temporary_chat,
+                )
+                if retrieved_memories or cmd_res.action_taken != "no_command_detected":
+                    mem_block = memory_engine.format_memory_context_for_prompt(retrieved_memories)
+                    cmd_note = (
+                        f"\n[Memory Engine Action ({cmd_res.action_taken})]: {cmd_res.message}"
+                        if cmd_res.action_taken != "no_command_detected"
+                        else ""
+                    )
+                    current_sys = active_request.system_prompt or ""
+                    active_request = active_request.model_copy(update={
+                        "system_prompt": f"{current_sys}\n\n### Persistent Memory Context:\n{mem_block}{cmd_note}".strip()
+                    })
+            except Exception as me:
+                logger.warning(f"Streaming memory engine notice: {me}")
 
         # 3. Stream from Chosen Provider
         async for chunk in provider.stream(active_request, api_key or ""):

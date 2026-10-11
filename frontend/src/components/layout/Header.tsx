@@ -1,6 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
-import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network } from 'lucide-react';
+import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network, Database } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Stage 12
+                Stage 13
               </span>
             </div>
           </div>
@@ -83,6 +83,17 @@ export const Header: React.FC = () => {
           >
             <Network className="w-3.5 h-3.5 text-cyan-400" />
             <span>Model Router</span>
+          </button>
+          <button
+            onClick={() => setActiveWorkspaceView('memory')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'memory'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Memory Center</span>
           </button>
           <button
             onClick={() => setActiveWorkspaceView('vision')}
