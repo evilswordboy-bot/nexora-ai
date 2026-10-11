@@ -408,6 +408,55 @@ class ToolRegistry:
             handler=self._handle_workspace_bulk_organizer,
         )
 
+        # 14. Stage 18: Sandboxed Code & Test Runner Tool
+        self.register(
+            tool=ToolDefinition(
+                name="terminal_code_runner",
+                description="Inspects, lints, executes, or tests code inside the isolated Stage 18 developer sandbox with CPU/memory/timeout limits and network disabled by default.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "default": "run",
+                            "description": "run | test | inspect | debug_repair",
+                        },
+                        "project_id": {"type": "string", "default": "proj_default_py"},
+                        "target_file": {"type": "string", "default": "main.py"},
+                        "user_id": {"type": "string", "default": "default_user"},
+                    },
+                },
+                stage_introduced=18,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_terminal_code_runner,
+        )
+
+        # 15. Stage 18: Consequential Terminal Package & Command Runner (Requires Approval)
+        self.register(
+            tool=ToolDefinition(
+                name="terminal_package_and_command",
+                description="Executes consequential developer terminal operations (package installation, file removal, or network-enabled execution) after explicit user approval.",
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "command": {"type": "string", "description": "Terminal command to execute"},
+                        "project_id": {"type": "string", "default": "proj_default_py"},
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "allow_network": {"type": "boolean", "default": False},
+                    },
+                    "required": ["command"],
+                },
+                stage_introduced=18,
+                requires_approval=True,
+                risk_level="high",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_terminal_package_and_command,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -827,6 +876,109 @@ class ToolRegistry:
             "status": op.status,
             "verified": op.verified,
             "summary": op.summary,
+        }
+
+    async def _handle_terminal_code_runner(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.terminal.engine import terminal_execution_engine
+        from app.models.schemas import (
+            CodeExecuteRequest,
+            CodeInspectRequest,
+            DebugRepairRequest,
+        )
+
+        action = str(params.get("action", "run")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        project_id = str(params.get("project_id", "proj_default_py")).strip()
+        target_file = str(params.get("target_file", "main.py")).strip()
+        terminal_execution_engine._ensure_default_project(user_id)
+
+        if action == "inspect":
+            res = terminal_execution_engine.inspect_code(
+                CodeInspectRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    relative_path=target_file,
+                )
+            )
+            return {
+                "action": "inspect",
+                "project_id": project_id,
+                "target_file": target_file,
+                "syntax_valid": res.syntax_valid,
+                "diagnostics_count": len(res.diagnostics),
+                "missing_dependencies_count": res.missing_dependencies_count,
+                "summary": res.summary,
+            }
+
+        if action == "debug_repair":
+            rep = await terminal_execution_engine.debug_and_repair(
+                DebugRepairRequest(
+                    user_id=user_id,
+                    project_id=project_id,
+                    target_file=target_file,
+                    run_tests=True,
+                )
+            )
+            return {
+                "action": "debug_repair",
+                "repair_id": rep.repair_id,
+                "status": rep.status,
+                "attempts_used": rep.attempts_used,
+                "final_verified": rep.final_verified,
+                "summary": rep.explanation,
+            }
+
+        mode = "test" if action == "test" else "run"
+        exec_rec = await terminal_execution_engine.execute_code(
+            CodeExecuteRequest(
+                user_id=user_id,
+                project_id=project_id,
+                target_file=target_file if mode == "run" else None,
+                mode=mode,  # type: ignore[arg-type]
+            )
+        )
+        return {
+            "action": mode,
+            "execution_id": exec_rec.execution_id,
+            "status": exec_rec.status,
+            "exit_code": exec_rec.exit_code,
+            "verified": exec_rec.verified_execution,
+            "stdout": exec_rec.stdout,
+            "stderr": exec_rec.stderr,
+            "summary": (
+                f"Sandbox {mode} ({target_file}) finished with status={exec_rec.status}, "
+                f"exit_code={exec_rec.exit_code}: {(exec_rec.stdout or exec_rec.stderr).strip()[:300]}"
+            ),
+        }
+
+    async def _handle_terminal_package_and_command(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.terminal.engine import terminal_execution_engine
+        from app.models.schemas import TerminalCommandRequest
+
+        user_id = str(params.get("user_id", "default_user")).strip()
+        project_id = str(params.get("project_id", "proj_default_py")).strip()
+        command = str(params.get("command", "")).strip()
+        allow_network = bool(params.get("allow_network", False))
+        terminal_execution_engine._ensure_default_project(user_id)
+
+        rec = await terminal_execution_engine.run_terminal_command(
+            TerminalCommandRequest(
+                user_id=user_id,
+                project_id=project_id,
+                command=command,
+                allow_network=allow_network,
+                confirmed=True,
+            )
+        )
+        return {
+            "execution_id": rec.execution_id,
+            "status": rec.status,
+            "exit_code": rec.exit_code,
+            "verified": rec.verified_execution,
+            "summary": (
+                f"Terminal command '{command}' finished with status={rec.status}, "
+                f"exit_code={rec.exit_code}: {(rec.stdout or rec.stderr).strip()[:300]}"
+            ),
         }
 
 

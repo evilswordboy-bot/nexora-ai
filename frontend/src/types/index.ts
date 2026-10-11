@@ -1277,5 +1277,233 @@ export interface FileWorkspaceCapabilitiesResponse {
   security_boundaries: string[];
 }
 
+// ============================================================================
+// Stage 18: Terminal & Code Execution Engine Types
+// ============================================================================
 
+export type CodeLanguage =
+  | 'python'
+  | 'javascript'
+  | 'typescript'
+  | 'html'
+  | 'css'
+  | 'json'
+  | 'markdown';
 
+export type ProjectTemplateType = 'python' | 'javascript' | 'typescript' | 'web';
+
+export type TerminalExecutionStatus =
+  | 'PLANNED'
+  | 'WAITING_FOR_APPROVAL'
+  | 'RUNNING'
+  | 'SUCCEEDED'
+  | 'FAILED'
+  | 'TIMED_OUT'
+  | 'BLOCKED'
+  | 'CANCELLED';
+
+export type CommandRiskClassification =
+  | 'allowed_safe'
+  | 'requires_approval'
+  | 'blocked_forbidden';
+
+export interface CodeProjectFile {
+  relative_path: string;
+  name: string;
+  language: CodeLanguage;
+  size_bytes: number;
+  sha256_hash: string;
+  modified_at: string;
+  backup_count: number;
+  content?: string | null;
+}
+
+export interface CodeFileBackup {
+  backup_id: string;
+  user_id: string;
+  project_id: string;
+  relative_path: string;
+  version_number: number;
+  sha256_hash: string;
+  size_bytes: number;
+  reason: string;
+  created_at: string;
+}
+
+export interface CodeProjectSummary {
+  project_id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  template: ProjectTemplateType;
+  primary_language: CodeLanguage;
+  entrypoint: string;
+  test_entrypoint: string;
+  file_count: number;
+  created_at: string;
+  updated_at: string;
+  files: CodeProjectFile[];
+}
+
+export interface CodeDiagnosticIssue {
+  line: number;
+  column: number;
+  severity: 'error' | 'warning' | 'info';
+  code: string;
+  message: string;
+  rule_source: string;
+  suggestion?: string | null;
+}
+
+export interface DependencyStatusItem {
+  package_name: string;
+  ecosystem: 'pip' | 'npm' | 'builtin';
+  installed: boolean;
+  version?: string | null;
+  imported_in: string[];
+  install_command?: string | null;
+  setup_explanation: string;
+}
+
+export interface CodeInspectionResult {
+  project_id: string;
+  relative_path: string;
+  language: CodeLanguage;
+  syntax_valid: boolean;
+  formatted_content?: string | null;
+  formatting_changed: boolean;
+  diagnostics: CodeDiagnosticIssue[];
+  dependencies: DependencyStatusItem[];
+  missing_dependencies_count: number;
+  untrusted_instruction_warnings: string[];
+  summary: string;
+}
+
+export interface TestCaseResult {
+  name: string;
+  status: 'passed' | 'failed' | 'error' | 'skipped';
+  duration_ms: number;
+  message?: string | null;
+}
+
+export interface TestSuiteResult {
+  framework: string;
+  executed: boolean;
+  passed: number;
+  failed: number;
+  errors: number;
+  skipped: number;
+  total: number;
+  all_passed: boolean;
+  cases: TestCaseResult[];
+  raw_summary: string;
+}
+
+export interface CommandPreview {
+  raw_command: string;
+  normalized_command: string;
+  classification: CommandRiskClassification;
+  risk_level: 'low' | 'medium' | 'high' | 'critical';
+  target_workspace: string;
+  expected_effect: string;
+  requires_approval: boolean;
+  approval_reason?: string | null;
+  blocked_reason?: string | null;
+}
+
+export interface TerminalExecutionRecord {
+  execution_id: string;
+  user_id: string;
+  project_id: string;
+  execution_type:
+    | 'run_code'
+    | 'run_tests'
+    | 'terminal_command'
+    | 'syntax_check'
+    | 'debug_repair';
+  command_preview: CommandPreview;
+  status: TerminalExecutionStatus;
+  exit_code?: number | null;
+  stdout: string;
+  stderr: string;
+  output_truncated: boolean;
+  timed_out: boolean;
+  duration_ms: number;
+  memory_limit_mb: number;
+  network_enabled: boolean;
+  verified_execution: boolean;
+  approved?: boolean | null;
+  test_results?: TestSuiteResult | null;
+  error_diagnosis?: string | null;
+  suggested_fix?: string | null;
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface RepairIterationStep {
+  attempt_number: number;
+  failure_type: string;
+  diagnosis: string;
+  proposed_patch_summary: string;
+  backup_id?: string | null;
+  applied: boolean;
+  execution_id?: string | null;
+  exit_code?: number | null;
+  tests_passed: boolean;
+  stdout_excerpt: string;
+  stderr_excerpt: string;
+}
+
+export interface DebugRepairResponse {
+  repair_id: string;
+  user_id: string;
+  project_id: string;
+  target_file: string;
+  initial_error: string;
+  status:
+    | 'REPAIRED_AND_VERIFIED'
+    | 'MAX_ATTEMPTS_REACHED'
+    | 'REQUIRES_USER_INTERVENTION'
+    | 'NO_FAILURE_DETECTED';
+  attempts_used: number;
+  max_attempts: number;
+  final_verified: boolean;
+  intervention_reason?: string | null;
+  explanation: string;
+  iterations: RepairIterationStep[];
+  final_execution?: TerminalExecutionRecord | null;
+}
+
+export interface TerminalCapabilitiesResponse {
+  stage: number;
+  engine: string;
+  sandbox_mode: string;
+  supported_languages: string[];
+  runtimes: {
+    python: {
+      available: boolean;
+      version: string;
+      executable: string;
+      pytest_available: boolean;
+      unittest_available: boolean;
+    };
+    node: {
+      available: boolean;
+      executable?: string | null;
+    };
+    git: {
+      available: boolean;
+    };
+  };
+  limits: {
+    execution_timeout_seconds: number;
+    max_output_bytes: number;
+    max_memory_mb: number;
+    max_processes: number;
+    max_concurrent_runs_per_user: number;
+    max_repair_attempts: number;
+    default_allow_network: boolean;
+  };
+  allowlisted_commands: string[];
+  approval_required_operations: string[];
+}

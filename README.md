@@ -354,4 +354,18 @@ Builds cleanly with zero TypeScript or bundling errors in under 4 seconds.
 - [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
 
 ---
-*Stage 17 is complete. Do not proceed to Stage 18 until Stage 17 has been reviewed and approved.*
+
+## 📋 Stage 18: Terminal & Code Execution Engine Checklist
+
+- [x] **Developer Code Workspace (`TerminalExecutionEngine` in `backend/app/services/terminal/engine.py`)**: Isolated per-user, per-project workspaces (`data/terminal_workspace/<user_id>/<project_id>`) supporting Python, JavaScript, TypeScript, HTML, and CSS templates; automatic pre-edit and pre-repair version backups (`.nexora_code_backups` + SQLite `terminal_backups`) with 1-click restoration.
+- [x] **Syntax Checking, Formatting, Linting & Missing Dependency Detection (`/api/v1/terminal/inspect`)**: Real Python `ast.parse` syntax diagnostics, static linter (`PY_BARE_EXCEPT`, `PY_MUTABLE_DEFAULT`, `PY_DIV_BY_ZERO`, `PY_UNUSED_IMPORT`), deterministic PEP-8/JS formatting, import dependency inspection (`importlib.util.find_spec` + `requirements.txt` / `package.json`) with clear setup instructions, and untrusted repository instruction quarantine.
+- [x] **Sandboxed Code & Test Execution (`/api/v1/terminal/execute`)**: Runs code and unit tests (`unittest` / `pytest` / `node`) inside an isolated subprocess environment with sanitized environment variables (all host API keys stripped), recursion/memory/timeout/output-truncation limits (`5.0s`, `128MB`, `64KB`), and a runtime sandbox site-guard that disables outbound network sockets, `os.system`/`popen`, and outside-workspace writes by default.
+- [x] **Controlled Terminal & Approval Gates (`/api/v1/terminal/command`, `/executions/{id}/approve`)**: Classifies commands into `allowed_safe` (`python`, `pytest`, `node`, `ls`, `cat`, `pwd`, `echo`, `git status`), `requires_approval` (`pip install`, `npm install`, `rm`, `--allow-network`), and `blocked_forbidden` (credential theft, `env`, `.env`, `id_rsa`, `rm -rf`, command chaining `;`/`&&`/`|`, subshells, path traversal `..`).
+- [x] **Bounded Autonomous Debugging & Repair (`/api/v1/terminal/debug-repair`)**: Captures real `stdout`, `stderr`, `exit_code`, and unit test results; diagnoses root causes; snapshots backups; applies targeted fixes up to `TERMINAL_MAX_REPAIR_ATTEMPTS` (default `3`); verifies with real test re-execution; and stops immediately when user intervention is required (e.g., missing external packages).
+- [x] **Cross-Stage Integration & IDE Workspace (`TerminalCodeStudio.tsx`)**: Connects `terminal_code_runner` and `terminal_package_and_command` to `ToolRegistry` and Stage 14's `coding_agent`, and provides bidirectional sync with the Stage 17 File Workspace (`/api/v1/terminal/projects/{id}/sync-stage17`).
+- [x] **115/115 Automated Pytest Tests Passing** across Stages 1–18 (`tests/test_stage18_terminal.py`).
+- [x] **Frontend TypeScript & Vite Production Build Verified** (`0 errors`).
+
+---
+*Stage 18 is complete. Do not proceed to Stage 19 until Stage 18 has been reviewed and approved.*
+

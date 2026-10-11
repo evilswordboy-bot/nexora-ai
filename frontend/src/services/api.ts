@@ -69,6 +69,15 @@ import {
   WorkspaceFileReadResponse,
   WorkspaceFileVersion,
   WorkspaceTrashItem,
+  CodeFileBackup,
+  CodeInspectionResult,
+  CodeProjectFile,
+  CodeProjectSummary,
+  CommandPreview,
+  DebugRepairResponse,
+  ProjectTemplateType,
+  TerminalCapabilitiesResponse,
+  TerminalExecutionRecord,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -1593,6 +1602,272 @@ export const api = {
         target_filename: params.target_filename,
         overwrite: true,
         confirmed_overwrite: true,
+      }),
+    });
+  },
+
+  // =========================================================================
+  // Stage 18: Terminal & Code Execution Engine
+  // =========================================================================
+
+  async getTerminalCapabilities(userId = 'default_user'): Promise<TerminalCapabilitiesResponse> {
+    return request<TerminalCapabilitiesResponse>(
+      `/terminal/capabilities?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async listCodeProjects(userId = 'default_user'): Promise<CodeProjectSummary[]> {
+    return request<CodeProjectSummary[]>(
+      `/terminal/projects?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async createCodeProject(params: {
+    user_id?: string;
+    name: string;
+    description?: string;
+    template: ProjectTemplateType;
+  }): Promise<CodeProjectSummary> {
+    return request<CodeProjectSummary>('/terminal/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        name: params.name,
+        description: params.description || '',
+        template: params.template,
+      }),
+    });
+  },
+
+  async getCodeProject(projectId: string, userId = 'default_user'): Promise<CodeProjectSummary> {
+    return request<CodeProjectSummary>(
+      `/terminal/projects/${encodeURIComponent(projectId)}?user_id=${encodeURIComponent(userId)}`
+    );
+  },
+
+  async resetCodeProject(projectId: string, userId = 'default_user'): Promise<CodeProjectSummary> {
+    return request<CodeProjectSummary>(
+      `/terminal/projects/${encodeURIComponent(projectId)}/reset?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async saveCodeProjectFile(
+    projectId: string,
+    params: {
+      user_id?: string;
+      relative_path: string;
+      content: string;
+      create_backup?: boolean;
+      backup_reason?: string;
+    }
+  ): Promise<{ file: CodeProjectFile; backup: CodeFileBackup | null }> {
+    return request<{ file: CodeProjectFile; backup: CodeFileBackup | null }>(
+      `/terminal/projects/${encodeURIComponent(projectId)}/files`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          relative_path: params.relative_path,
+          content: params.content,
+          create_backup: params.create_backup ?? true,
+          backup_reason: params.backup_reason || 'editor_save',
+        }),
+      }
+    );
+  },
+
+  async listCodeProjectBackups(
+    projectId: string,
+    userId = 'default_user',
+    relativePath?: string
+  ): Promise<CodeFileBackup[]> {
+    const query = new URLSearchParams({ user_id: userId });
+    if (relativePath) query.set('relative_path', relativePath);
+    return request<CodeFileBackup[]>(
+      `/terminal/projects/${encodeURIComponent(projectId)}/backups?${query.toString()}`
+    );
+  },
+
+  async restoreCodeProjectBackup(
+    projectId: string,
+    backupId: string,
+    userId = 'default_user'
+  ): Promise<CodeProjectFile> {
+    return request<CodeProjectFile>(
+      `/terminal/projects/${encodeURIComponent(projectId)}/backups/${encodeURIComponent(backupId)}/restore?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async inspectProjectCode(params: {
+    user_id?: string;
+    project_id: string;
+    relative_path: string;
+    content?: string;
+    apply_formatting?: boolean;
+  }): Promise<CodeInspectionResult> {
+    return request<CodeInspectionResult>('/terminal/inspect', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        relative_path: params.relative_path,
+        content: params.content,
+        apply_formatting: params.apply_formatting ?? false,
+      }),
+    });
+  },
+
+  async executeProjectCode(params: {
+    user_id?: string;
+    project_id: string;
+    target_file?: string;
+    mode: 'run' | 'test';
+    args?: string[];
+    stdin_text?: string;
+    timeout_seconds?: number;
+    allow_network?: boolean;
+    confirmed_network?: boolean;
+  }): Promise<TerminalExecutionRecord> {
+    return request<TerminalExecutionRecord>('/terminal/execute', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        target_file: params.target_file,
+        mode: params.mode,
+        args: params.args || [],
+        stdin_text: params.stdin_text || '',
+        timeout_seconds: params.timeout_seconds,
+        allow_network: params.allow_network ?? false,
+        confirmed_network: params.confirmed_network ?? false,
+      }),
+    });
+  },
+
+  async classifyTerminalCommand(params: {
+    user_id?: string;
+    project_id: string;
+    command: string;
+    allow_network?: boolean;
+  }): Promise<CommandPreview> {
+    return request<CommandPreview>('/terminal/command/classify', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        command: params.command,
+        allow_network: params.allow_network ?? false,
+      }),
+    });
+  },
+
+  async runTerminalCommand(params: {
+    user_id?: string;
+    project_id: string;
+    command: string;
+    timeout_seconds?: number;
+    allow_network?: boolean;
+    confirmed?: boolean;
+    preview_only?: boolean;
+  }): Promise<TerminalExecutionRecord> {
+    return request<TerminalExecutionRecord>('/terminal/command', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        command: params.command,
+        timeout_seconds: params.timeout_seconds,
+        allow_network: params.allow_network ?? false,
+        confirmed: params.confirmed ?? false,
+        preview_only: params.preview_only ?? false,
+      }),
+    });
+  },
+
+  async listTerminalExecutions(
+    userId = 'default_user',
+    projectId?: string,
+    limit = 30
+  ): Promise<TerminalExecutionRecord[]> {
+    const query = new URLSearchParams({ user_id: userId, limit: String(limit) });
+    if (projectId) query.set('project_id', projectId);
+    return request<TerminalExecutionRecord[]>(`/terminal/executions?${query.toString()}`);
+  },
+
+  async approveTerminalExecution(
+    executionId: string,
+    params: {
+      user_id?: string;
+      approved: boolean;
+      user_note?: string;
+    }
+  ): Promise<TerminalExecutionRecord> {
+    return request<TerminalExecutionRecord>(
+      `/terminal/executions/${encodeURIComponent(executionId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          approved: params.approved,
+          user_note: params.user_note,
+        }),
+      }
+    );
+  },
+
+  async stopTerminalExecution(
+    executionId: string,
+    userId = 'default_user'
+  ): Promise<{ execution_id: string; stopped: boolean; message: string }> {
+    return request<{ execution_id: string; stopped: boolean; message: string }>(
+      `/terminal/executions/${encodeURIComponent(executionId)}/stop?user_id=${encodeURIComponent(userId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async debugAndRepairCode(params: {
+    user_id?: string;
+    project_id: string;
+    target_file: string;
+    run_tests?: boolean;
+    max_attempts?: number;
+    auto_apply?: boolean;
+  }): Promise<DebugRepairResponse> {
+    return request<DebugRepairResponse>('/terminal/debug-repair', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        project_id: params.project_id,
+        target_file: params.target_file,
+        run_tests: params.run_tests ?? true,
+        max_attempts: params.max_attempts ?? 3,
+        auto_apply: params.auto_apply ?? true,
+      }),
+    });
+  },
+
+  async syncCodeProjectWithStage17(
+    projectId: string,
+    params: {
+      user_id?: string;
+      direction: 'to_stage17' | 'from_stage17';
+      relative_path?: string;
+    }
+  ): Promise<{
+    project_id: string;
+    direction: string;
+    synced_count: number;
+    synced_files: string[];
+    summary: string;
+  }> {
+    return request(`/terminal/projects/${encodeURIComponent(projectId)}/sync-stage17`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        direction: params.direction,
+        relative_path: params.relative_path,
       }),
     });
   },

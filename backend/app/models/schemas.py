@@ -1661,4 +1661,261 @@ class FileBrowserImportRequest(BaseModel):
     confirmed_overwrite: bool = True
 
 
+# ============================================================================
+# Stage 18: Terminal & Code Execution Engine Schemas
+# ============================================================================
 
+CodeLanguage = Literal["python", "javascript", "typescript", "html", "css", "json", "markdown"]
+ProjectTemplateType = Literal["python", "javascript", "typescript", "web"]
+
+TerminalExecutionStatus = Literal[
+    "PLANNED",
+    "WAITING_FOR_APPROVAL",
+    "RUNNING",
+    "SUCCEEDED",
+    "FAILED",
+    "TIMED_OUT",
+    "BLOCKED",
+    "CANCELLED",
+]
+
+CommandRiskClassification = Literal[
+    "allowed_safe",
+    "requires_approval",
+    "blocked_forbidden",
+]
+
+
+class CodeProjectFile(BaseModel):
+    relative_path: str
+    name: str
+    language: CodeLanguage = "python"
+    size_bytes: int = 0
+    sha256_hash: str = ""
+    modified_at: datetime = Field(default_factory=utc_now)
+    backup_count: int = 0
+    content: Optional[str] = None
+
+
+class CodeFileBackup(BaseModel):
+    backup_id: str
+    user_id: str = "default_user"
+    project_id: str
+    relative_path: str
+    version_number: int
+    sha256_hash: str
+    size_bytes: int
+    reason: str = "pre_edit_backup"
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class CodeProjectSummary(BaseModel):
+    project_id: str
+    user_id: str = "default_user"
+    name: str
+    description: str = ""
+    template: ProjectTemplateType = "python"
+    primary_language: CodeLanguage = "python"
+    entrypoint: str = "main.py"
+    test_entrypoint: str = "test_main.py"
+    file_count: int = 0
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    files: List[CodeProjectFile] = Field(default_factory=list)
+
+
+class CodeDiagnosticIssue(BaseModel):
+    line: int = 1
+    column: int = 1
+    severity: Literal["error", "warning", "info"] = "error"
+    code: str = "SYNTAX"
+    message: str
+    rule_source: str = "ast_checker"
+    suggestion: Optional[str] = None
+
+
+class DependencyStatusItem(BaseModel):
+    package_name: str
+    ecosystem: Literal["pip", "npm", "builtin"] = "pip"
+    installed: bool = True
+    version: Optional[str] = None
+    imported_in: List[str] = Field(default_factory=list)
+    install_command: Optional[str] = None
+    setup_explanation: str = ""
+
+
+class CodeInspectionResult(BaseModel):
+    project_id: str
+    relative_path: str
+    language: CodeLanguage
+    syntax_valid: bool = True
+    formatted_content: Optional[str] = None
+    formatting_changed: bool = False
+    diagnostics: List[CodeDiagnosticIssue] = Field(default_factory=list)
+    dependencies: List[DependencyStatusItem] = Field(default_factory=list)
+    missing_dependencies_count: int = 0
+    untrusted_instruction_warnings: List[str] = Field(default_factory=list)
+    summary: str = ""
+
+
+class TestCaseResult(BaseModel):
+    name: str
+    status: Literal["passed", "failed", "error", "skipped"] = "passed"
+    duration_ms: float = 0.0
+    message: Optional[str] = None
+
+
+class TestSuiteResult(BaseModel):
+    framework: str = "pytest"
+    executed: bool = False
+    passed: int = 0
+    failed: int = 0
+    errors: int = 0
+    skipped: int = 0
+    total: int = 0
+    all_passed: bool = False
+    cases: List[TestCaseResult] = Field(default_factory=list)
+    raw_summary: str = ""
+
+
+class CommandPreview(BaseModel):
+    raw_command: str
+    normalized_command: str
+    classification: CommandRiskClassification = "allowed_safe"
+    risk_level: Literal["low", "medium", "high", "critical"] = "low"
+    target_workspace: str = ""
+    expected_effect: str = ""
+    requires_approval: bool = False
+    approval_reason: Optional[str] = None
+    blocked_reason: Optional[str] = None
+
+
+class TerminalExecutionRecord(BaseModel):
+    execution_id: str
+    user_id: str = "default_user"
+    project_id: str
+    execution_type: Literal[
+        "run_code",
+        "run_tests",
+        "terminal_command",
+        "syntax_check",
+        "debug_repair",
+    ] = "run_code"
+    command_preview: CommandPreview
+    status: TerminalExecutionStatus = "PLANNED"
+    exit_code: Optional[int] = None
+    stdout: str = ""
+    stderr: str = ""
+    output_truncated: bool = False
+    timed_out: bool = False
+    duration_ms: float = 0.0
+    memory_limit_mb: int = 128
+    network_enabled: bool = False
+    verified_execution: bool = False
+    approved: Optional[bool] = None
+    test_results: Optional[TestSuiteResult] = None
+    error_diagnosis: Optional[str] = None
+    suggested_fix: Optional[str] = None
+    created_at: datetime = Field(default_factory=utc_now)
+    completed_at: Optional[datetime] = None
+
+
+class RepairIterationStep(BaseModel):
+    attempt_number: int
+    failure_type: str
+    diagnosis: str
+    proposed_patch_summary: str
+    backup_id: Optional[str] = None
+    applied: bool = False
+    execution_id: Optional[str] = None
+    exit_code: Optional[int] = None
+    tests_passed: bool = False
+    stdout_excerpt: str = ""
+    stderr_excerpt: str = ""
+
+
+class DebugRepairResponse(BaseModel):
+    repair_id: str
+    user_id: str = "default_user"
+    project_id: str
+    target_file: str
+    initial_error: str = ""
+    status: Literal[
+        "REPAIRED_AND_VERIFIED",
+        "MAX_ATTEMPTS_REACHED",
+        "REQUIRES_USER_INTERVENTION",
+        "NO_FAILURE_DETECTED",
+    ] = "REPAIRED_AND_VERIFIED"
+    attempts_used: int = 0
+    max_attempts: int = 3
+    final_verified: bool = False
+    intervention_reason: Optional[str] = None
+    explanation: str = ""
+    iterations: List[RepairIterationStep] = Field(default_factory=list)
+    final_execution: Optional[TerminalExecutionRecord] = None
+
+
+class CreateCodeProjectRequest(BaseModel):
+    user_id: str = "default_user"
+    name: str = Field(..., min_length=1, max_length=80)
+    description: str = Field(default="", max_length=400)
+    template: ProjectTemplateType = "python"
+
+
+class SaveCodeFileRequest(BaseModel):
+    user_id: str = "default_user"
+    relative_path: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(default="", max_length=1_000_000)
+    create_backup: bool = True
+    backup_reason: str = "editor_save"
+
+
+class CodeInspectRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    relative_path: str = "main.py"
+    content: Optional[str] = None
+    apply_formatting: bool = False
+
+
+class CodeExecuteRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    target_file: Optional[str] = None
+    mode: Literal["run", "test"] = "run"
+    args: List[str] = Field(default_factory=list)
+    stdin_text: str = ""
+    timeout_seconds: Optional[float] = None
+    allow_network: bool = False
+    confirmed_network: bool = False
+
+
+class TerminalCommandRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    command: str = Field(..., min_length=1, max_length=600)
+    timeout_seconds: Optional[float] = None
+    allow_network: bool = False
+    confirmed: bool = False
+    preview_only: bool = False
+
+
+class TerminalApproveRequest(BaseModel):
+    user_id: str = "default_user"
+    approved: bool = True
+    user_note: Optional[str] = None
+
+
+class DebugRepairRequest(BaseModel):
+    user_id: str = "default_user"
+    project_id: str
+    target_file: str = "main.py"
+    run_tests: bool = True
+    max_attempts: int = Field(default=3, ge=1, le=5)
+    auto_apply: bool = True
+
+
+class SyncStage17Request(BaseModel):
+    user_id: str = "default_user"
+    direction: Literal["to_stage17", "from_stage17"] = "to_stage17"
+    relative_path: Optional[str] = None

@@ -12,7 +12,7 @@ Status Key:
 
 ---
 
-## 📊 Stages 1–17 Status: COMPLETE (Verified & Validated)
+## 📊 Stages 1–18 Status: COMPLETE (Verified & Validated)
 
 | Phase | Description | Status | Verification Notes |
 |---|---|---|---|
@@ -33,6 +33,7 @@ Status Key:
 | **Phase 45** | **Workflow Automation Engine & Durable Scheduler (Stage 15)** | **COMPLETE** | Visual DAG workflow builder, manual & timezone-aware recurring scheduler (`Asia/Kolkata`, `UTC`, etc.), input/output step templating (`{{steps.step_1.output}}`), conditional branching, bounded retries, SQLite run history & crash recovery, honest in-app/webhook/SMTP notification center, and Workflow Automation Studio UI, 95/95 Pytest tests passing. |
 | **Phase 46** | **Computer Control & Digital Execution Engine (Stage 16)** | **COMPLETE** | Isolated Browser Automation (`open_url`, `navigate`, `click`, `fill_text`, `select_option`, `scroll`, `capture_screenshot`, `extract_content`, `submit_form`) strictly separated from Sandboxed Local Computer Task Runner (`list_workspace_files`, `read_workspace_file`, `write_workspace_file`, `delete_workspace_file`, `run_predefined_diagnostic`, `open_approved_application`), SSRF & CAPTCHA/MFA security boundary enforcement, secret masking, preview-and-confirm approval gates, and Computer Actions Studio UI, 101/101 Pytest tests passing. |
 | **Phase 57** | **File Management & Workspace Automation Engine (Stage 17)** | **COMPLETE** | Permission-based File Workspace (`data/file_workspace/<user_id>`) with strict path normalization, traversal & symlink escape defense, file discovery & full-text/Stage 4 indexed content search, text/MD/CSV/JSON/DOCX/XLSX creation & editing with automatic `.nexora_versions` backup snapshots, format conversion (`CSV <-> JSON <-> XLSX`, `MD <-> DOCX <-> TXT`), SHA-256 duplicate finder, rule-based bulk organization with preview & 1-click rollback, Recoverable Trash (`.nexora_trash`), and File Workspace Studio UI, 108/108 Pytest tests passing. |
+| **Phase 31–33** | **Terminal & Code Execution Engine (Stage 18)** | **COMPLETE** | Isolated Developer Code Workspace (`Python`, `JavaScript`, `TypeScript`, `HTML`, `CSS`) with pre-edit/pre-repair version backups, real AST syntax checking, static linting, missing dependency detection, sandboxed process execution with CPU/memory/timeout/output limits and network disabled by default, allowlisted Controlled Terminal with approval gates, bounded autonomous debugging & code repair loop, and IDE-style `TerminalCodeStudio.tsx`, 115/115 Pytest tests passing. |
 
 ---
 
@@ -83,9 +84,9 @@ Status Key:
 ### Tier 4: Developer Tools, Code Generation & Execution (Phases 31–40)
 | Phase | Title | Status | Target Scope |
 |---|---|---|---|
-| **31** | Autonomous Code Generator & Refactorer | NOT STARTED | Multi-file code generation, refactoring, test case generation, type-safe scaffolding |
-| **32** | Sandboxed Code Execution Environment | NOT STARTED | Docker/Pyodide browser code sandbox, stdout/stderr capture, timeout enforcement |
-| **33** | Interactive Terminal & Shell Agent | NOT STARTED | Safe command suggestion, command explanation, sandboxed bash/powershell runner |
+| **31** | Autonomous Code Generator & Refactorer | **COMPLETE** | Multi-file code generation, bounded autonomous debugging & repair, unit test verification |
+| **32** | Sandboxed Code Execution Environment | **COMPLETE** | Isolated subprocess code sandbox with site-guard, stdout/stderr capture, timeout/memory/network enforcement |
+| **33** | Interactive Terminal & Shell Agent | **COMPLETE** | Allowlisted command runner, risk classification (`allowed_safe`, `requires_approval`, `blocked_forbidden`), approval gates |
 | **34** | Git Repository Integration & PR Assistant | NOT STARTED | Git clone, diff analysis, commit message generation, automated PR reviewer |
 | **35** | Database Query Builder & SQL Optimizer | NOT STARTED | Natural language to SQL, schema introspection, query plan optimizer, safe execution |
 | **36** | API Builder, OpenAPI Generator & Tester | NOT STARTED | Auto-generate REST/GraphQL endpoints, Postman-style test runner, mock servers |

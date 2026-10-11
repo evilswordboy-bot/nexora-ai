@@ -91,18 +91,19 @@ class MultiAgentOrchestrator:
             SpecializedAgentSpec(
                 agent_id="coding_agent",
                 name="Coding Agent",
-                purpose="Writes, explains, reviews, refactors, and debugs software code with deterministic math verification.",
+                purpose="Writes, explains, reviews, refactors, and debugs software code with deterministic math and Stage 18 sandbox verification.",
                 capabilities=[
                     "Multi-language code generation & review",
                     "Root-cause debugging & complexity analysis",
                     "Deterministic expression verification via calculator",
+                    "Sandboxed code & test verification via Stage 18 Terminal Engine",
                 ],
                 limitations=[
                     "Does not execute arbitrary shell commands or modify host OS files without approval",
                 ],
                 permission_scope="read_only",
-                allowed_tools=["calculator"],
-                requires_approval_for=["modify_repository", "deploy_code", "delete_document"],
+                allowed_tools=["calculator", "terminal_code_runner"],
+                requires_approval_for=["modify_repository", "deploy_code", "delete_document", "terminal_package_and_command"],
                 preferred_task_category="coding",
             ),
             SpecializedAgentSpec(

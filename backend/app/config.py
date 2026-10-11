@@ -142,6 +142,33 @@ class Settings(BaseModel):
         os.getenv("FILE_WORKSPACE_MAX_VERSIONS_PER_FILE", "10")
     )
 
+    # Stage 18: Terminal & Code Execution Engine
+    terminal_workspace_dir: str = os.getenv(
+        "TERMINAL_WORKSPACE_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "terminal_workspace"),
+    )
+    terminal_db_path: str = os.getenv(
+        "TERMINAL_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "terminal_workspace" / "nexora_terminal.db"),
+    )
+    terminal_execution_timeout_seconds: float = float(
+        os.getenv("TERMINAL_EXECUTION_TIMEOUT_SECONDS", "5.0")
+    )
+    terminal_max_output_bytes: int = int(
+        os.getenv("TERMINAL_MAX_OUTPUT_BYTES", str(64 * 1024))
+    )
+    terminal_max_memory_mb: int = int(os.getenv("TERMINAL_MAX_MEMORY_MB", "128"))
+    terminal_max_processes: int = int(os.getenv("TERMINAL_MAX_PROCESSES", "4"))
+    terminal_max_concurrent_runs_per_user: int = int(
+        os.getenv("TERMINAL_MAX_CONCURRENT_RUNS_PER_USER", "3")
+    )
+    terminal_max_repair_attempts: int = int(
+        os.getenv("TERMINAL_MAX_REPAIR_ATTEMPTS", "3")
+    )
+    terminal_default_allow_network: bool = os.getenv(
+        "TERMINAL_DEFAULT_ALLOW_NETWORK", "false"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

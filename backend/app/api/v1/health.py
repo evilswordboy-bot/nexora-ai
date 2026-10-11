@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 17,
-        "stage_title": "File Management & Workspace Automation Engine",
+        "stage": 18,
+        "stage_title": "Terminal & Code Execution Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -35,6 +35,7 @@ async def health_check():
             "workflow_automation": "operational",
             "computer_control": "operational",
             "file_workspace": "operational",
+            "terminal_execution": "operational",
         },
     }
 
