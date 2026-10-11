@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 19,
-        "stage_title": "Git & Version Control Engine",
+        "stage": 20,
+        "stage_title": "AI Evaluation & Quality Assurance Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -37,6 +37,7 @@ async def health_check():
             "file_workspace": "operational",
             "terminal_execution": "operational",
             "git_version_control": "operational",
+            "evaluation_qa": "operational",
         },
     }
 

@@ -21,6 +21,7 @@ import { ComputerStudio } from './components/computer/ComputerStudio';
 import { FileWorkspaceStudio } from './components/files/FileWorkspaceStudio';
 import { TerminalCodeStudio } from './components/terminal/TerminalCodeStudio';
 import { GitVersionControlStudio } from './components/git/GitVersionControlStudio';
+import { EvaluationStudio } from './components/evaluation/EvaluationStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -63,6 +64,8 @@ const MainLayout: React.FC = () => {
           <TerminalCodeStudio />
         ) : activeWorkspaceView === 'git' ? (
           <GitVersionControlStudio />
+        ) : activeWorkspaceView === 'evaluation' ? (
+          <EvaluationStudio />
         ) : (
           <ChatArea />
         )}

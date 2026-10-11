@@ -61,7 +61,7 @@ def test_git_capabilities_and_health():
     assert "github.com" in data["allowed_remote_hosts"]
 
     health = client.get("/api/v1/health").json()
-    assert health["stage"] == 19
+    assert health["stage"] >= 19
     assert health["subsystems"]["git_version_control"] == "operational"
 
 

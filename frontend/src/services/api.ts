@@ -87,6 +87,15 @@ import {
   GitPullRequestRecord,
   GitRemoteProvider,
   GitRepositoryStatusResponse,
+  EvalAcceptanceThresholds,
+  EvalCaseReviewStatus,
+  EvalCaseSourceType,
+  EvalMetadataResponse,
+  EvalRegressionAlert,
+  EvalReleaseGateVerdict,
+  EvalRunRecord,
+  EvalSuiteId,
+  EvalTestCase,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -2178,6 +2187,169 @@ export const api = {
       }
     );
   },
+
+  // =========================================================================
+  // Stage 20: AI Evaluation & Quality Assurance Engine
+  // =========================================================================
+
+  async getEvaluationMetadata(): Promise<EvalMetadataResponse> {
+    return request<EvalMetadataResponse>('/evaluation/metadata');
+  },
+
+  async listEvaluationCases(
+    suiteId?: EvalSuiteId,
+    includeRejected = false
+  ): Promise<{ dataset_version: string; total: number; cases: EvalTestCase[] }> {
+    const q = new URLSearchParams({ include_rejected: String(includeRejected) });
+    if (suiteId) q.set('suite_id', suiteId);
+    return request(`/evaluation/cases?${q.toString()}`);
+  },
+
+  async createEvaluationCase(params: {
+    suite_id: EvalSuiteId;
+    title: string;
+    description?: string;
+    input_payload: Record<string, any>;
+    expected_criteria: Record<string, any>;
+    scoring_rubric?: string;
+    is_edge_case?: boolean;
+    is_critical?: boolean;
+    known_limitations?: string;
+    source_type?: EvalCaseSourceType;
+    contains_private_conversation_data?: boolean;
+  }): Promise<EvalTestCase> {
+    return request<EvalTestCase>('/evaluation/cases', {
+      method: 'POST',
+      body: JSON.stringify({
+        suite_id: params.suite_id,
+        title: params.title,
+        description: params.description || '',
+        input_payload: params.input_payload,
+        expected_criteria: params.expected_criteria,
+        scoring_rubric: params.scoring_rubric || 'Deterministic assertion check',
+        is_edge_case: params.is_edge_case ?? false,
+        is_critical: params.is_critical ?? false,
+        known_limitations: params.known_limitations || '',
+        source_type: params.source_type || 'curated_benchmark',
+        contains_private_conversation_data: params.contains_private_conversation_data ?? false,
+      }),
+    });
+  },
+
+  async generateSyntheticCases(params: {
+    suite_id: EvalSuiteId;
+    topic_focus?: string;
+    count?: number;
+  }): Promise<{
+    dataset_version: string;
+    generated_count: number;
+    cases: EvalTestCase[];
+  }> {
+    return request('/evaluation/cases/synthetic', {
+      method: 'POST',
+      body: JSON.stringify({
+        suite_id: params.suite_id,
+        topic_focus: params.topic_focus || 'edge_case_boundary',
+        count: params.count || 2,
+      }),
+    });
+  },
+
+  async reviewEvaluationCase(
+    caseId: string,
+    params: {
+      review_status: EvalCaseReviewStatus;
+      reviewer_note?: string;
+    }
+  ): Promise<EvalTestCase> {
+    return request<EvalTestCase>(`/evaluation/cases/${encodeURIComponent(caseId)}/review`, {
+      method: 'POST',
+      body: JSON.stringify({
+        review_status: params.review_status,
+        reviewer_note: params.reviewer_note || '',
+      }),
+    });
+  },
+
+  async deleteEvaluationCase(
+    caseId: string
+  ): Promise<{ deleted: boolean; case_id: string; dataset_version: string }> {
+    return request(`/evaluation/cases/${encodeURIComponent(caseId)}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async exportEvaluationDataset(): Promise<{
+    dataset_version: string;
+    total_cases: number;
+    cases: EvalTestCase[];
+    changelog: any[];
+  }> {
+    return request('/evaluation/datasets/export');
+  },
+
+  async executeEvaluationRun(params: {
+    label?: string;
+    suites?: EvalSuiteId[];
+    include_pending_synthetic?: boolean;
+    baseline_run_id?: string;
+    thresholds?: EvalAcceptanceThresholds;
+    simulate_interrupted_after_n?: number;
+    simulate_provider_failure?: boolean;
+  }): Promise<EvalRunRecord> {
+    return request<EvalRunRecord>('/evaluation/runs', {
+      method: 'POST',
+      body: JSON.stringify({
+        label: params.label || 'Stage 20 QA Benchmark Run',
+        suites: params.suites || [],
+        include_pending_synthetic: params.include_pending_synthetic ?? false,
+        baseline_run_id: params.baseline_run_id || undefined,
+        thresholds: params.thresholds,
+        simulate_interrupted_after_n: params.simulate_interrupted_after_n,
+        simulate_provider_failure: params.simulate_provider_failure ?? false,
+      }),
+    });
+  },
+
+  async listEvaluationRuns(
+    limit = 25
+  ): Promise<{ runs: EvalRunRecord[]; total: number }> {
+    return request(`/evaluation/runs?limit=${limit}`);
+  },
+
+  async getEvaluationRun(runId: string): Promise<EvalRunRecord> {
+    return request<EvalRunRecord>(`/evaluation/runs/${encodeURIComponent(runId)}`);
+  },
+
+  async compareEvaluationRuns(params: {
+    baseline_run_id: string;
+    candidate_run_id: string;
+    thresholds?: EvalAcceptanceThresholds;
+  }): Promise<{
+    baseline_run_id: string;
+    candidate_run_id: string;
+    baseline_dataset_version: string;
+    candidate_dataset_version: string;
+    regression_alerts: EvalRegressionAlert[];
+    has_critical_regressions: boolean;
+    candidate_verdict: EvalReleaseGateVerdict;
+  }> {
+    return request('/evaluation/compare', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async exportEvaluationRunReport(
+    runId: string,
+    format: 'markdown' | 'json' = 'markdown'
+  ): Promise<any> {
+    return request(
+      `/evaluation/runs/${encodeURIComponent(runId)}/export?format=${encodeURIComponent(format)}`
+    );
+  },
 };
+
+
 
 

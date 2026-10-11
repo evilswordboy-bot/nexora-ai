@@ -1726,3 +1726,171 @@ export interface GitCapabilitiesResponse {
   recommended_gitignore_rules: string[];
 }
 
+// ==========================================
+// Stage 20: AI Evaluation & Quality Assurance Engine Interfaces
+// ==========================================
+
+export type EvalSuiteId =
+  | 'general_qa'
+  | 'web_research'
+  | 'fact_checking'
+  | 'document_rag'
+  | 'multilingual'
+  | 'vision_ocr'
+  | 'voice_speech'
+  | 'coding_sandbox'
+  | 'agents_tools_memory_workflows'
+  | 'security_privacy_safety';
+
+export type EvalRunStatus =
+  | 'COMPLETED'
+  | 'INCOMPLETE_INTERRUPTED'
+  | 'FAILED_PROVIDER_ERROR';
+
+export type EvalReleaseGateVerdict =
+  | 'RELEASE_APPROVED'
+  | 'RELEASE_BLOCKED_CRITICAL_FAILURE'
+  | 'RELEASE_BLOCKED_REGRESSION'
+  | 'INCOMPLETE_RUN';
+
+export type EvalCaseSourceType = 'curated_benchmark' | 'synthetic_labeled';
+export type EvalCaseReviewStatus = 'approved' | 'pending_review' | 'rejected';
+
+export interface EvalMetricScoringRule {
+  metric_id: string;
+  name: string;
+  range_display: string;
+  scoring_method:
+    | 'deterministic_assertion'
+    | 'lexical_overlap'
+    | 'schema_validation'
+    | 'heuristic_rubric'
+    | 'ai_judge_advisory'
+    | 'telemetry_measurement';
+  is_definitive_ground_truth: boolean;
+  rule_description: string;
+  limitations: string;
+}
+
+export interface EvalSuiteDefinition {
+  suite_id: EvalSuiteId;
+  name: string;
+  stage_coverage: string;
+  description: string;
+  primary_metrics: string[];
+  total_cases: number;
+  approved_cases: number;
+  critical_cases: number;
+}
+
+export interface EvalTestCase {
+  case_id: string;
+  suite_id: EvalSuiteId;
+  title: string;
+  description: string;
+  input_payload: Record<string, any>;
+  expected_criteria: Record<string, any>;
+  scoring_rubric: string;
+  is_edge_case: boolean;
+  is_critical: boolean;
+  known_limitations: string;
+  source_type: EvalCaseSourceType;
+  review_status: EvalCaseReviewStatus;
+  dataset_version: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface EvalCaseExecutionResult {
+  case_id: string;
+  suite_id: EvalSuiteId;
+  title: string;
+  is_critical: boolean;
+  is_edge_case: boolean;
+  source_type: EvalCaseSourceType;
+  passed: boolean;
+  score: number;
+  scoring_method: string;
+  is_subjective_advisory: boolean;
+  latency_ms: number;
+  actual_output_excerpt: string;
+  expected_summary: string;
+  metrics_breakdown: Record<string, number | null>;
+  unavailable_metrics: string[];
+  error_detail?: string | null;
+  prevented_side_effect: boolean;
+}
+
+export interface EvalAcceptanceThresholds {
+  min_task_success_rate: number;
+  min_safety_compliance_rate: number;
+  max_error_rate: number;
+  max_latency_regression_pct: number;
+  block_on_critical_failure: boolean;
+}
+
+export interface EvalMetricSummary {
+  task_success_rate: number;
+  factual_support_score?: number | null;
+  citation_validity_score?: number | null;
+  extraction_accuracy_score?: number | null;
+  language_quality_score?: number | null;
+  tool_call_success_rate?: number | null;
+  safety_compliance_rate?: number | null;
+  error_rate: number;
+  avg_latency_ms: number;
+  p95_latency_ms: number;
+  total_tokens?: number | null;
+  estimated_cost_usd?: number | null;
+  unavailable_metrics_notes: Record<string, string>;
+}
+
+export interface EvalRegressionAlert {
+  metric_name: string;
+  baseline_value: number;
+  candidate_value: number;
+  delta: number;
+  severity: 'critical' | 'warning' | 'info';
+  message: string;
+}
+
+export interface EvalRunRecord {
+  run_id: string;
+  label: string;
+  dataset_version: string;
+  status: EvalRunStatus;
+  suites_selected: EvalSuiteId[];
+  sample_size: number;
+  completed_cases: number;
+  passed_cases: number;
+  failed_cases: number;
+  critical_failures: number;
+  model_configuration: Record<string, any>;
+  isolated_environment_id: string;
+  consequential_actions_blocked: boolean;
+  metrics: EvalMetricSummary;
+  thresholds: EvalAcceptanceThresholds;
+  release_gate_verdict: EvalReleaseGateVerdict;
+  release_gate_reasons: string[];
+  baseline_run_id?: string | null;
+  regression_alerts: EvalRegressionAlert[];
+  case_results: EvalCaseExecutionResult[];
+  created_at: string;
+  completed_at?: string | null;
+}
+
+export interface EvalMetadataResponse {
+  stage: number;
+  engine: string;
+  dataset_version: string;
+  total_cases: number;
+  approved_cases: number;
+  exclude_private_conversations_by_default: boolean;
+  consequential_side_effects_blocked: boolean;
+  configured_providers: string[];
+  default_thresholds: EvalAcceptanceThresholds;
+  suites: EvalSuiteDefinition[];
+  scoring_rules: EvalMetricScoringRule[];
+}
+
+

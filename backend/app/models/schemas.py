@@ -2211,3 +2211,209 @@ class GitApproveOperationRequest(BaseModel):
     user_id: str = "default_user"
     approved: bool = True
     user_note: Optional[str] = None
+
+
+# ============================================================================
+# Stage 20: AI Evaluation & Quality Assurance Engine Schemas
+# ============================================================================
+
+EvalSuiteId = Literal[
+    "general_qa",
+    "web_research",
+    "fact_checking",
+    "document_rag",
+    "multilingual",
+    "vision_ocr",
+    "voice_speech",
+    "coding_sandbox",
+    "agents_tools_memory_workflows",
+    "security_privacy_safety",
+]
+
+EvalRunStatus = Literal[
+    "RUNNING",
+    "COMPLETED",
+    "INCOMPLETE_INTERRUPTED",
+    "FAILED_PROVIDER_ERROR",
+]
+
+EvalReleaseGateVerdict = Literal[
+    "RELEASE_APPROVED",
+    "RELEASE_BLOCKED_CRITICAL_FAILURE",
+    "RELEASE_BLOCKED_REGRESSION",
+    "INCOMPLETE_RUN",
+]
+
+EvalCaseSourceType = Literal["curated_benchmark", "synthetic_labeled"]
+EvalCaseReviewStatus = Literal["approved", "pending_review", "rejected"]
+
+
+class EvalMetricScoringRule(BaseModel):
+    metric_id: str
+    name: str
+    range_display: str = "0.0 - 1.0"
+    scoring_method: Literal[
+        "deterministic_assertion",
+        "lexical_overlap",
+        "schema_validation",
+        "heuristic_rubric",
+        "ai_judge_advisory",
+        "telemetry_measurement",
+    ] = "deterministic_assertion"
+    is_definitive_ground_truth: bool = True
+    rule_description: str
+    limitations: str
+
+
+class EvalSuiteDefinition(BaseModel):
+    suite_id: EvalSuiteId
+    name: str
+    stage_coverage: str
+    description: str
+    primary_metrics: List[str] = Field(default_factory=list)
+    total_cases: int = 0
+    approved_cases: int = 0
+    critical_cases: int = 0
+
+
+class EvalTestCase(BaseModel):
+    case_id: str
+    suite_id: EvalSuiteId
+    title: str
+    description: str = ""
+    input_payload: Dict[str, Any] = Field(default_factory=dict)
+    expected_criteria: Dict[str, Any] = Field(default_factory=dict)
+    scoring_rubric: str = ""
+    is_edge_case: bool = False
+    is_critical: bool = False
+    known_limitations: str = ""
+    source_type: EvalCaseSourceType = "curated_benchmark"
+    review_status: EvalCaseReviewStatus = "approved"
+    dataset_version: str = "v1.0.0"
+    created_by: str = "system_admin"
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class EvalCaseExecutionResult(BaseModel):
+    case_id: str
+    suite_id: EvalSuiteId
+    title: str
+    is_critical: bool = False
+    is_edge_case: bool = False
+    source_type: EvalCaseSourceType = "curated_benchmark"
+    passed: bool = False
+    score: float = 0.0
+    scoring_method: str = "deterministic_assertion"
+    is_subjective_advisory: bool = False
+    latency_ms: float = 0.0
+    actual_output_excerpt: str = ""
+    expected_summary: str = ""
+    metrics_breakdown: Dict[str, Optional[float]] = Field(default_factory=dict)
+    unavailable_metrics: List[str] = Field(default_factory=list)
+    error_detail: Optional[str] = None
+    prevented_side_effect: bool = False
+
+
+class EvalAcceptanceThresholds(BaseModel):
+    min_task_success_rate: float = Field(default=0.85, ge=0.0, le=1.0)
+    min_safety_compliance_rate: float = Field(default=1.0, ge=0.0, le=1.0)
+    max_error_rate: float = Field(default=0.10, ge=0.0, le=1.0)
+    max_latency_regression_pct: float = Field(default=50.0, ge=0.0, le=500.0)
+    block_on_critical_failure: bool = True
+
+
+class EvalMetricSummary(BaseModel):
+    task_success_rate: float = 0.0
+    factual_support_score: Optional[float] = None
+    citation_validity_score: Optional[float] = None
+    extraction_accuracy_score: Optional[float] = None
+    language_quality_score: Optional[float] = None
+    tool_call_success_rate: Optional[float] = None
+    safety_compliance_rate: Optional[float] = None
+    error_rate: float = 0.0
+    avg_latency_ms: float = 0.0
+    p95_latency_ms: float = 0.0
+    total_tokens: Optional[int] = None
+    estimated_cost_usd: Optional[float] = None
+    unavailable_metrics_notes: Dict[str, str] = Field(default_factory=dict)
+
+
+class EvalRegressionAlert(BaseModel):
+    metric_name: str
+    baseline_value: float
+    candidate_value: float
+    delta: float
+    severity: Literal["critical", "warning", "info"] = "warning"
+    message: str
+
+
+class EvalRunRecord(BaseModel):
+    run_id: str
+    label: str = "Evaluation Run"
+    dataset_version: str = "v1.0.0"
+    status: EvalRunStatus = "COMPLETED"
+    suites_selected: List[EvalSuiteId] = Field(default_factory=list)
+    sample_size: int = 0
+    completed_cases: int = 0
+    passed_cases: int = 0
+    failed_cases: int = 0
+    critical_failures: int = 0
+    model_configuration: Dict[str, Any] = Field(default_factory=dict)
+    isolated_environment_id: str = ""
+    consequential_actions_blocked: bool = True
+    metrics: EvalMetricSummary = Field(default_factory=EvalMetricSummary)
+    thresholds: EvalAcceptanceThresholds = Field(default_factory=EvalAcceptanceThresholds)
+    release_gate_verdict: EvalReleaseGateVerdict = "RELEASE_APPROVED"
+    release_gate_reasons: List[str] = Field(default_factory=list)
+    baseline_run_id: Optional[str] = None
+    regression_alerts: List[EvalRegressionAlert] = Field(default_factory=list)
+    case_results: List[EvalCaseExecutionResult] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=utc_now)
+    completed_at: Optional[datetime] = None
+
+
+class EvalRunCreateRequest(BaseModel):
+    label: str = Field(default="Stage 20 QA Benchmark Run", max_length=120)
+    suites: List[EvalSuiteId] = Field(default_factory=list)
+    include_pending_synthetic: bool = False
+    baseline_run_id: Optional[str] = None
+    thresholds: Optional[EvalAcceptanceThresholds] = None
+    simulate_interrupted_after_n: Optional[int] = Field(default=None, ge=1, le=100)
+    simulate_provider_failure: bool = False
+    provider_label: Optional[str] = None
+    model_label: Optional[str] = None
+
+
+class EvalCaseCreateRequest(BaseModel):
+    suite_id: EvalSuiteId
+    title: str = Field(..., min_length=3, max_length=160)
+    description: str = Field(default="", max_length=600)
+    input_payload: Dict[str, Any] = Field(default_factory=dict)
+    expected_criteria: Dict[str, Any] = Field(default_factory=dict)
+    scoring_rubric: str = Field(default="Deterministic assertion check", max_length=400)
+    is_edge_case: bool = False
+    is_critical: bool = False
+    known_limitations: str = Field(default="", max_length=400)
+    source_type: EvalCaseSourceType = "curated_benchmark"
+    contains_private_conversation_data: bool = False
+    admin_actor: str = "admin"
+
+
+class EvalSyntheticGenerateRequest(BaseModel):
+    suite_id: EvalSuiteId
+    topic_focus: str = Field(default="edge_case_boundary", max_length=120)
+    count: int = Field(default=2, ge=1, le=5)
+    admin_actor: str = "admin"
+
+
+class EvalCaseReviewRequest(BaseModel):
+    review_status: EvalCaseReviewStatus
+    reviewer_note: str = Field(default="", max_length=300)
+    admin_actor: str = "admin"
+
+
+class EvalCompareRunsRequest(BaseModel):
+    baseline_run_id: str
+    candidate_run_id: str
+    thresholds: Optional[EvalAcceptanceThresholds] = None
+

@@ -513,6 +513,41 @@ class ToolRegistry:
             handler=self._handle_git_safe_commit_and_branch,
         )
 
+        # 17. Stage 20 Evaluation & QA Runner (Read-only / Isolated)
+        self.register(
+            ToolDefinition(
+                name="evaluation_qa_runner",
+                description=(
+                    "Runs NEXORA AI Stage 20 Evaluation & Quality Assurance benchmark suites in an isolated environment, "
+                    "retrieves dataset metadata, or compares baseline vs. candidate runs for regression gating."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["metadata", "run_suite", "latest_runs"],
+                            "default": "metadata",
+                        },
+                        "suite_id": {
+                            "type": "string",
+                            "default": "general_qa",
+                            "description": "Evaluation suite ID when action='run_suite'",
+                        },
+                        "label": {
+                            "type": "string",
+                            "default": "Tool-triggered QA Run",
+                        },
+                    },
+                },
+                stage_introduced=20,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_evaluation_qa_runner,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1163,5 +1198,65 @@ class ToolRegistry:
             "summary": op.stdout or op.error_message or op.command_display,
         }
 
+    async def _handle_evaluation_qa_runner(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.evaluation.engine import evaluation_qa_engine
+        from app.models.schemas import EvalRunCreateRequest
+
+        action = str(params.get("action", "metadata")).strip().lower()
+        suite_id = str(params.get("suite_id", "general_qa")).strip()
+        label = str(params.get("label", "Tool-triggered QA Run")).strip()
+
+        if action == "run_suite":
+            run_rec = await evaluation_qa_engine.execute_run(
+                EvalRunCreateRequest(
+                    label=label,
+                    suites=[suite_id],  # type: ignore[list-item]
+                )
+            )
+            return {
+                "action": "run_suite",
+                "run_id": run_rec.run_id,
+                "status": run_rec.status,
+                "release_gate_verdict": run_rec.release_gate_verdict,
+                "passed_cases": run_rec.passed_cases,
+                "sample_size": run_rec.sample_size,
+                "task_success_rate": run_rec.metrics.task_success_rate,
+                "summary": (
+                    f"Executed Evaluation Suite '{suite_id}' (run_id={run_rec.run_id}): "
+                    f"{run_rec.passed_cases}/{run_rec.sample_size} passed, verdict={run_rec.release_gate_verdict}."
+                ),
+            }
+
+        if action == "latest_runs":
+            runs = evaluation_qa_engine.list_runs(limit=5)
+            return {
+                "action": "latest_runs",
+                "runs_count": len(runs),
+                "runs": [
+                    {
+                        "run_id": r.run_id,
+                        "label": r.label,
+                        "verdict": r.release_gate_verdict,
+                        "passed_cases": r.passed_cases,
+                        "sample_size": r.sample_size,
+                    }
+                    for r in runs
+                ],
+                "summary": f"Retrieved {len(runs)} recent evaluation run(s).",
+            }
+
+        meta = evaluation_qa_engine.get_metadata()
+        return {
+            "action": "metadata",
+            "dataset_version": meta["dataset_version"],
+            "total_cases": meta["total_cases"],
+            "suites_count": len(meta["suites"]),
+            "summary": (
+                f"Evaluation & QA Engine operational (Dataset {meta['dataset_version']}, "
+                f"{meta['total_cases']} total cases across {len(meta['suites'])} suites)."
+            ),
+        }
+
 
 tool_registry = ToolRegistry()
+

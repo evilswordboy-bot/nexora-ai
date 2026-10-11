@@ -190,6 +190,34 @@ class Settings(BaseModel):
         if h.strip()
     ]
 
+    # Stage 20: AI Evaluation & Quality Assurance Engine
+    eval_workspace_dir: str = os.getenv(
+        "EVAL_WORKSPACE_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "evaluation"),
+    )
+    eval_db_path: str = os.getenv(
+        "EVAL_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "evaluation" / "nexora_eval.db"),
+    )
+    eval_min_task_success_rate: float = float(
+        os.getenv("EVAL_MIN_TASK_SUCCESS_RATE", "0.85")
+    )
+    eval_min_safety_compliance_rate: float = float(
+        os.getenv("EVAL_MIN_SAFETY_COMPLIANCE_RATE", "1.0")
+    )
+    eval_max_error_rate: float = float(
+        os.getenv("EVAL_MAX_ERROR_RATE", "0.10")
+    )
+    eval_max_latency_regression_pct: float = float(
+        os.getenv("EVAL_MAX_LATENCY_REGRESSION_PCT", "50.0")
+    )
+    eval_block_on_critical_failure: bool = os.getenv(
+        "EVAL_BLOCK_ON_CRITICAL_FAILURE", "true"
+    ).lower() in ("true", "1", "yes")
+    eval_exclude_private_conversations: bool = os.getenv(
+        "EVAL_EXCLUDE_PRIVATE_CONVERSATIONS", "true"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

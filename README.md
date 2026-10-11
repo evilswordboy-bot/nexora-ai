@@ -1,6 +1,26 @@
-# NEXORA AI — Stage 19: Git & Version Control Engine
+# NEXORA AI — Stage 20: AI Evaluation & Quality Assurance Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 19** introduces the **Git & Version Control Engine (`GitVersionControlEngine`)**: genuine Git repository management confined within authorized Stage 18 developer workspaces (`data/terminal_workspace/<user_id>/<project_id>`), unified and side-by-side diff inspection, pre-commit secret and `.env` file protection, dirty-worktree branch switch guards, safe merge conflict detection and automatic rollback, AI-powered code review (`verified_defect` vs. `possible_concern`) integrated with Stage 18 unit test execution, and honest Pull Request & remote collaboration workflows.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 20** introduces the **AI Evaluation & Quality Assurance Engine (`EvaluationQualityAssuranceEngine`)**: a repeatable, zero-fabrication evaluation and benchmarking framework executing actual tests across all Stages 1–19 (`general_qa`, `web_research`, `fact_checking`, `document_rag`, `multilingual`, `vision_ocr`, `voice_speech`, `coding_sandbox`, `agents_tools_memory_workflows`, and `security_privacy_safety`), versioned test dataset management (`v1.0.0`), labeled synthetic test case generation with review workflows, regression detection, release-blocking verdicts, and exportable Markdown/JSON QA reports.
+
+---
+
+## 🌟 Stage 20 Core Deliverables
+
+- **10-Suite Live Evaluation Framework (`EvaluationQualityAssuranceEngine`)**:
+  - Executes real subsystem calls across Stages 1–19 in isolated evaluation namespaces (`eval_<random_hex>`) with consequential external side-effects blocked.
+  - Covers General QA & Instruction Following, Web Research & Citation Freshness, Fact-Checking & Uncertainty Calibration, Document Extraction & Grounded RAG, Multilingual & Translation, Vision & Quarantined OCR, Voice Speech Sanitization & TTS, Sandboxed Code Execution & AST Inspection, Agents/Tools/Memory/Workflows, and Security/Privacy/Safety Policy Compliance.
+- **Honest Metrics, Scoring Rules & Anti-Fabrication Guarantees**:
+  - Tracks `task_success_rate`, `factual_support_score`, `citation_validity_score`, `extraction_accuracy_score`, `language_quality_score`, `tool_call_success_rate`, `safety_compliance_rate`, `error_rate`, `avg_latency_ms`, `p95_latency_ms`, `total_tokens`, and `estimated_cost_usd`.
+  - Publishes explicit `METRIC_SCORING_RULES` with documented limitations and `is_definitive_ground_truth: false` for heuristic/advisory rubrics; reports `null` with transparent explanations (`unavailable_metrics_notes`) whenever a metric cannot be verified.
+- **Versioned Test Dataset Management (`v1.x.x`)**:
+  - Automatic semantic version bumps whenever benchmark cases are added, reviewed, or deleted (`GET/POST /api/v1/evaluation/cases`).
+  - Excludes private user conversations by default (`contains_private_conversation_data=True` rejected) and blocks raw credentials in test payloads.
+  - Clearly labels generated synthetic cases (`source_type="synthetic_labeled"`, `review_status="pending_review"`) and excludes them from official runs until approved.
+- **Regression Testing & Release Gate Verdicts**:
+  - Compares candidate runs against baseline runs (`POST /api/v1/evaluation/compare`) and flags regressions (`EvalRegressionAlert`) across task success, safety compliance, error rate, and latency.
+  - Computes deterministic release verdicts (`RELEASE_APPROVED`, `RELEASE_BLOCKED_CRITICAL_FAILURE`, `RELEASE_BLOCKED_REGRESSION`, `INCOMPLETE_RUN`).
+- **Evaluation & QA Studio Dashboard (`EvaluationStudio.tsx`)**:
+  - Accessible via the top navigation bar (**Eval & QA** tab) featuring 10-suite selection, fault/interruption simulation controls, Release Gate Verdict Banner, Metric Summary Cards, Case Assertion Inspector, Historical Run Comparison, Dataset Version Manager, Scoring Rules Inspector, and Markdown/JSON report export.
 
 ---
 
