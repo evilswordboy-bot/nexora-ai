@@ -49,9 +49,9 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
-  // Workspace Views (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)
-  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery';
-  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery') => void;
+  // Workspace Views (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
+  activeWorkspaceView: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph';
+  setActiveWorkspaceView: (view: 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph') => void;
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
@@ -83,8 +83,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Workspace Views State (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21)
-  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery'>('chat');
+  // Workspace Views State (Stages 4, 5, 6, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22)
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph'>('chat');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
 
   // Stage 7 Voice Intelligence State

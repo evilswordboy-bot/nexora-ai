@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 21,
-        "stage_title": "Universal Knowledge Discovery Engine",
+        "stage": 22,
+        "stage_title": "Knowledge Graph Intelligence",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -39,6 +39,7 @@ async def health_check():
             "git_version_control": "operational",
             "evaluation_qa": "operational",
             "universal_discovery": "operational",
+            "knowledge_graph": "operational",
         },
     }
 

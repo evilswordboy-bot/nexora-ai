@@ -23,6 +23,7 @@ import { TerminalCodeStudio } from './components/terminal/TerminalCodeStudio';
 import { GitVersionControlStudio } from './components/git/GitVersionControlStudio';
 import { EvaluationStudio } from './components/evaluation/EvaluationStudio';
 import { DiscoveryStudio } from './components/discovery/DiscoveryStudio';
+import { KnowledgeGraphStudio } from './components/knowledgegraph/KnowledgeGraphStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -69,6 +70,8 @@ const MainLayout: React.FC = () => {
           <EvaluationStudio />
         ) : activeWorkspaceView === 'discovery' ? (
           <DiscoveryStudio />
+        ) : activeWorkspaceView === 'knowledgegraph' ? (
+          <KnowledgeGraphStudio />
         ) : (
           <ChatArea />
         )}

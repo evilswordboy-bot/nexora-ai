@@ -2048,5 +2048,220 @@ export interface DiscoveryMetadataResponse {
   stale_days_threshold: number;
 }
 
+// ============================================================================
+// Stage 22: Knowledge Graph Intelligence Engine Types
+// ============================================================================
 
+export type KGEntityType =
+  | 'concept'
+  | 'technology'
+  | 'organization'
+  | 'person'
+  | 'event'
+  | 'dataset'
+  | 'component'
+  | 'claim_or_standard';
 
+export type KGRelationType =
+  | 'depends_on'
+  | 'created_by'
+  | 'related_to'
+  | 'part_of'
+  | 'contradicts'
+  | 'supports'
+  | 'uses'
+  | 'evaluates'
+  | 'governed_by';
+
+export type KGFactBasis = 'explicit_fact' | 'ai_inferred';
+
+export type KGUncertaintyLabel =
+  | 'verified_explicit'
+  | 'hedged_source_statement'
+  | 'inferred_transitive'
+  | 'inferred_low_confidence';
+
+export type KGSourceKind =
+  | 'user_document'
+  | 'vault_document'
+  | 'discovery_result'
+  | 'inferred_transitivity';
+
+export type KGQueryMode =
+  | 'natural_language'
+  | 'connection_path'
+  | 'dependency_impact'
+  | 'contradiction_analysis'
+  | 'neighborhood_exploration';
+
+export interface KGEvidenceItem {
+  evidence_id: string;
+  source_kind: KGSourceKind;
+  source_id: string;
+  source_title: string;
+  source_url?: string | null;
+  page_or_section?: string | null;
+  passage: string;
+  quarantined_passage: string;
+  stance: 'supporting' | 'contradicting' | 'neutral';
+  extracted_at: string;
+}
+
+export interface KGEntityNode {
+  entity_id: string;
+  user_id: string;
+  workspace_id: string;
+  canonical_key: string;
+  label: string;
+  entity_type: KGEntityType;
+  aliases: string[];
+  description: string;
+  properties: Record<string, any>;
+  provenance: KGEvidenceItem[];
+  confidence: number;
+  degree: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KGRelationshipEdge {
+  relationship_id: string;
+  user_id: string;
+  workspace_id: string;
+  source_entity_id: string;
+  source_label: string;
+  target_entity_id: string;
+  target_label: string;
+  relation_type: KGRelationType;
+  fact_basis: KGFactBasis;
+  is_inferred: boolean;
+  uncertainty_label: KGUncertaintyLabel;
+  confidence: number;
+  explanation: string;
+  evidence: KGEvidenceItem[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KGChangeLogEntry {
+  change_id: string;
+  user_id: string;
+  workspace_id: string;
+  action_type: 'ingest_merge' | 'entity_merge_approved' | 'delete_approved' | 'seed_sample';
+  summary: string;
+  affected_entity_ids: string[];
+  affected_relationship_ids: string[];
+  created_at: string;
+}
+
+export interface KGIngestResponse {
+  user_id: string;
+  workspace_id: string;
+  entities_created: number;
+  entities_updated: number;
+  relationships_created: number;
+  relationships_updated: number;
+  inferred_relationships_created: number;
+  prompt_injection_neutralized_count: number;
+  ssrf_blocked_urls_count: number;
+  entities: KGEntityNode[];
+  relationships: KGRelationshipEdge[];
+  change_log: KGChangeLogEntry;
+  summary: string;
+}
+
+export interface KGGraphSnapshotResponse {
+  user_id: string;
+  workspace_id: string;
+  total_nodes_in_workspace: number;
+  total_edges_in_workspace: number;
+  returned_nodes_count: number;
+  returned_edges_count: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  has_more: boolean;
+  nodes: KGEntityNode[];
+  edges: KGRelationshipEdge[];
+}
+
+export interface KGPathStep {
+  step_index: number;
+  relationship_id: string;
+  source_entity_id: string;
+  source_label: string;
+  relation_type: KGRelationType;
+  target_entity_id: string;
+  target_label: string;
+  fact_basis: KGFactBasis;
+  is_inferred: boolean;
+  uncertainty_label: KGUncertaintyLabel;
+  confidence: number;
+  evidence: KGEvidenceItem[];
+}
+
+export interface KGContradictionItem {
+  subject_label: string;
+  target_label: string;
+  supporting_edge?: KGRelationshipEdge | null;
+  contradicting_edge: KGRelationshipEdge;
+  supporting_sources: string[];
+  contradicting_sources: string[];
+  explanation: string;
+}
+
+export interface KGQueryResponse {
+  query_id: string;
+  user_id: string;
+  workspace_id: string;
+  mode_executed: KGQueryMode;
+  question: string;
+  answer_summary: string;
+  paths: KGPathStep[][];
+  dependent_entities: KGEntityNode[];
+  contradictions: KGContradictionItem[];
+  subgraph_nodes: KGEntityNode[];
+  subgraph_edges: KGRelationshipEdge[];
+  cycles_detected: number;
+  explicit_facts_count: number;
+  inferred_facts_count: number;
+  latency_ms: number;
+}
+
+export interface KGDuplicateCandidate {
+  candidate_id: string;
+  entity_a_id: string;
+  entity_a_label: string;
+  entity_b_id: string;
+  entity_b_label: string;
+  entity_type: KGEntityType;
+  similarity_score: number;
+  reason: string;
+}
+
+export interface KGDestructiveOperationRecord {
+  op_id: string;
+  user_id: string;
+  workspace_id: string;
+  operation_type: 'merge_entities' | 'delete_items' | 'clear_workspace';
+  status: 'WAITING_FOR_APPROVAL' | 'SUCCEEDED' | 'CANCELLED';
+  requires_approval: boolean;
+  summary: string;
+  affected_entities_count: number;
+  affected_relationships_count: number;
+  created_at: string;
+  resolved_at?: string | null;
+}
+
+export interface KGMetadataResponse {
+  stage: number;
+  engine: string;
+  schema_version: string;
+  storage_backend: string;
+  entity_types: KGEntityType[];
+  relation_types: KGRelationType[];
+  query_modes: Array<{ id: string; name: string; description: string }>;
+  max_expansion_depth: number;
+  default_page_size: number;
+  max_page_size: number;
+}

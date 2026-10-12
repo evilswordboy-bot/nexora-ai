@@ -1,6 +1,25 @@
-# NEXORA AI — Stage 21: Universal Knowledge Discovery Engine
+# NEXORA AI — Stage 22: Knowledge Graph Intelligence
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 21** introduces the **Universal Knowledge Discovery Engine (`UniversalKnowledgeDiscoveryEngine`)**: a unified, zero-fabrication multi-source discovery and knowledge synthesis platform searching across 6 modular connectors (`general_web`, `academic_publications` via OpenAlex/ArXiv/DOI, `news_live`, `public_datasets`, `official_documentation`, and `authorized_knowledge_base`), supporting 5 search modes (`quick`, `comprehensive`, `academic`, `official`, `exploration`), defensible provenance & originality classification, URL/content deduplication, conflict detection, chronological timelines, evidence gap reporting, and SSRF/prompt-injection protection.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 22** introduces the **Knowledge Graph Intelligence Engine (`KnowledgeGraphIntelligenceEngine`)**: a structured-reasoning and provenance-grounded graph engine that extracts entities and relationships from authorized documents and verified research results, strictly separates explicit source facts from AI-inferred transitive relationships, answers multi-hop dependency/path/contradiction queries safely over cyclic graphs, and provides an interactive SVG Graph Explorer (`KnowledgeGraphStudio.tsx`) with approval-gated duplicate merging and deletion.
+
+---
+
+## 🌟 Stage 22 Core Deliverables
+
+- **Entity Extraction & Relationship Discovery (`KnowledgeGraphIntelligenceEngine`)**:
+  - Extracts typed entities (`concept`, `technology`, `organization`, `person`, `event`, `dataset`, `component`, `claim_or_standard`) and directed relationships (`depends_on`, `created_by`, `related_to`, `part_of`, `contradicts`, `supports`, `uses`, `evaluates`, `governed_by`) from user-provided text, Stage 4 Document Vault collections, and Stage 21 Discovery results.
+  - Architecture & Storage Design: Backed by a dedicated SQLite relational-graph adjacency store (`data/knowledge_graph/nexora_knowledge_graph.db`) with schema migration tracking (`kg_schema_migrations`, version `1.0.0`), composite adjacency indexes on `(user_id, workspace_id, source_entity_id)` and `(user_id, workspace_id, target_entity_id)` for fast multi-hop traversal, and strict tenant/workspace scoping (`user_id` + `workspace_id`).
+- **Evidence, Provenance & Epistemic Separation**:
+  - Links every extracted entity and relationship to its originating document ID, URL, page/section, and quarantined source passage (`<untrusted_kg_evidence>`).
+  - Strictly distinguishes explicit source assertions (`fact_basis="explicit_fact"`, `is_inferred=false`) from AI-inferred transitive relationships (`fact_basis="ai_inferred"`, `is_inferred=true`), and attaches calibrated uncertainty labels (`verified_explicit`, `hedged_source_statement`, `inferred_transitive`, `inferred_low_confidence`).
+- **Cycle-Safe Knowledge Graph Queries**:
+  - Supports 5 structured query modes: `"How are these technologies connected?"` (`connection_path`), `"What depends on this component?"` (`dependency_impact`), `"Which sources disagree about this claim?"` (`contradiction_analysis`), $k$-hop `neighborhood_exploration`, and auto-routed `natural_language` queries.
+  - Handles cyclic graphs safely via visited-path tracking (`cycles_detected` counter) without infinite recursion.
+- **Incremental Updates, Duplicate Detection & Approval Gates**:
+  - Incrementally merges new facts, aliases, and source passages into existing nodes and edges while recording an auditable changelog (`kg_change_history`).
+  - Detects duplicate entity candidates (`/api/v1/knowledge-graph/duplicates`) and enforces `WAITING_FOR_APPROVAL` confirmation gates (`/api/v1/knowledge-graph/operations/{op_id}/approve`) before executing destructive entity merges or deletions.
+- **Interactive Knowledge Graph Studio UI (`KnowledgeGraphStudio.tsx`)**:
+  - Accessible via the top navigation bar (**Knowledge Graph** tab) featuring an interactive SVG graph canvas with zoom, pan, radial vs. layered layout toggle, entity/relationship/fact-basis filters, search, 1-click neighborhood expansion, provenance inspection panel, Knowledge Query Console, Ingestion Panel, and Governance & Duplicate Merge tab.
 
 ---
 

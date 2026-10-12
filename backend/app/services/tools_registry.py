@@ -584,6 +584,50 @@ class ToolRegistry:
             handler=self._handle_universal_knowledge_discovery,
         )
 
+        # 19. Stage 22 Knowledge Graph Intelligence Engine
+        self.register(
+            ToolDefinition(
+                name="knowledge_graph_reasoner",
+                description=(
+                    "Queries or ingests structured knowledge into the Stage 22 Knowledge Graph Intelligence Engine, "
+                    "supporting connection paths, dependency impact traversal, contradiction detection, and k-hop neighborhood exploration."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["query", "ingest", "snapshot"],
+                            "default": "query",
+                        },
+                        "question": {
+                            "type": "string",
+                            "description": "Graph question or source text to ingest",
+                            "default": "How are Nexora Platform and Pydantic connected?",
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": [
+                                "natural_language",
+                                "connection_path",
+                                "dependency_impact",
+                                "contradiction_analysis",
+                                "neighborhood_exploration",
+                            ],
+                            "default": "natural_language",
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=22,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_knowledge_graph_reasoner,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1324,6 +1368,63 @@ class ToolRegistry:
                 f"{res.total_filtered_results} normalized source(s) "
                 f"({res.deduplicated_count} duplicates merged): {res.synthesis.concise_summary[:360]}"
             ),
+        }
+
+    async def _handle_knowledge_graph_reasoner(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.knowledge_graph.engine import knowledge_graph_engine
+        from app.models.schemas import KGQueryRequest, KGIngestRequest
+
+        action = str(params.get("action", "query")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+        question = str(params.get("question", "How are Nexora Platform and Pydantic connected?")).strip()
+        mode = str(params.get("mode", "natural_language")).strip()
+
+        if action == "ingest":
+            ing = knowledge_graph_engine.ingest_knowledge(
+                KGIngestRequest(
+                    user_id=user_id,
+                    workspace_id=workspace_id,
+                    source_title="Tool-Ingested Knowledge Snippet",
+                    source_text=question,
+                    derive_inferred_relationships=True,
+                )
+            )
+            return {
+                "action": "ingest",
+                "entities_created": ing.entities_created,
+                "relationships_created": ing.relationships_created,
+                "inferred_relationships_created": ing.inferred_relationships_created,
+                "summary": ing.summary,
+            }
+
+        if action == "snapshot":
+            snap = knowledge_graph_engine.get_graph_snapshot(user_id=user_id, workspace_id=workspace_id)
+            return {
+                "action": "snapshot",
+                "total_nodes": snap.total_nodes_in_workspace,
+                "total_edges": snap.total_edges_in_workspace,
+                "summary": (
+                    f"Knowledge Graph Snapshot ({workspace_id}): {snap.total_nodes_in_workspace} nodes, "
+                    f"{snap.total_edges_in_workspace} edges."
+                ),
+            }
+
+        q_res = knowledge_graph_engine.query_graph(
+            KGQueryRequest(
+                user_id=user_id,
+                workspace_id=workspace_id,
+                mode=mode,  # type: ignore[arg-type]
+                question=question,
+            )
+        )
+        return {
+            "action": "query",
+            "query_id": q_res.query_id,
+            "mode_executed": q_res.mode_executed,
+            "explicit_facts_count": q_res.explicit_facts_count,
+            "inferred_facts_count": q_res.inferred_facts_count,
+            "summary": q_res.answer_summary,
         }
 
 

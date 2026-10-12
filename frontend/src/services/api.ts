@@ -100,6 +100,17 @@ import {
   DiscoverySearchMode,
   DiscoverySearchResponse,
   DiscoverySourceType,
+  KGChangeLogEntry,
+  KGDestructiveOperationRecord,
+  KGDuplicateCandidate,
+  KGEntityType,
+  KGFactBasis,
+  KGGraphSnapshotResponse,
+  KGIngestResponse,
+  KGMetadataResponse,
+  KGQueryMode,
+  KGQueryResponse,
+  KGRelationType,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -2401,9 +2412,197 @@ export const api = {
   async listDiscoveryHistory(limit = 15): Promise<DiscoverySearchResponse[]> {
     return request<DiscoverySearchResponse[]>(`/discovery/history?limit=${limit}`);
   },
+
+  // =========================================================================
+  // Stage 22: Knowledge Graph Intelligence Engine
+  // =========================================================================
+
+  async getKnowledgeGraphMetadata(): Promise<KGMetadataResponse> {
+    return request<KGMetadataResponse>('/knowledge-graph/metadata');
+  },
+
+  async getKnowledgeGraphSnapshot(params?: {
+    user_id?: string;
+    workspace_id?: string;
+    search?: string;
+    entity_type?: string;
+    relation_type?: string;
+    fact_basis?: string;
+    page?: number;
+    page_size?: number;
+  }): Promise<KGGraphSnapshotResponse> {
+    const q = new URLSearchParams();
+    q.set('user_id', params?.user_id || 'default_user');
+    q.set('workspace_id', params?.workspace_id || 'default_workspace');
+    if (params?.search) q.set('search', params.search);
+    if (params?.entity_type) q.set('entity_type', params.entity_type);
+    if (params?.relation_type) q.set('relation_type', params.relation_type);
+    if (params?.fact_basis) q.set('fact_basis', params.fact_basis);
+    q.set('page', String(params?.page || 1));
+    q.set('page_size', String(params?.page_size || 50));
+    return request<KGGraphSnapshotResponse>(`/knowledge-graph/snapshot?${q.toString()}`);
+  },
+
+  async ingestKnowledgeGraph(params: {
+    user_id?: string;
+    workspace_id?: string;
+    source_title: string;
+    source_url?: string;
+    page_or_section?: string;
+    source_text?: string;
+    vault_document_ids?: string[];
+    discovery_id?: string;
+    explicit_entities?: Array<{
+      label: string;
+      entity_type: KGEntityType;
+      aliases?: string[];
+      description?: string;
+    }>;
+    explicit_relationships?: Array<{
+      source_label: string;
+      source_type: KGEntityType;
+      target_label: string;
+      target_type: KGEntityType;
+      relation_type: KGRelationType;
+      fact_basis?: KGFactBasis;
+      passage?: string;
+      page_or_section?: string;
+      source_title?: string;
+      source_url?: string;
+    }>;
+    derive_inferred_relationships?: boolean;
+  }): Promise<KGIngestResponse> {
+    return request<KGIngestResponse>('/knowledge-graph/ingest', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        source_title: params.source_title,
+        source_url: params.source_url || undefined,
+        page_or_section: params.page_or_section || 'Section 1',
+        source_text: params.source_text || '',
+        vault_document_ids: params.vault_document_ids || [],
+        discovery_id: params.discovery_id || undefined,
+        explicit_entities: params.explicit_entities || [],
+        explicit_relationships: params.explicit_relationships || [],
+        derive_inferred_relationships: params.derive_inferred_relationships ?? true,
+      }),
+    });
+  },
+
+  async queryKnowledgeGraph(params: {
+    user_id?: string;
+    workspace_id?: string;
+    mode?: KGQueryMode;
+    question?: string;
+    source_entity?: string;
+    target_entity?: string;
+    max_depth?: number;
+    include_inferred?: boolean;
+    relation_types?: KGRelationType[];
+  }): Promise<KGQueryResponse> {
+    return request<KGQueryResponse>('/knowledge-graph/query', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        mode: params.mode || 'natural_language',
+        question: params.question || '',
+        source_entity: params.source_entity || undefined,
+        target_entity: params.target_entity || undefined,
+        max_depth: params.max_depth || 4,
+        include_inferred: params.include_inferred ?? true,
+        relation_types: params.relation_types || [],
+      }),
+    });
+  },
+
+  async listDuplicateEntities(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<KGDuplicateCandidate[]> {
+    return request<KGDuplicateCandidate[]>(
+      `/knowledge-graph/duplicates?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async mergeKnowledgeGraphEntities(params: {
+    user_id?: string;
+    workspace_id?: string;
+    source_entity_id: string;
+    target_entity_id: string;
+    confirmed?: boolean;
+  }): Promise<KGDestructiveOperationRecord> {
+    return request<KGDestructiveOperationRecord>('/knowledge-graph/entities/merge', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        source_entity_id: params.source_entity_id,
+        target_entity_id: params.target_entity_id,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async deleteKnowledgeGraphItems(params: {
+    user_id?: string;
+    workspace_id?: string;
+    entity_ids?: string[];
+    relationship_ids?: string[];
+    clear_workspace?: boolean;
+    confirmed?: boolean;
+  }): Promise<KGDestructiveOperationRecord> {
+    return request<KGDestructiveOperationRecord>('/knowledge-graph/delete', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        entity_ids: params.entity_ids || [],
+        relationship_ids: params.relationship_ids || [],
+        clear_workspace: params.clear_workspace ?? false,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async approveKnowledgeGraphOperation(
+    opId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      approved: boolean;
+    }
+  ): Promise<KGDestructiveOperationRecord> {
+    return request<KGDestructiveOperationRecord>(
+      `/knowledge-graph/operations/${encodeURIComponent(opId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          workspace_id: params.workspace_id || 'default_workspace',
+          approved: params.approved,
+        }),
+      }
+    );
+  },
+
+  async listKnowledgeGraphOperations(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<KGDestructiveOperationRecord[]> {
+    return request<KGDestructiveOperationRecord[]>(
+      `/knowledge-graph/operations?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async listKnowledgeGraphHistory(
+    userId = 'default_user',
+    workspaceId = 'default_workspace',
+    limit = 25
+  ): Promise<KGChangeLogEntry[]> {
+    return request<KGChangeLogEntry[]>(
+      `/knowledge-graph/history?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}&limit=${limit}`
+    );
+  },
 };
-
-
-
-
-

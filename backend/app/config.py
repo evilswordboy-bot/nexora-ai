@@ -241,6 +241,24 @@ class Settings(BaseModel):
         "DISCOVERY_ENABLE_LIVE_ACADEMIC_API", "true"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 22: Knowledge Graph Intelligence Engine
+    kg_db_path: str = os.getenv(
+        "KG_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "knowledge_graph" / "nexora_knowledge_graph.db"),
+    )
+    kg_max_expansion_depth: int = int(
+        os.getenv("KG_MAX_EXPANSION_DEPTH", "6")
+    )
+    kg_default_page_size: int = int(
+        os.getenv("KG_DEFAULT_PAGE_SIZE", "50")
+    )
+    kg_max_page_size: int = int(
+        os.getenv("KG_MAX_PAGE_SIZE", "200")
+    )
+    kg_enable_ai_inferred_edges: bool = os.getenv(
+        "KG_ENABLE_AI_INFERRED_EDGES", "true"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

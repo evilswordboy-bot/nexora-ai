@@ -2595,3 +2595,303 @@ class DiscoveryMetadataResponse(BaseModel):
     stale_days_threshold: int = 730
 
 
+# ============================================================================
+# Stage 22: Knowledge Graph Intelligence Engine Schemas
+# ============================================================================
+
+KGEntityType = Literal[
+    "concept",
+    "technology",
+    "organization",
+    "person",
+    "event",
+    "dataset",
+    "component",
+    "claim_or_standard",
+]
+
+KGRelationType = Literal[
+    "depends_on",
+    "created_by",
+    "related_to",
+    "part_of",
+    "contradicts",
+    "supports",
+    "uses",
+    "evaluates",
+    "governed_by",
+]
+
+KGFactBasis = Literal["explicit_fact", "ai_inferred"]
+
+KGUncertaintyLabel = Literal[
+    "verified_explicit",
+    "hedged_source_statement",
+    "inferred_transitive",
+    "inferred_low_confidence",
+]
+
+KGSourceKind = Literal[
+    "user_document",
+    "vault_document",
+    "discovery_result",
+    "inferred_transitivity",
+]
+
+KGQueryMode = Literal[
+    "natural_language",
+    "connection_path",
+    "dependency_impact",
+    "contradiction_analysis",
+    "neighborhood_exploration",
+]
+
+
+class KGEvidenceItem(BaseModel):
+    evidence_id: str
+    source_kind: KGSourceKind = "user_document"
+    source_id: str
+    source_title: str
+    source_url: Optional[str] = None
+    page_or_section: Optional[str] = None
+    passage: str
+    quarantined_passage: str
+    stance: Literal["supporting", "contradicting", "neutral"] = "supporting"
+    extracted_at: str
+
+
+class KGEntityNode(BaseModel):
+    entity_id: str
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    canonical_key: str
+    label: str
+    entity_type: KGEntityType = "concept"
+    aliases: List[str] = Field(default_factory=list)
+    description: str = ""
+    properties: Dict[str, Any] = Field(default_factory=dict)
+    provenance: List[KGEvidenceItem] = Field(default_factory=list)
+    confidence: float = Field(default=0.9, ge=0.0, le=1.0)
+    degree: int = 0
+    created_at: str
+    updated_at: str
+
+
+class KGRelationshipEdge(BaseModel):
+    relationship_id: str
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    source_entity_id: str
+    source_label: str = ""
+    target_entity_id: str
+    target_label: str = ""
+    relation_type: KGRelationType = "related_to"
+    fact_basis: KGFactBasis = "explicit_fact"
+    is_inferred: bool = False
+    uncertainty_label: KGUncertaintyLabel = "verified_explicit"
+    confidence: float = Field(default=0.9, ge=0.0, le=1.0)
+    explanation: str = ""
+    evidence: List[KGEvidenceItem] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class KGExplicitEntityInput(BaseModel):
+    label: str = Field(..., min_length=1, max_length=160)
+    entity_type: KGEntityType = "concept"
+    aliases: List[str] = Field(default_factory=list)
+    description: str = Field(default="", max_length=1000)
+    properties: Dict[str, Any] = Field(default_factory=dict)
+
+
+class KGExplicitRelationshipInput(BaseModel):
+    source_label: str = Field(..., min_length=1, max_length=160)
+    source_type: KGEntityType = "technology"
+    target_label: str = Field(..., min_length=1, max_length=160)
+    target_type: KGEntityType = "technology"
+    relation_type: KGRelationType = "depends_on"
+    fact_basis: KGFactBasis = "explicit_fact"
+    passage: str = Field(default="", max_length=1000)
+    page_or_section: Optional[str] = None
+    source_title: Optional[str] = None
+    source_url: Optional[str] = None
+    confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+
+
+class KGIngestRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    source_title: str = Field(default="User Knowledge Input", max_length=240)
+    source_url: Optional[str] = Field(default=None, max_length=600)
+    page_or_section: Optional[str] = Field(default="Section 1", max_length=120)
+    source_text: str = Field(default="", max_length=32000)
+    vault_document_ids: List[str] = Field(default_factory=list)
+    discovery_id: Optional[str] = None
+    explicit_entities: List[KGExplicitEntityInput] = Field(default_factory=list)
+    explicit_relationships: List[KGExplicitRelationshipInput] = Field(default_factory=list)
+    derive_inferred_relationships: bool = True
+
+
+class KGChangeLogEntry(BaseModel):
+    change_id: str
+    user_id: str
+    workspace_id: str
+    action_type: Literal[
+        "ingest_merge",
+        "entity_merge_approved",
+        "delete_approved",
+        "seed_sample",
+    ]
+    summary: str
+    affected_entity_ids: List[str] = Field(default_factory=list)
+    affected_relationship_ids: List[str] = Field(default_factory=list)
+    created_at: str
+
+
+class KGIngestResponse(BaseModel):
+    user_id: str
+    workspace_id: str
+    entities_created: int = 0
+    entities_updated: int = 0
+    relationships_created: int = 0
+    relationships_updated: int = 0
+    inferred_relationships_created: int = 0
+    prompt_injection_neutralized_count: int = 0
+    ssrf_blocked_urls_count: int = 0
+    entities: List[KGEntityNode] = Field(default_factory=list)
+    relationships: List[KGRelationshipEdge] = Field(default_factory=list)
+    change_log: KGChangeLogEntry
+    summary: str
+
+
+class KGGraphSnapshotResponse(BaseModel):
+    user_id: str
+    workspace_id: str
+    total_nodes_in_workspace: int = 0
+    total_edges_in_workspace: int = 0
+    returned_nodes_count: int = 0
+    returned_edges_count: int = 0
+    page: int = 1
+    page_size: int = 50
+    total_pages: int = 1
+    has_more: bool = False
+    nodes: List[KGEntityNode] = Field(default_factory=list)
+    edges: List[KGRelationshipEdge] = Field(default_factory=list)
+
+
+class KGPathStep(BaseModel):
+    step_index: int
+    relationship_id: str
+    source_entity_id: str
+    source_label: str
+    relation_type: KGRelationType
+    target_entity_id: str
+    target_label: str
+    fact_basis: KGFactBasis
+    is_inferred: bool
+    uncertainty_label: KGUncertaintyLabel
+    confidence: float
+    evidence: List[KGEvidenceItem] = Field(default_factory=list)
+
+
+class KGContradictionItem(BaseModel):
+    subject_label: str
+    target_label: str
+    supporting_edge: Optional[KGRelationshipEdge] = None
+    contradicting_edge: KGRelationshipEdge
+    supporting_sources: List[str] = Field(default_factory=list)
+    contradicting_sources: List[str] = Field(default_factory=list)
+    explanation: str
+
+
+class KGQueryRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    mode: KGQueryMode = "natural_language"
+    question: str = Field(default="", max_length=1000)
+    source_entity: Optional[str] = None
+    target_entity: Optional[str] = None
+    max_depth: int = Field(default=4, ge=1, le=6)
+    include_inferred: bool = True
+    relation_types: List[KGRelationType] = Field(default_factory=list)
+
+
+class KGQueryResponse(BaseModel):
+    query_id: str
+    user_id: str
+    workspace_id: str
+    mode_executed: KGQueryMode
+    question: str
+    answer_summary: str
+    paths: List[List[KGPathStep]] = Field(default_factory=list)
+    dependent_entities: List[KGEntityNode] = Field(default_factory=list)
+    contradictions: List[KGContradictionItem] = Field(default_factory=list)
+    subgraph_nodes: List[KGEntityNode] = Field(default_factory=list)
+    subgraph_edges: List[KGRelationshipEdge] = Field(default_factory=list)
+    cycles_detected: int = 0
+    explicit_facts_count: int = 0
+    inferred_facts_count: int = 0
+    latency_ms: float = 0.0
+
+
+class KGDuplicateCandidate(BaseModel):
+    candidate_id: str
+    entity_a_id: str
+    entity_a_label: str
+    entity_b_id: str
+    entity_b_label: str
+    entity_type: KGEntityType
+    similarity_score: float
+    reason: str
+
+
+class KGDestructiveOperationRecord(BaseModel):
+    op_id: str
+    user_id: str
+    workspace_id: str
+    operation_type: Literal["merge_entities", "delete_items", "clear_workspace"]
+    status: Literal["WAITING_FOR_APPROVAL", "SUCCEEDED", "CANCELLED"]
+    requires_approval: bool = True
+    summary: str
+    affected_entities_count: int = 0
+    affected_relationships_count: int = 0
+    created_at: str
+    resolved_at: Optional[str] = None
+
+
+class KGEntityMergeRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    source_entity_id: str
+    target_entity_id: str
+    confirmed: bool = False
+
+
+class KGDeleteRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    entity_ids: List[str] = Field(default_factory=list)
+    relationship_ids: List[str] = Field(default_factory=list)
+    clear_workspace: bool = False
+    confirmed: bool = False
+
+
+class KGApproveOperationRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    approved: bool = True
+
+
+class KGMetadataResponse(BaseModel):
+    stage: int = 22
+    engine: str = "KnowledgeGraphIntelligenceEngine"
+    schema_version: str = "v1.0.0"
+    storage_backend: str = "SQLite Relational-Graph Engine with Adjacency Indexing"
+    entity_types: List[str] = Field(default_factory=list)
+    relation_types: List[str] = Field(default_factory=list)
+    query_modes: List[Dict[str, str]] = Field(default_factory=list)
+    max_expansion_depth: int = 6
+    default_page_size: int = 50
+    max_page_size: int = 200
+
+
