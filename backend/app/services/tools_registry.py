@@ -665,6 +665,51 @@ class ToolRegistry:
             handler=self._handle_iot_project_builder,
         )
 
+        # 25. Stage 24: Embedded Firmware Engineering Studio Tool
+        self.register(
+            tool=ToolDefinition(
+                name="embedded_firmware_studio",
+                description=(
+                    "Creates multi-file embedded firmware workspaces (C/C++, Arduino, ESP-IDF, STM32 HAL, MicroPython), "
+                    "reuses Stage 23 IoT hardware profiles and wiring netlists, runs static code quality analysis, "
+                    "executes sandboxed compilation/unit tests, and inspects virtual or physical serial output."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["create_workspace", "list_platforms", "compile"],
+                            "default": "create_workspace",
+                        },
+                        "name": {
+                            "type": "string",
+                            "default": "ESP32 Telemetry & Watchdog Firmware",
+                        },
+                        "board_id": {
+                            "type": "string",
+                            "default": "esp32_devkit_v1",
+                        },
+                        "framework": {
+                            "type": "string",
+                            "default": "micropython",
+                        },
+                        "fw_project_id": {
+                            "type": "string",
+                            "default": "",
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=24,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_embedded_firmware_studio,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1516,6 +1561,88 @@ class ToolRegistry:
                 f"Created IoT project '{proj.name}' ({proj.project_id}) on {proj.board_profile.name} "
                 f"with {len(proj.placed_components)} components, {len(proj.wires)} wires "
                 f"(wiring_valid={proj.wiring_report.valid}), and {proj.firmware.language} firmware."
+            ),
+        }
+
+    async def _handle_embedded_firmware_studio(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.firmware.engine import firmware_studio_engine
+        from app.models.schemas import (
+            FirmwareWorkspaceCreateRequest,
+            FirmwareCompileRequest,
+        )
+
+        action = str(params.get("action", "create_workspace")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+
+        if action == "list_platforms":
+            platforms = firmware_studio_engine.get_platform_matrix()
+            supported_count = sum(len(p.supported_frameworks) for p in platforms)
+            unsupported_count = sum(len(p.unsupported_frameworks) for p in platforms)
+            return {
+                "action": "list_platforms",
+                "total_boards": len(platforms),
+                "supported_entries": supported_count,
+                "unsupported_entries": unsupported_count,
+                "summary": (
+                    f"Stage 24 Firmware Platform Matrix: {len(platforms)} boards with {supported_count} supported "
+                    f"board+framework combinations and {unsupported_count} explicitly unsupported combinations."
+                ),
+            }
+
+        if action == "compile":
+            fw_project_id = str(params.get("fw_project_id", "")).strip()
+            if not fw_project_id:
+                existing = firmware_studio_engine.list_workspaces(user_id=user_id, workspace_id=workspace_id)
+                if existing:
+                    fw_project_id = existing[0].fw_project_id
+                else:
+                    created = firmware_studio_engine.create_workspace(
+                        FirmwareWorkspaceCreateRequest(
+                            user_id=user_id,
+                            workspace_id=workspace_id,
+                            name="Auto ESP32 MicroPython Build",
+                            board_id="esp32_devkit_v1",
+                            framework="micropython",
+                        )
+                    )
+                    fw_project_id = created.fw_project_id
+            comp = firmware_studio_engine.compile_workspace(
+                fw_project_id=fw_project_id,
+                req=FirmwareCompileRequest(user_id=user_id, workspace_id=workspace_id, run_unit_tests=True),
+            )
+            return {
+                "action": "compile",
+                "fw_project_id": fw_project_id,
+                "status": comp.status,
+                "binary_artifact_produced": comp.binary_artifact_produced,
+                "summary": comp.honesty_notice,
+            }
+
+        name = str(params.get("name", "ESP32 Telemetry & Watchdog Firmware")).strip()
+        board_id = str(params.get("board_id", "esp32_devkit_v1")).strip()
+        framework = str(params.get("framework", "micropython")).strip()
+        if framework not in ("arduino_cpp", "esp_idf_c", "stm32_hal_c", "micropython", "rpi_python_gpiozero"):
+            framework = "micropython"
+        ws = firmware_studio_engine.create_workspace(
+            FirmwareWorkspaceCreateRequest(
+                user_id=user_id,
+                workspace_id=workspace_id,
+                name=name,
+                board_id=board_id,  # type: ignore[arg-type]
+                framework=framework,  # type: ignore[arg-type]
+            )
+        )
+        return {
+            "action": "create_workspace",
+            "fw_project_id": ws.fw_project_id,
+            "board_id": ws.board_id,
+            "framework": ws.framework,
+            "files_count": len(ws.files),
+            "passed_quality_gate": ws.quality_report.passed_quality_gate,
+            "summary": (
+                f"Created firmware workspace '{ws.name}' ({ws.fw_project_id}) for {ws.board_name} "
+                f"({ws.framework}) with {len(ws.files)} modular files (passed_quality_gate={ws.quality_report.passed_quality_gate})."
             ),
         }
 

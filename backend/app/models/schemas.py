@@ -3361,4 +3361,329 @@ class IoTMetadataResponse(BaseModel):
     hardware_execution_disclaimer: str
 
 
+# ============================================================================
+# STAGE 24: EMBEDDED FIRMWARE ENGINEERING STUDIO SCHEMAS
+# ============================================================================
+
+FirmwareFrameworkId = Literal[
+    "arduino_cpp",
+    "esp_idf_c",
+    "stm32_hal_c",
+    "micropython",
+    "rpi_python_gpiozero",
+]
+
+FirmwareOptimizationLevel = Literal["-Os", "-O2", "-O0", "-Og"]
+
+
+class FirmwarePlatformMatrixEntry(BaseModel):
+    board_id: IoTBoardId
+    board_name: str
+    mcu_or_soc: str
+    supported_frameworks: List[FirmwareFrameworkId] = Field(default_factory=list)
+    unsupported_frameworks: Dict[str, str] = Field(default_factory=dict)
+    compiler_binaries: Dict[str, str] = Field(default_factory=dict)
+    toolchain_available: Dict[str, bool] = Field(default_factory=dict)
+    flash_protocol: str
+    default_baud_rate: int = 115200
+
+
+class FirmwareLibraryDependency(BaseModel):
+    name: str
+    version: str = "^1.0.0"
+    header_or_module: str
+    purpose: str
+    installed_in_sandbox: bool = False
+
+
+class FirmwareBuildSettings(BaseModel):
+    optimization_level: FirmwareOptimizationLevel = "-Os"
+    debug_symbols: bool = True
+    watchdog_enabled: bool = True
+    watchdog_timeout_ms: int = 5000
+    serial_baud_rate: int = 115200
+    enable_ota_stub: bool = False
+    extra_build_flags: List[str] = Field(default_factory=lambda: ["-Wall", "-Wextra"])
+
+
+class FirmwareProjectFile(BaseModel):
+    path: str
+    role: Literal[
+        "main_entry",
+        "pin_config",
+        "driver_header",
+        "driver_source",
+        "secrets_template",
+        "build_manifest",
+        "unit_test",
+    ]
+    language: str
+    content: str
+    size_bytes: int
+    sha256: str
+    updated_at: str
+
+
+class FirmwareHardwareDiagnostic(BaseModel):
+    diag_id: str
+    severity: Literal["critical", "error", "warning", "info"]
+    category: Literal[
+        "incompatible_voltage",
+        "invalid_pin",
+        "missing_library",
+        "unsupported_peripheral",
+        "interrupt_constraint",
+    ]
+    title: str
+    detail: str
+    file_path: Optional[str] = None
+    line_number: Optional[int] = None
+    suggested_fix: str
+
+
+class FirmwareStaticIssue(BaseModel):
+    issue_id: str
+    category: Literal[
+        "memory_error",
+        "blocking_loop",
+        "watchdog_issue",
+        "unsafe_buffer_handling",
+        "uninitialized_value",
+        "missing_timeout",
+        "credential_exposure",
+    ]
+    severity: Literal["critical", "error", "warning", "info"]
+    file_path: str
+    line_number: int
+    code_snippet: str
+    message: str
+    suggested_fix: str
+
+
+class FirmwareQualityReport(BaseModel):
+    passed_quality_gate: bool
+    critical_count: int = 0
+    error_count: int = 0
+    warning_count: int = 0
+    issues: List[FirmwareStaticIssue] = Field(default_factory=list)
+    unit_tests_executed: bool = False
+    unit_tests_passed: Optional[bool] = None
+    unit_test_output: str = ""
+    hil_status: Literal["SKIPPED_NO_HIL_EQUIPMENT", "EXECUTED"] = "SKIPPED_NO_HIL_EQUIPMENT"
+    hil_notes: str = (
+        "Hardware-in-the-Loop (HIL) physical test rig is not connected to this host; "
+        "host-side deterministic unit tests were executed instead."
+    )
+
+
+class FirmwareCompilerDiagnostic(BaseModel):
+    file_path: str
+    line_number: int
+    column: int = 1
+    severity: Literal["error", "warning", "info"]
+    message: str
+    source_line: str = ""
+    suggested_fix: str = ""
+
+
+class FirmwareArtifactFile(BaseModel):
+    relative_path: str
+    artifact_type: Literal[
+        "source_file",
+        "dependency_manifest",
+        "build_config",
+        "compiled_bytecode_or_binary",
+        "release_notes",
+    ]
+    size_bytes: int
+    sha256: str
+    genuinely_produced_by_build: bool = True
+
+
+class FirmwareCompileResult(BaseModel):
+    build_id: str
+    workspace_id: str
+    fw_project_id: str
+    board_id: IoTBoardId
+    framework: FirmwareFrameworkId
+    status: Literal[
+        "SUCCEEDED",
+        "FAILED_COMPILATION_ERROR",
+        "BLOCKED_TOOLCHAIN_MISSING",
+    ]
+    toolchain_binary: str
+    toolchain_installed: bool
+    compilation_genuinely_executed: bool
+    binary_artifact_produced: bool
+    exit_code: Optional[int] = None
+    duration_ms: float = 0.0
+    compiler_stdout: str = ""
+    compiler_stderr: str = ""
+    diagnostics: List[FirmwareCompilerDiagnostic] = Field(default_factory=list)
+    produced_artifacts: List[FirmwareArtifactFile] = Field(default_factory=list)
+    compiled_at: str
+    honesty_notice: str
+
+
+class FirmwareSerialLogEntry(BaseModel):
+    seq: int
+    timestamp_ms: int
+    event_type: Literal["boot_banner", "reset_event", "sensor_telemetry", "isr_trigger", "watchdog_feed", "error"]
+    message: str
+    firmware_version: str
+
+
+class FirmwareSerialMonitorResponse(BaseModel):
+    fw_project_id: str
+    board_id: IoTBoardId
+    source_mode: Literal["simulated_virtual_serial", "physical_authorized_serial"] = "simulated_virtual_serial"
+    is_simulated: bool = True
+    connected_physical_port: Optional[str] = None
+    baud_rate: int = 115200
+    firmware_version: str = "1.0.0"
+    reset_reason: str = "POWERON_RESET"
+    logs: List[FirmwareSerialLogEntry] = Field(default_factory=list)
+    distinction_banner: str = (
+        "SIMULATED SERIAL MONITOR: No physical serial device is attached. Logs are generated from the "
+        "firmware's deterministic state machine and sensor driver model."
+    )
+
+
+class FirmwareDeviceActionRecord(BaseModel):
+    action_id: str
+    fw_project_id: str
+    user_id: str
+    workspace_id: str
+    action_type: Literal["flash_firmware", "reset_device"]
+    target_port: str = "auto"
+    status: Literal[
+        "WAITING_FOR_APPROVAL",
+        "BLOCKED_NO_PHYSICAL_DEVICE",
+        "CANCELLED",
+    ]
+    requires_approval: bool = True
+    cli_command_preview: str
+    recovery_guidance: List[str] = Field(default_factory=list)
+    message: str
+    created_at: str
+    resolved_at: Optional[str] = None
+
+
+class FirmwareVersionSnapshot(BaseModel):
+    version_id: str
+    semver: str
+    commit_note: str
+    files: List[FirmwareProjectFile] = Field(default_factory=list)
+    build_settings: FirmwareBuildSettings
+    created_at: str
+
+
+class FirmwareCodeSearchHit(BaseModel):
+    file_path: str
+    line_number: int
+    line_preview: str
+
+
+class FirmwareWorkspaceRecord(BaseModel):
+    fw_project_id: str
+    user_id: str
+    workspace_id: str
+    name: str
+    iot_project_id: Optional[str] = None
+    board_id: IoTBoardId
+    board_name: str
+    framework: FirmwareFrameworkId
+    semver: str = "1.0.0"
+    build_settings: FirmwareBuildSettings
+    libraries: List[FirmwareLibraryDependency] = Field(default_factory=list)
+    files: List[FirmwareProjectFile] = Field(default_factory=list)
+    hardware_diagnostics: List[FirmwareHardwareDiagnostic] = Field(default_factory=list)
+    quality_report: FirmwareQualityReport
+    last_compile: Optional[FirmwareCompileResult] = None
+    versions: List[FirmwareVersionSnapshot] = Field(default_factory=list)
+    recovery_guidance: List[str] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+
+
+class FirmwareWorkspaceCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    name: str = Field(..., min_length=2, max_length=160)
+    iot_project_id: Optional[str] = None
+    board_id: IoTBoardId = "esp32_devkit_v1"
+    framework: FirmwareFrameworkId = "arduino_cpp"
+    build_settings: Optional[FirmwareBuildSettings] = None
+
+
+class FirmwareFileUpdateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    file_path: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., max_length=262144)
+    commit_note: str = "Updated firmware source file"
+    create_version_snapshot: bool = True
+
+
+class FirmwareCompileRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    run_unit_tests: bool = True
+
+
+class FirmwareSerialMonitorRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    mode: Literal["simulated_virtual_serial", "physical_authorized_serial"] = "simulated_virtual_serial"
+    serial_port: Optional[str] = None
+    simulate_reset_event: Literal["POWERON_RESET", "SW_CPU_RESET", "WDT_RESET", "BROWNOUT_RST"] = "POWERON_RESET"
+    lines_count: int = Field(default=8, ge=1, le=30)
+
+
+class FirmwareDeviceActionRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    action_type: Literal["flash_firmware", "reset_device"] = "flash_firmware"
+    target_port: str = "COM3"
+    confirmed: bool = False
+
+
+class FirmwareApproveActionRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    approved: bool = True
+
+
+class FirmwareRestoreVersionRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    version_id: str
+
+
+class FirmwareExportResponse(BaseModel):
+    export_id: str
+    fw_project_id: str
+    name: str
+    semver: str
+    export_directory: str
+    workspace_relative_dir: Optional[str] = None
+    only_real_artifacts_exported: bool = True
+    compiled_binaries_included: bool = False
+    artifacts: List[FirmwareArtifactFile] = Field(default_factory=list)
+    release_notes_markdown: str
+    exported_at: str
+    summary: str
+
+
+class FirmwareMetadataResponse(BaseModel):
+    stage: int = 24
+    engine: str = "EmbeddedFirmwareStudioEngine"
+    reuses_stage23_iot_builder: bool = True
+    platform_matrix: List[FirmwarePlatformMatrixEntry] = Field(default_factory=list)
+    detected_toolchains: Dict[str, bool] = Field(default_factory=dict)
+    connected_serial_ports: List[str] = Field(default_factory=list)
+    safety_and_honesty_policy: str
+
+
+
 

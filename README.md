@@ -1,6 +1,22 @@
-# NEXORA AI — Stage 23: IoT Project Builder & Embedded Firmware Studio
+# NEXORA AI — Stage 24: Embedded Firmware Engineering Studio
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 23** introduces the **IoT Project Builder Engine (`IoTProjectBuilderEngine`)**: an interactive embedded-systems and electronics engineering workspace where users can design IoT inventions from natural language, select hardware board profiles (`ESP32`, `Arduino Uno R3`, `STM32 Nucleo-F401RE`, `Raspberry Pi Pico W`, `Raspberry Pi 4B`), browse a datasheet-grounded component library, build and validate pin-to-pin wiring schematics, generate editable firmware with honest host toolchain/syntax checks, run deterministic virtual sensor simulations (`is_physical_hardware_execution=False`), audit electrical safety and power budgets, and export versioned prototype bundles (`IoTProjectBuilderStudio.tsx`).
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 24** introduces the **Embedded Firmware Engineering Studio (`EmbeddedFirmwareStudioEngine`)**: a professional multi-file embedded firmware IDE that reuses the Stage 23 IoT Project Builder board profiles and validated wiring netlists to generate modular C/C++/MicroPython drivers, interrupt service routines (ISRs), hardware watchdog management, static embedded safety analysis, isolated compilation & unit testing, simulated vs. physical serial monitoring, approval-gated device flashing, version rollback, and authentic release artifact export (`FirmwareEngineeringStudio.tsx`).
+
+---
+
+## 🌟 Stage 24 Core Deliverables
+
+- **Multi-Platform Firmware Workspace & Matrix (`EmbeddedFirmwareStudioEngine`)**:
+  - Supports configurable development profiles for `esp32_devkit_v1`, `arduino_uno_r3`, `stm32_nucleo_f401re`, `raspberry_pi_pico_w`, and `raspberry_pi_4b` across `arduino_cpp`, `esp_idf_c`, `stm32_hal_c`, `micropython`, and `rpi_python_gpiozero`.
+  - Clearly displays and rejects unsupported board + framework combinations (`HTTP 400`, e.g., `arduino_uno_r3` + `micropython` due to 2 KB SRAM limit, or `esp32_devkit_v1` + `stm32_hal_c`).
+- **Multi-File Code Editor, Project Structure & Hardware-Aware Code Generation**:
+  - Reuses Stage 23 validated wiring netlists (`iot_project_id`) to generate modular project files (`include/pin_config.h`, `include/secrets.example.h`, `include/peripheral_drivers.h`, `src/peripheral_drivers.cpp`, `src/main.cpp`, `platformio.ini`, `test/test_embedded_logic.py` or MicroPython equivalents) with code search across files and immutable version snapshots (`v1.0.0` -> `v1.0.1`).
+  - Hardware-Aware Diagnostics flag invalid GPIO numbers, input-only GPIO output misuse (`GPIO34`/`GPIO35` on ESP32), missing manifest libraries, and unsupported wireless peripherals.
+- **Sandboxed Compile, Static Quality Analyzer & Host Unit Tests**:
+  - Static analyzer flags `unsafe_buffer_handling` (`strcpy`/`sprintf`), `blocking_loop` (`while(1)` / long `delay()`), `watchdog_issue` (enabled watchdog never fed in main loop), `memory_error` (`malloc`), `missing_timeout` (`pulseIn`), and `credential_exposure` (hardcoded secrets).
+  - Executes real Python `ast.parse` + `py_compile` bytecode compilation for MicroPython/Python projects (producing genuine `.pyc` artifacts on disk) and real C/C++ syntax/brace verification (`FAILED_COMPILATION_ERROR` on syntax errors, `BLOCKED_TOOLCHAIN_MISSING` when `pio`/`arduino-cli`/`idf.py` is absent on host PATH — never fabricating binary builds).
+- **Serial Monitor, Approval-Gated Device Flash/Reset & Authentic Artifact Export**:
+  - Strictly distinguishes `simulated_virtual_serial` (`is_simulated=True`) from `physical_authorized_serial`, requires explicit user approval (`WAITING_FOR_APPROVAL` -> `/approve`) before flashing or resetting physical hardware, provides bootloader recovery & unbricking steps, and exports only genuinely produced artifacts (`only_real_artifacts_exported=True`).
 
 ---
 

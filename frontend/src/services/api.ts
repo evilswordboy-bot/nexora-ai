@@ -125,6 +125,16 @@ import {
   IoTSimulationResponse,
   IoTSimulationStimulus,
   IoTWireConnection,
+  FirmwareBuildSettings,
+  FirmwareCodeSearchHit,
+  FirmwareCompileResult,
+  FirmwareDeviceActionRecord,
+  FirmwareExportResponse,
+  FirmwareFrameworkId,
+  FirmwareMetadataResponse,
+  FirmwarePlatformMatrixEntry,
+  FirmwareSerialMonitorResponse,
+  FirmwareWorkspaceRecord,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -2782,5 +2792,209 @@ export const api = {
         write_to_workspace_files: params?.write_to_workspace_files ?? true,
       }),
     });
+  },
+
+  // Stage 24: Embedded Firmware Engineering Studio Methods
+  async getFirmwareMetadata(): Promise<FirmwareMetadataResponse> {
+    return request<FirmwareMetadataResponse>('/firmware/metadata');
+  },
+
+  async listFirmwarePlatforms(): Promise<FirmwarePlatformMatrixEntry[]> {
+    return request<FirmwarePlatformMatrixEntry[]>('/firmware/platforms');
+  },
+
+  async listFirmwareWorkspaces(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<FirmwareWorkspaceRecord[]> {
+    return request<FirmwareWorkspaceRecord[]>(
+      `/firmware/workspaces?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async createFirmwareWorkspace(params: {
+    user_id?: string;
+    workspace_id?: string;
+    name: string;
+    iot_project_id?: string | null;
+    board_id: IoTBoardId;
+    framework: FirmwareFrameworkId;
+    build_settings?: FirmwareBuildSettings;
+  }): Promise<FirmwareWorkspaceRecord> {
+    return request<FirmwareWorkspaceRecord>('/firmware/workspaces', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        name: params.name,
+        iot_project_id: params.iot_project_id || null,
+        board_id: params.board_id,
+        framework: params.framework,
+        build_settings: params.build_settings,
+      }),
+    });
+  },
+
+  async getFirmwareWorkspace(
+    fwProjectId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<FirmwareWorkspaceRecord> {
+    return request<FirmwareWorkspaceRecord>(
+      `/firmware/workspaces/${encodeURIComponent(fwProjectId)}?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async updateFirmwareFile(
+    fwProjectId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      file_path: string;
+      content: string;
+      commit_note?: string;
+      create_version_snapshot?: boolean;
+    }
+  ): Promise<FirmwareWorkspaceRecord> {
+    return request<FirmwareWorkspaceRecord>(`/firmware/workspaces/${encodeURIComponent(fwProjectId)}/files`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        file_path: params.file_path,
+        content: params.content,
+        commit_note: params.commit_note || 'Updated firmware source file',
+        create_version_snapshot: params.create_version_snapshot ?? true,
+      }),
+    });
+  },
+
+  async searchFirmwareCode(
+    fwProjectId: string,
+    query: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<FirmwareCodeSearchHit[]> {
+    return request<FirmwareCodeSearchHit[]>(
+      `/firmware/workspaces/${encodeURIComponent(fwProjectId)}/search?query=${encodeURIComponent(query)}&user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async compileFirmwareWorkspace(
+    fwProjectId: string,
+    params?: {
+      user_id?: string;
+      workspace_id?: string;
+      run_unit_tests?: boolean;
+    }
+  ): Promise<FirmwareCompileResult> {
+    return request<FirmwareCompileResult>(`/firmware/workspaces/${encodeURIComponent(fwProjectId)}/compile`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params?.user_id || 'default_user',
+        workspace_id: params?.workspace_id || 'default_workspace',
+        run_unit_tests: params?.run_unit_tests ?? true,
+      }),
+    });
+  },
+
+  async readFirmwareSerialMonitor(
+    fwProjectId: string,
+    params?: {
+      user_id?: string;
+      workspace_id?: string;
+      mode?: 'simulated_virtual_serial' | 'physical_authorized_serial';
+      serial_port?: string;
+      simulate_reset_event?: 'POWERON_RESET' | 'SW_CPU_RESET' | 'WDT_RESET' | 'BROWNOUT_RST';
+      lines_count?: number;
+    }
+  ): Promise<FirmwareSerialMonitorResponse> {
+    return request<FirmwareSerialMonitorResponse>(`/firmware/workspaces/${encodeURIComponent(fwProjectId)}/serial`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params?.user_id || 'default_user',
+        workspace_id: params?.workspace_id || 'default_workspace',
+        mode: params?.mode || 'simulated_virtual_serial',
+        serial_port: params?.serial_port,
+        simulate_reset_event: params?.simulate_reset_event || 'POWERON_RESET',
+        lines_count: params?.lines_count ?? 8,
+      }),
+    });
+  },
+
+  async requestFirmwareDeviceAction(
+    fwProjectId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      action_type: 'flash_firmware' | 'reset_device';
+      target_port?: string;
+      confirmed?: boolean;
+    }
+  ): Promise<FirmwareDeviceActionRecord> {
+    return request<FirmwareDeviceActionRecord>(
+      `/firmware/workspaces/${encodeURIComponent(fwProjectId)}/device-action`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params.user_id || 'default_user',
+          workspace_id: params.workspace_id || 'default_workspace',
+          action_type: params.action_type,
+          target_port: params.target_port || 'COM3',
+          confirmed: params.confirmed ?? false,
+        }),
+      }
+    );
+  },
+
+  async approveFirmwareDeviceAction(
+    actionId: string,
+    params?: {
+      user_id?: string;
+      workspace_id?: string;
+      approved?: boolean;
+    }
+  ): Promise<FirmwareDeviceActionRecord> {
+    return request<FirmwareDeviceActionRecord>(
+      `/firmware/device-actions/${encodeURIComponent(actionId)}/approve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params?.user_id || 'default_user',
+          workspace_id: params?.workspace_id || 'default_workspace',
+          approved: params?.approved ?? true,
+        }),
+      }
+    );
+  },
+
+  async restoreFirmwareWorkspaceVersion(
+    fwProjectId: string,
+    versionId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<FirmwareWorkspaceRecord> {
+    return request<FirmwareWorkspaceRecord>(
+      `/firmware/workspaces/${encodeURIComponent(fwProjectId)}/restore-version`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: userId,
+          workspace_id: workspaceId,
+          version_id: versionId,
+        }),
+      }
+    );
+  },
+
+  async exportFirmwareWorkspace(
+    fwProjectId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<FirmwareExportResponse> {
+    return request<FirmwareExportResponse>(
+      `/firmware/workspaces/${encodeURIComponent(fwProjectId)}/export?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`,
+      { method: 'POST' }
+    );
   },
 };

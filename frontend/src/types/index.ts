@@ -2624,3 +2624,259 @@ export interface IoTMetadataResponse {
   hardware_execution_disclaimer: string;
 }
 
+// ============================================================================
+// STAGE 24: EMBEDDED FIRMWARE ENGINEERING STUDIO TYPES
+// ============================================================================
+
+export type FirmwareFrameworkId =
+  | 'arduino_cpp'
+  | 'esp_idf_c'
+  | 'stm32_hal_c'
+  | 'micropython'
+  | 'rpi_python_gpiozero';
+
+export type FirmwareOptimizationLevel = '-Os' | '-O2' | '-O0' | '-Og';
+
+export interface FirmwarePlatformMatrixEntry {
+  board_id: IoTBoardId;
+  board_name: string;
+  mcu_or_soc: string;
+  supported_frameworks: FirmwareFrameworkId[];
+  unsupported_frameworks: Record<string, string>;
+  compiler_binaries: Record<string, string>;
+  toolchain_available: Record<string, boolean>;
+  flash_protocol: string;
+  default_baud_rate: number;
+}
+
+export interface FirmwareLibraryDependency {
+  name: string;
+  version: string;
+  header_or_module: string;
+  purpose: string;
+  installed_in_sandbox: boolean;
+}
+
+export interface FirmwareBuildSettings {
+  optimization_level: FirmwareOptimizationLevel;
+  debug_symbols: boolean;
+  watchdog_enabled: boolean;
+  watchdog_timeout_ms: number;
+  serial_baud_rate: number;
+  enable_ota_stub: boolean;
+  extra_build_flags: string[];
+}
+
+export interface FirmwareProjectFile {
+  path: string;
+  role:
+    | 'main_entry'
+    | 'pin_config'
+    | 'driver_header'
+    | 'driver_source'
+    | 'secrets_template'
+    | 'build_manifest'
+    | 'unit_test';
+  language: string;
+  content: string;
+  size_bytes: number;
+  sha256: string;
+  updated_at: string;
+}
+
+export interface FirmwareHardwareDiagnostic {
+  diag_id: string;
+  severity: 'critical' | 'error' | 'warning' | 'info';
+  category:
+    | 'incompatible_voltage'
+    | 'invalid_pin'
+    | 'missing_library'
+    | 'unsupported_peripheral'
+    | 'interrupt_constraint';
+  title: string;
+  detail: string;
+  file_path?: string | null;
+  line_number?: number | null;
+  suggested_fix: string;
+}
+
+export interface FirmwareStaticIssue {
+  issue_id: string;
+  category:
+    | 'memory_error'
+    | 'blocking_loop'
+    | 'watchdog_issue'
+    | 'unsafe_buffer_handling'
+    | 'uninitialized_value'
+    | 'missing_timeout'
+    | 'credential_exposure';
+  severity: 'critical' | 'error' | 'warning' | 'info';
+  file_path: string;
+  line_number: number;
+  code_snippet: string;
+  message: string;
+  suggested_fix: string;
+}
+
+export interface FirmwareQualityReport {
+  passed_quality_gate: boolean;
+  critical_count: number;
+  error_count: number;
+  warning_count: number;
+  issues: FirmwareStaticIssue[];
+  unit_tests_executed: boolean;
+  unit_tests_passed?: boolean | null;
+  unit_test_output: string;
+  hil_status: 'SKIPPED_NO_HIL_EQUIPMENT' | 'EXECUTED';
+  hil_notes: string;
+}
+
+export interface FirmwareCompilerDiagnostic {
+  file_path: string;
+  line_number: number;
+  column: number;
+  severity: 'error' | 'warning' | 'info';
+  message: string;
+  source_line: string;
+  suggested_fix: string;
+}
+
+export interface FirmwareArtifactFile {
+  relative_path: string;
+  artifact_type:
+    | 'source_file'
+    | 'dependency_manifest'
+    | 'build_config'
+    | 'compiled_bytecode_or_binary'
+    | 'release_notes';
+  size_bytes: number;
+  sha256: string;
+  genuinely_produced_by_build: boolean;
+}
+
+export interface FirmwareCompileResult {
+  build_id: string;
+  workspace_id: string;
+  fw_project_id: string;
+  board_id: IoTBoardId;
+  framework: FirmwareFrameworkId;
+  status: 'SUCCEEDED' | 'FAILED_COMPILATION_ERROR' | 'BLOCKED_TOOLCHAIN_MISSING';
+  toolchain_binary: string;
+  toolchain_installed: boolean;
+  compilation_genuinely_executed: boolean;
+  binary_artifact_produced: boolean;
+  exit_code?: number | null;
+  duration_ms: number;
+  compiler_stdout: string;
+  compiler_stderr: string;
+  diagnostics: FirmwareCompilerDiagnostic[];
+  produced_artifacts: FirmwareArtifactFile[];
+  compiled_at: string;
+  honesty_notice: string;
+}
+
+export interface FirmwareSerialLogEntry {
+  seq: number;
+  timestamp_ms: number;
+  event_type:
+    | 'boot_banner'
+    | 'reset_event'
+    | 'sensor_telemetry'
+    | 'isr_trigger'
+    | 'watchdog_feed'
+    | 'error';
+  message: string;
+  firmware_version: string;
+}
+
+export interface FirmwareSerialMonitorResponse {
+  fw_project_id: string;
+  board_id: IoTBoardId;
+  source_mode: 'simulated_virtual_serial' | 'physical_authorized_serial';
+  is_simulated: boolean;
+  connected_physical_port?: string | null;
+  baud_rate: number;
+  firmware_version: string;
+  reset_reason: string;
+  logs: FirmwareSerialLogEntry[];
+  distinction_banner: string;
+}
+
+export interface FirmwareDeviceActionRecord {
+  action_id: string;
+  fw_project_id: string;
+  user_id: string;
+  workspace_id: string;
+  action_type: 'flash_firmware' | 'reset_device';
+  target_port: string;
+  status: 'WAITING_FOR_APPROVAL' | 'BLOCKED_NO_PHYSICAL_DEVICE' | 'CANCELLED';
+  requires_approval: boolean;
+  cli_command_preview: string;
+  recovery_guidance: string[];
+  message: string;
+  created_at: string;
+  resolved_at?: string | null;
+}
+
+export interface FirmwareVersionSnapshot {
+  version_id: string;
+  semver: string;
+  commit_note: string;
+  files: FirmwareProjectFile[];
+  build_settings: FirmwareBuildSettings;
+  created_at: string;
+}
+
+export interface FirmwareCodeSearchHit {
+  file_path: string;
+  line_number: number;
+  line_preview: string;
+}
+
+export interface FirmwareWorkspaceRecord {
+  fw_project_id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  iot_project_id?: string | null;
+  board_id: IoTBoardId;
+  board_name: string;
+  framework: FirmwareFrameworkId;
+  semver: string;
+  build_settings: FirmwareBuildSettings;
+  libraries: FirmwareLibraryDependency[];
+  files: FirmwareProjectFile[];
+  hardware_diagnostics: FirmwareHardwareDiagnostic[];
+  quality_report: FirmwareQualityReport;
+  last_compile?: FirmwareCompileResult | null;
+  versions: FirmwareVersionSnapshot[];
+  recovery_guidance: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FirmwareExportResponse {
+  export_id: string;
+  fw_project_id: string;
+  name: string;
+  semver: string;
+  export_directory: string;
+  workspace_relative_dir?: string | null;
+  only_real_artifacts_exported: boolean;
+  compiled_binaries_included: boolean;
+  artifacts: FirmwareArtifactFile[];
+  release_notes_markdown: string;
+  exported_at: string;
+  summary: string;
+}
+
+export interface FirmwareMetadataResponse {
+  stage: number;
+  engine: string;
+  reuses_stage23_iot_builder: boolean;
+  platform_matrix: FirmwarePlatformMatrixEntry[];
+  detected_toolchains: Record<string, boolean>;
+  connected_serial_ports: string[];
+  safety_and_honesty_policy: string;
+}
+

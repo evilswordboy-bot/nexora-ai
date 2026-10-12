@@ -278,6 +278,25 @@ class Settings(BaseModel):
         "IOT_ENABLE_TOOLCHAIN_PROBING", "true"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 24: Embedded Firmware Engineering Studio
+    firmware_db_path: str = os.getenv(
+        "FIRMWARE_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "firmware_studio" / "nexora_firmware.db"),
+    )
+    firmware_builds_dir: str = os.getenv(
+        "FIRMWARE_BUILDS_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "firmware_studio" / "builds"),
+    )
+    firmware_compile_timeout_seconds: float = float(
+        os.getenv("FIRMWARE_COMPILE_TIMEOUT_SECONDS", "15.0")
+    )
+    firmware_max_file_size_bytes: int = int(
+        os.getenv("FIRMWARE_MAX_FILE_SIZE_BYTES", "262144")
+    )
+    firmware_default_baud_rate: int = int(
+        os.getenv("FIRMWARE_DEFAULT_BAUD_RATE", "115200")
+    )
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

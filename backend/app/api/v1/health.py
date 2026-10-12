@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 23,
-        "stage_title": "IoT Project Builder",
+        "stage": 24,
+        "stage_title": "Embedded Firmware Engineering Studio",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -41,6 +41,7 @@ async def health_check():
             "universal_discovery": "operational",
             "knowledge_graph": "operational",
             "iot_project_builder": "operational",
+            "firmware_studio": "operational",
         },
     }
 

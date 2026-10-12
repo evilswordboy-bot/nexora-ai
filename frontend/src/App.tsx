@@ -25,6 +25,7 @@ import { EvaluationStudio } from './components/evaluation/EvaluationStudio';
 import { DiscoveryStudio } from './components/discovery/DiscoveryStudio';
 import { KnowledgeGraphStudio } from './components/knowledgegraph/KnowledgeGraphStudio';
 import { IoTProjectBuilderStudio } from './components/iot/IoTProjectBuilderStudio';
+import { FirmwareEngineeringStudio } from './components/firmware/FirmwareEngineeringStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -75,6 +76,8 @@ const MainLayout: React.FC = () => {
           <KnowledgeGraphStudio />
         ) : activeWorkspaceView === 'iot' ? (
           <IoTProjectBuilderStudio />
+        ) : activeWorkspaceView === 'firmware' ? (
+          <FirmwareEngineeringStudio />
         ) : (
           <ChatArea />
         )}
