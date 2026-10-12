@@ -1,6 +1,6 @@
 import React from 'react';
 import { useChat } from '../../context/ChatContext';
-import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network, Database, Users, GitBranch, Monitor, FolderOpen, Terminal } from 'lucide-react';
+import { Menu, Sparkles, Settings as SettingsIcon, HelpCircle, Shield, AlertTriangle, CheckCircle2, BookOpen, ShieldCheck, Globe, Radio, Cpu, Network, Database, Users, GitBranch, Monitor, FolderOpen, Terminal, Compass } from 'lucide-react';
 
 export const Header: React.FC = () => {
   const {
@@ -43,7 +43,7 @@ export const Header: React.FC = () => {
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                Stage 20
+                Stage 21
               </span>
             </div>
           </div>
@@ -61,6 +61,17 @@ export const Header: React.FC = () => {
           >
             <Sparkles className="w-3.5 h-3.5" />
             <span>Chat & Search</span>
+          </button>
+          <button
+            onClick={() => setActiveWorkspaceView('discovery')}
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              activeWorkspaceView === 'discovery'
+                ? 'bg-cyan-500/20 text-cyan-300 shadow-sm border border-cyan-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Discovery</span>
           </button>
           <button
             onClick={() => setActiveWorkspaceView('evaluation')}

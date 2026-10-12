@@ -23,6 +23,7 @@ from app.api.v1.files import router as files_router
 from app.api.v1.terminal import router as terminal_router
 from app.api.v1.git import router as git_router
 from app.api.v1.evaluation import router as evaluation_router
+from app.api.v1.discovery import router as discovery_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -75,6 +76,7 @@ app.include_router(files_router, prefix="/api/v1")
 app.include_router(terminal_router, prefix="/api/v1")
 app.include_router(git_router, prefix="/api/v1")
 app.include_router(evaluation_router, prefix="/api/v1")
+app.include_router(discovery_router, prefix="/api/v1")
 
 
 @app.get("/")

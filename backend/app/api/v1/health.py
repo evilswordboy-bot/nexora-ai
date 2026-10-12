@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 20,
-        "stage_title": "AI Evaluation & Quality Assurance Engine",
+        "stage": 21,
+        "stage_title": "Universal Knowledge Discovery Engine",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -38,6 +38,7 @@ async def health_check():
             "terminal_execution": "operational",
             "git_version_control": "operational",
             "evaluation_qa": "operational",
+            "universal_discovery": "operational",
         },
     }
 

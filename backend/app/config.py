@@ -218,6 +218,29 @@ class Settings(BaseModel):
         "EVAL_EXCLUDE_PRIVATE_CONVERSATIONS", "true"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 21: Universal Knowledge Discovery Engine
+    discovery_cache_ttl_seconds: float = float(
+        os.getenv("DISCOVERY_CACHE_TTL_SECONDS", "300.0")
+    )
+    discovery_connector_timeout_seconds: float = float(
+        os.getenv("DISCOVERY_CONNECTOR_TIMEOUT_SECONDS", "8.0")
+    )
+    discovery_max_parallel_connectors: int = int(
+        os.getenv("DISCOVERY_MAX_PARALLEL_CONNECTORS", "4")
+    )
+    discovery_default_page_size: int = int(
+        os.getenv("DISCOVERY_DEFAULT_PAGE_SIZE", "10")
+    )
+    discovery_max_page_size: int = int(
+        os.getenv("DISCOVERY_MAX_PAGE_SIZE", "30")
+    )
+    discovery_stale_days_threshold: int = int(
+        os.getenv("DISCOVERY_STALE_DAYS_THRESHOLD", "730")
+    )
+    discovery_enable_live_academic_api: bool = os.getenv(
+        "DISCOVERY_ENABLE_LIVE_ACADEMIC_API", "true"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

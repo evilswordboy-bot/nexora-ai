@@ -2417,3 +2417,181 @@ class EvalCompareRunsRequest(BaseModel):
     candidate_run_id: str
     thresholds: Optional[EvalAcceptanceThresholds] = None
 
+
+# ============================================================================
+# Stage 21: Universal Knowledge Discovery Engine Schemas
+# ============================================================================
+
+DiscoverySourceType = Literal[
+    "general_web",
+    "academic_publications",
+    "news_live",
+    "public_datasets",
+    "official_documentation",
+    "authorized_knowledge_base",
+]
+
+DiscoverySearchMode = Literal[
+    "quick",
+    "comprehensive",
+    "academic",
+    "official",
+    "exploration",
+]
+
+DiscoveryOriginalityTier = Literal[
+    "original_primary_source",
+    "peer_reviewed_or_preprint",
+    "secondary_reporting",
+    "syndicated_or_copied",
+]
+
+
+class DiscoveryConnectorSpec(BaseModel):
+    connector_id: str
+    name: str
+    source_type: DiscoverySourceType
+    description: str
+    configured: bool = True
+    status: Literal["operational", "degraded", "unavailable"] = "operational"
+    supported_syntax: List[str] = Field(default_factory=list)
+    supports_date_filter: bool = True
+    supports_language_filter: bool = True
+    requires_api_key: bool = False
+    provider_notes: str = ""
+
+
+class DiscoveryConnectorExecutionStatus(BaseModel):
+    connector_id: str
+    name: str
+    source_type: DiscoverySourceType
+    status: Literal["succeeded", "unavailable", "error", "skipped"]
+    items_returned: int = 0
+    latency_ms: float = 0.0
+    error_message: Optional[str] = None
+
+
+class DiscoveryNormalizedItem(BaseModel):
+    item_id: str
+    citation_index: int
+    title: str
+    url: str
+    canonical_url: str
+    domain: str
+    snippet: str
+    quarantined_snippet: str
+    source_type: DiscoverySourceType
+    connector_id: str
+    publication_date: Optional[str] = None
+    retrieval_timestamp: str
+    language: str = "en"
+    originality_tier: DiscoveryOriginalityTier = "secondary_reporting"
+    is_verified_scholarly: bool = False
+    is_verified_official: bool = False
+    authority_basis: str = "General web source (unverified third-party domain)"
+    relevance_score: float = 0.0
+    recency_score: float = 0.0
+    quality_score: float = 0.0
+    combined_rank_score: float = 0.0
+    is_stale: bool = False
+    staleness_warning: Optional[str] = None
+    duplicate_count: int = 1
+    merged_from_connectors: List[str] = Field(default_factory=list)
+    authors_or_publisher: Optional[str] = None
+    doi_or_identifier: Optional[str] = None
+
+
+class DiscoveryTimelineEvent(BaseModel):
+    date_label: str
+    title: str
+    summary: str
+    citation_indices: List[int] = Field(default_factory=list)
+    source_urls: List[str] = Field(default_factory=list)
+
+
+class DiscoverySourceComparisonRow(BaseModel):
+    citation_index: int
+    title: str
+    domain: str
+    source_type: DiscoverySourceType
+    originality_tier: DiscoveryOriginalityTier
+    publication_date: Optional[str] = None
+    key_claim: str
+    agreement_status: Literal["corroborated", "unique_finding", "conflicting"] = "unique_finding"
+    authority_basis: str
+
+
+class DiscoveryConflictItem(BaseModel):
+    topic: str
+    claim_a: str
+    citation_a: int
+    claim_b: str
+    citation_b: int
+    explanation: str
+
+
+class DiscoverySynthesisPayload(BaseModel):
+    concise_summary: str
+    detailed_report: str
+    grouped_findings: Dict[str, List[str]] = Field(default_factory=dict)
+    timeline: List[DiscoveryTimelineEvent] = Field(default_factory=list)
+    source_comparison: List[DiscoverySourceComparisonRow] = Field(default_factory=list)
+    detected_conflicts: List[DiscoveryConflictItem] = Field(default_factory=list)
+    evidence_gaps: List[str] = Field(default_factory=list)
+
+
+class DiscoverySearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=1000)
+    mode: DiscoverySearchMode = "comprehensive"
+    source_types: List[DiscoverySourceType] = Field(default_factory=list)
+    language: str = Field(default="auto", max_length=24)
+    date_from: Optional[str] = None
+    date_to: Optional[str] = None
+    domain_filter: Optional[str] = None
+    exclude_terms: List[str] = Field(default_factory=list)
+    exact_phrase: Optional[str] = None
+    page: int = Field(default=1, ge=1, le=50)
+    page_size: int = Field(default=10, ge=1, le=30)
+    bypass_cache: bool = False
+    simulate_failed_connectors: List[str] = Field(default_factory=list)
+    custom_candidate_items: List[Dict[str, Any]] = Field(default_factory=list)
+    user_id: str = "default_user"
+
+
+class DiscoverySearchResponse(BaseModel):
+    discovery_id: str
+    query: str
+    preserved_language: str
+    detected_language_name: str
+    mode: DiscoverySearchMode
+    query_intent: str
+    parsed_operators: Dict[str, Any] = Field(default_factory=dict)
+    expanded_subqueries: List[str] = Field(default_factory=list)
+    connector_statuses: List[DiscoveryConnectorExecutionStatus] = Field(default_factory=list)
+    total_raw_candidates: int = 0
+    deduplicated_count: int = 0
+    ssrf_blocked_count: int = 0
+    page: int = 1
+    page_size: int = 10
+    total_filtered_results: int = 0
+    total_pages: int = 1
+    cache_hit: bool = False
+    latency_ms: float = 0.0
+    results: List[DiscoveryNormalizedItem] = Field(default_factory=list)
+    follow_up_queries: List[str] = Field(default_factory=list)
+    related_topics: List[str] = Field(default_factory=list)
+    alternative_viewpoints: List[str] = Field(default_factory=list)
+    synthesis: DiscoverySynthesisPayload
+    created_at: datetime = Field(default_factory=utc_now)
+
+
+class DiscoveryMetadataResponse(BaseModel):
+    stage: int = 21
+    engine: str = "UniversalKnowledgeDiscoveryEngine"
+    connectors: List[DiscoveryConnectorSpec] = Field(default_factory=list)
+    modes: List[Dict[str, str]] = Field(default_factory=list)
+    supported_operators: List[str] = Field(default_factory=list)
+    cache_ttl_seconds: float = 300.0
+    stale_days_threshold: int = 730
+
+

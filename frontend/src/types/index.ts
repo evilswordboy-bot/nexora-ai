@@ -1893,4 +1893,160 @@ export interface EvalMetadataResponse {
   scoring_rules: EvalMetricScoringRule[];
 }
 
+// ============================================================================
+// Stage 21: Universal Knowledge Discovery Engine Interfaces
+// ============================================================================
+
+export type DiscoverySourceType =
+  | 'general_web'
+  | 'academic_publications'
+  | 'news_live'
+  | 'public_datasets'
+  | 'official_documentation'
+  | 'authorized_knowledge_base';
+
+export type DiscoverySearchMode =
+  | 'quick'
+  | 'comprehensive'
+  | 'academic'
+  | 'official'
+  | 'exploration';
+
+export type DiscoveryOriginalityTier =
+  | 'original_primary_source'
+  | 'peer_reviewed_or_preprint'
+  | 'secondary_reporting'
+  | 'syndicated_or_copied';
+
+export interface DiscoveryConnectorSpec {
+  connector_id: string;
+  name: string;
+  source_type: DiscoverySourceType;
+  description: string;
+  configured: boolean;
+  status: 'operational' | 'degraded' | 'unavailable';
+  supported_syntax: string[];
+  supports_date_filter: boolean;
+  supports_language_filter: boolean;
+  requires_api_key: boolean;
+  provider_notes: string;
+}
+
+export interface DiscoveryConnectorExecutionStatus {
+  connector_id: string;
+  name: string;
+  source_type: DiscoverySourceType;
+  status: 'succeeded' | 'unavailable' | 'error' | 'skipped';
+  items_returned: number;
+  latency_ms: number;
+  error_message?: string | null;
+}
+
+export interface DiscoveryNormalizedItem {
+  item_id: string;
+  citation_index: number;
+  title: string;
+  url: string;
+  canonical_url: string;
+  domain: string;
+  snippet: string;
+  quarantined_snippet: string;
+  source_type: DiscoverySourceType;
+  connector_id: string;
+  publication_date?: string | null;
+  retrieval_timestamp: string;
+  language: string;
+  originality_tier: DiscoveryOriginalityTier;
+  is_verified_scholarly: boolean;
+  is_verified_official: boolean;
+  authority_basis: string;
+  relevance_score: number;
+  recency_score: number;
+  quality_score: number;
+  combined_rank_score: number;
+  is_stale: boolean;
+  staleness_warning?: string | null;
+  duplicate_count: number;
+  merged_from_connectors: string[];
+  authors_or_publisher?: string | null;
+  doi_or_identifier?: string | null;
+}
+
+export interface DiscoveryTimelineEvent {
+  date_label: string;
+  title: string;
+  summary: string;
+  citation_indices: number[];
+  source_urls: string[];
+}
+
+export interface DiscoverySourceComparisonRow {
+  citation_index: number;
+  title: string;
+  domain: string;
+  source_type: DiscoverySourceType;
+  originality_tier: DiscoveryOriginalityTier;
+  publication_date?: string | null;
+  key_claim: string;
+  agreement_status: 'corroborated' | 'unique_finding' | 'conflicting';
+  authority_basis: string;
+}
+
+export interface DiscoveryConflictItem {
+  topic: string;
+  claim_a: string;
+  citation_a: number;
+  claim_b: string;
+  citation_b: number;
+  explanation: string;
+}
+
+export interface DiscoverySynthesisPayload {
+  concise_summary: string;
+  detailed_report: string;
+  grouped_findings: Record<string, string[]>;
+  timeline: DiscoveryTimelineEvent[];
+  source_comparison: DiscoverySourceComparisonRow[];
+  detected_conflicts: DiscoveryConflictItem[];
+  evidence_gaps: string[];
+}
+
+export interface DiscoverySearchResponse {
+  discovery_id: string;
+  query: string;
+  preserved_language: string;
+  detected_language_name: string;
+  mode: DiscoverySearchMode;
+  query_intent: string;
+  parsed_operators: Record<string, any>;
+  expanded_subqueries: string[];
+  connector_statuses: DiscoveryConnectorExecutionStatus[];
+  total_raw_candidates: number;
+  deduplicated_count: number;
+  ssrf_blocked_count: number;
+  page: number;
+  page_size: number;
+  total_filtered_results: number;
+  total_pages: number;
+  cache_hit: boolean;
+  latency_ms: number;
+  results: DiscoveryNormalizedItem[];
+  follow_up_queries: string[];
+  related_topics: string[];
+  alternative_viewpoints: string[];
+  synthesis: DiscoverySynthesisPayload;
+  created_at: string;
+}
+
+export interface DiscoveryMetadataResponse {
+  stage: number;
+  engine: string;
+  connectors: DiscoveryConnectorSpec[];
+  modes: Array<{ id: string; name: string; description: string }>;
+  supported_operators: string[];
+  cache_ttl_seconds: number;
+  stale_days_threshold: number;
+}
+
+
 

@@ -96,6 +96,10 @@ import {
   EvalRunRecord,
   EvalSuiteId,
   EvalTestCase,
+  DiscoveryMetadataResponse,
+  DiscoverySearchMode,
+  DiscoverySearchResponse,
+  DiscoverySourceType,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -2348,7 +2352,57 @@ export const api = {
       `/evaluation/runs/${encodeURIComponent(runId)}/export?format=${encodeURIComponent(format)}`
     );
   },
+
+  // =========================================================================
+  // Stage 21: Universal Knowledge Discovery Engine
+  // =========================================================================
+
+  async getDiscoveryMetadata(): Promise<DiscoveryMetadataResponse> {
+    return request<DiscoveryMetadataResponse>('/discovery/metadata');
+  },
+
+  async executeDiscoverySearch(params: {
+    query: string;
+    mode?: DiscoverySearchMode;
+    source_types?: DiscoverySourceType[];
+    language?: string;
+    date_from?: string;
+    date_to?: string;
+    domain_filter?: string;
+    exclude_terms?: string[];
+    exact_phrase?: string;
+    page?: number;
+    page_size?: number;
+    bypass_cache?: boolean;
+    simulate_failed_connectors?: string[];
+    user_id?: string;
+  }): Promise<DiscoverySearchResponse> {
+    return request<DiscoverySearchResponse>('/discovery/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        query: params.query,
+        mode: params.mode || 'comprehensive',
+        source_types: params.source_types || [],
+        language: params.language || 'auto',
+        date_from: params.date_from || undefined,
+        date_to: params.date_to || undefined,
+        domain_filter: params.domain_filter || undefined,
+        exclude_terms: params.exclude_terms || [],
+        exact_phrase: params.exact_phrase || undefined,
+        page: params.page || 1,
+        page_size: params.page_size || 10,
+        bypass_cache: params.bypass_cache ?? false,
+        simulate_failed_connectors: params.simulate_failed_connectors || [],
+        user_id: params.user_id || 'default_user',
+      }),
+    });
+  },
+
+  async listDiscoveryHistory(limit = 15): Promise<DiscoverySearchResponse[]> {
+    return request<DiscoverySearchResponse[]>(`/discovery/history?limit=${limit}`);
+  },
 };
+
 
 
 

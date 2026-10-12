@@ -548,6 +548,42 @@ class ToolRegistry:
             handler=self._handle_evaluation_qa_runner,
         )
 
+        # 18. Stage 21 Universal Knowledge Discovery Engine (Read-only / Multi-Source)
+        self.register(
+            ToolDefinition(
+                name="universal_knowledge_discovery",
+                description=(
+                    "Executes unified multi-source knowledge discovery across configured Web, Academic/Scholarly, "
+                    "Live News, Public Datasets, Official Documentation, and Authorized Local Knowledge Bases "
+                    "with deduplication, defensible provenance verification, and grounded synthesis."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Search or research discovery query (supports site:, \"exact phrase\", -exclude)",
+                        },
+                        "mode": {
+                            "type": "string",
+                            "enum": ["quick", "comprehensive", "academic", "official", "exploration"],
+                            "default": "comprehensive",
+                        },
+                        "language": {
+                            "type": "string",
+                            "default": "auto",
+                        },
+                    },
+                    "required": ["query"],
+                },
+                stage_introduced=21,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=True,
+            ),
+            handler=self._handle_universal_knowledge_discovery,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1257,6 +1293,40 @@ class ToolRegistry:
             ),
         }
 
+    async def _handle_universal_knowledge_discovery(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.discovery.engine import discovery_engine
+        from app.models.schemas import DiscoverySearchRequest
+
+        query = str(params.get("query", "")).strip()
+        mode = str(params.get("mode", "comprehensive")).strip().lower()
+        if mode not in ("quick", "comprehensive", "academic", "official", "exploration"):
+            mode = "comprehensive"
+        lang = str(params.get("language", "auto")).strip()
+
+        res = await discovery_engine.execute_discovery(
+            DiscoverySearchRequest(
+                query=query,
+                mode=mode,  # type: ignore[arg-type]
+                language=lang,
+                page_size=6,
+            )
+        )
+        return {
+            "discovery_id": res.discovery_id,
+            "query": res.query,
+            "mode": res.mode,
+            "preserved_language": res.preserved_language,
+            "total_filtered_results": res.total_filtered_results,
+            "deduplicated_count": res.deduplicated_count,
+            "concise_summary": res.synthesis.concise_summary,
+            "summary": (
+                f"Universal Discovery ({res.mode}, lang={res.preserved_language}) retrieved "
+                f"{res.total_filtered_results} normalized source(s) "
+                f"({res.deduplicated_count} duplicates merged): {res.synthesis.concise_summary[:360]}"
+            ),
+        }
+
 
 tool_registry = ToolRegistry()
+
 

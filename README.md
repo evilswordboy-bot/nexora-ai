@@ -1,6 +1,25 @@
-# NEXORA AI — Stage 20: AI Evaluation & Quality Assurance Engine
+# NEXORA AI — Stage 21: Universal Knowledge Discovery Engine
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 20** introduces the **AI Evaluation & Quality Assurance Engine (`EvaluationQualityAssuranceEngine`)**: a repeatable, zero-fabrication evaluation and benchmarking framework executing actual tests across all Stages 1–19 (`general_qa`, `web_research`, `fact_checking`, `document_rag`, `multilingual`, `vision_ocr`, `voice_speech`, `coding_sandbox`, `agents_tools_memory_workflows`, and `security_privacy_safety`), versioned test dataset management (`v1.0.0`), labeled synthetic test case generation with review workflows, regression detection, release-blocking verdicts, and exportable Markdown/JSON QA reports.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 21** introduces the **Universal Knowledge Discovery Engine (`UniversalKnowledgeDiscoveryEngine`)**: a unified, zero-fabrication multi-source discovery and knowledge synthesis platform searching across 6 modular connectors (`general_web`, `academic_publications` via OpenAlex/ArXiv/DOI, `news_live`, `public_datasets`, `official_documentation`, and `authorized_knowledge_base`), supporting 5 search modes (`quick`, `comprehensive`, `academic`, `official`, `exploration`), defensible provenance & originality classification, URL/content deduplication, conflict detection, chronological timelines, evidence gap reporting, and SSRF/prompt-injection protection.
+
+---
+
+## 🌟 Stage 21 Core Deliverables
+
+- **Modular 6-Source Connector Registry (`UniversalKnowledgeDiscoveryEngine`)**:
+  - Unifies General Web Search (Stage 3), Academic Publications (OpenAlex REST API + ArXiv/DOI metadata inspection), Live News & Freshness Feeds (Stage 8), Public Datasets & Tabular Catalogs, Official Documentation & Primary Institutional Sources (`.gov`, `.int`, `.edu`, W3C/IETF/NIST/WHO/RFC), and Authorized Local Knowledge Bases (Stage 4 Document Vault + Stage 17 File Workspace).
+  - Supports inline and structured query operators (`site:`, `"exact phrase"`, `-exclude`, `after:YYYY-MM-DD`, `before:YYYY-MM-DD`, `lang:<code>`), source type filters, and pagination.
+  - Explicitly surfaces connector-specific execution statuses (`succeeded`, `skipped`, `unavailable`, `error`) and latency metrics instead of silently hiding failed connectors.
+- **Intelligent Discovery & Defensible Provenance**:
+  - Classifies query intent, expands complex queries into focused subqueries, and preserves the user's chosen or auto-detected language (including native Tamil, Hindi, Arabic, CJK, and European scripts).
+  - Enforces strict anti-fabrication provenance rules: never labels a source as scholarly (`is_verified_scholarly`) or official (`is_verified_official`) without a defensible basis (`authority_basis`), and classifies every result into an explicit originality tier (`original_primary_source`, `peer_reviewed_or_preprint`, `secondary_reporting`, `syndicated_or_copied`).
+  - Deduplicates canonical URLs (stripping `utm_*`, `fbclid`, `gclid` tracking parameters) and substantially overlapping snippets (Jaccard similarity $\ge 0.72$).
+- **Multi-Source Knowledge Synthesis**:
+  - Generates concise executive summaries and multi-section reports with clickable numbered citations (`[1]`, `[2]`), grouped findings by category, a Source Comparison Matrix (`corroborated`, `unique_finding`, `conflicting`), automated Conflict Detection across diverging sources, Evidence Gaps & Limitations, and a Chronological Timeline built strictly from sources with verified publication dates.
+- **Performance, Caching & Security**:
+  - Bounded parallel connector execution (`asyncio.Semaphore`), per-connector timeouts, TTL response caching, SSRF URL blocking (`localhost`, `127.0.0.1`, `169.254.169.254`, private IP ranges), and `<untrusted_discovery_evidence>` prompt-injection quarantine.
+- **Universal Discovery Studio UI (`DiscoveryStudio.tsx`)**:
+  - Accessible via the top navigation bar (**Discovery** tab) featuring 5 search mode selectors, 6 source connector toggles, operator & date range filters, Synthesis/Timeline/Matrix/Connector Diagnostics tabs, originality & authority badges, and one-click follow-up query exploration.
 
 ---
 
