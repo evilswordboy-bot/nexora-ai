@@ -2,6 +2,11 @@
   <img src="frontend/public/assets/nexora-eagle-logo.jpg" alt="NEXORA AI Official Metallic Eagle Logo" width="160" style="border-radius: 24px;" />
   <h1>NEXORA AI — SKS // BKKLSSNJ</h1>
   <p><strong>THE NEXT EVOLUTION OF INTELLIGENCE · INTELLIGENCE. BEYOND LIMITS.</strong></p>
+  <p>
+    <a href="https://evilswordboy-bot.github.io/nexora-ai/"><strong>🚀 Launch 24/7 Cloud Live Demo (GitHub Pages)</strong></a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/evilswordboy-bot/nexora-ai/actions"><strong>⚡ Auto-Deploy CI/CD Status</strong></a>
+  </p>
   <img src="frontend/public/assets/nexora-eagle-hero.jpg" alt="NEXORA AI Futuristic Metallic Eagle Hero" width="100%" style="border-radius: 16px;" />
 </div>
 

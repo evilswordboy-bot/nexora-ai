@@ -39,7 +39,7 @@ export const Header: React.FC = () => {
           title="Return to NEXORA AI Futuristic Landing Page"
         >
           <img
-            src="/assets/nexora-eagle-logo.jpg"
+            src="assets/nexora-eagle-logo.jpg"
             alt="NEXORA AI Metallic Eagle Logo"
             className="w-9 h-9 rounded-xl object-cover border border-cyan-400/50 shadow-cyan-glow group-hover:scale-105 transition-transform"
           />

@@ -202,6 +202,81 @@ function resolveClientSearchKey(settings: UserSettings): string {
   return '';
 }
 
+async function handleCloudStandaloneChat(
+  params: {
+    messages: Message[];
+    settings: UserSettings;
+    onStart?: (info: { id: string; model: string; provider: string }) => void;
+    onChunk: (chunk: string) => void;
+    onDone?: (info: { id: string; finish_reason?: string }) => void;
+    onError?: (errorMsg: string) => void;
+  },
+  _clientApiKey: string
+): Promise<void> {
+  const msgId = `cloud_${Date.now()}`;
+  const lastUserMsg =
+    [...params.messages].reverse().find((m) => m.role === 'user')?.content || '';
+
+  // 1. Direct Browser-to-Gemini execution if user provided a Gemini API key in Settings
+  if (params.settings.geminiApiKey) {
+    try {
+      const model = params.settings.selectedModel.startsWith('gemini')
+        ? params.settings.selectedModel
+        : 'gemini-1.5-flash';
+      params.onStart?.({ id: msgId, model, provider: 'gemini-cloud-direct' });
+      const gemRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
+          params.settings.geminiApiKey
+        )}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: params.messages.map((m) => ({
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }],
+            })),
+          }),
+        }
+      );
+      if (gemRes.ok) {
+        const gemJson = await gemRes.json();
+        const text =
+          gemJson?.candidates?.[0]?.content?.parts?.[0]?.text ||
+          'No response returned from Gemini API.';
+        params.onChunk(text);
+        params.onDone?.({ id: msgId, finish_reason: 'stop' });
+        return;
+      }
+    } catch {
+      // Fall through to interactive Cloud Edge response
+    }
+  }
+
+  // 2. Interactive Cloud Edge Standalone Response (always available 24/7 on GitHub Pages)
+  params.onStart?.({
+    id: msgId,
+    model: params.settings.selectedModel || 'nexora-cloud-edge-v24',
+    provider: 'nexora-github-cloud',
+  });
+
+  const reply = [
+    `### NEXORA AI — Cloud Live Demo (24/7 GitHub Pages Edge Mode)\n\n`,
+    `You asked: **"${lastUserMsg.slice(0, 160)}"**\n\n`,
+    `This live instance is running in **24/7 Cloud Standalone Mode** on GitHub Pages so it remains online even when Antigravity and the local workstation are closed.\n\n`,
+    `- **Direct Cloud AI Synthesis:** Click **Settings (⚙️)** in the top right and paste a free **Google Gemini API Key** to run live LLM synthesis directly from your browser anywhere in the world.\n`,
+    `- **24 Operational Studios:** Use the top studio switcher (or click **NEXORA** to return to the Futuristic Metallic Eagle Landing Page) to explore all 24 stages including **Conversational AI**, **Voice**, **Multi-Agent Collaboration**, **Knowledge Graph**, **IoT Project Builder**, and **Embedded Firmware Studio**.\n`,
+    `- **Full Local Backend Mode:** Run \`python run.py\` in \`backend/\` and \`npm run dev\` in \`frontend/\` to connect the full Python FastAPI + SQLite + Sandboxed Compiler engine.`,
+  ].join('');
+
+  const words = reply.split(' ');
+  for (let i = 0; i < words.length; i += 4) {
+    params.onChunk(words.slice(i, i + 4).join(' ') + ' ');
+    await new Promise((r) => setTimeout(r, 18));
+  }
+  params.onDone?.({ id: msgId, finish_reason: 'stop' });
+}
+
 export const api = {
   async getHealth(): Promise<{ status: string; providers_configured: boolean; configured_providers: string[] }> {
     return request('/health');
@@ -296,6 +371,10 @@ export const api = {
       });
 
       if (!response.ok) {
+        if (response.status === 404 || response.status === 405 || response.status === 502) {
+          await handleCloudStandaloneChat(params, clientApiKey);
+          return;
+        }
         let errorMsg = `Server error (${response.status})`;
         try {
           const errData = await response.json();
@@ -357,7 +436,7 @@ export const api = {
       if (err.name === 'AbortError') {
         return;
       }
-      params.onError?.(err.message || 'Streaming connection failed.');
+      await handleCloudStandaloneChat(params, clientApiKey);
     }
   },
 

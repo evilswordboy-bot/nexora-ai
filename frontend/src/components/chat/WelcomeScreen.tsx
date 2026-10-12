@@ -69,7 +69,7 @@ export const WelcomeScreen: React.FC = () => {
       <div className="text-center space-y-3 mb-8">
         <div className="relative inline-flex items-center justify-center mb-2">
           <img
-            src="/assets/nexora-eagle-logo.jpg"
+            src="assets/nexora-eagle-logo.jpg"
             alt="NEXORA AI Official Metallic Eagle Logo"
             className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border border-cyan-400/50 shadow-[0_0_30px_rgba(6,182,212,0.35)]"
           />

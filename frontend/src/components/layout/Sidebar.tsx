@@ -302,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onConfirmDelete }) => {
               <div className="flex items-center justify-between text-xs text-slate-400">
                 <div className="flex items-center gap-2.5">
                   <img
-                    src="/assets/nexora-eagle-logo.jpg"
+                    src="assets/nexora-eagle-logo.jpg"
                     alt="NEXORA AI Logo"
                     className="w-7 h-7 rounded-lg object-cover border border-cyan-400/40 shadow-sm"
                   />

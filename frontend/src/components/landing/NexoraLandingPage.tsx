@@ -280,7 +280,7 @@ export const NexoraLandingPage: React.FC = () => {
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
             <img
-              src="/assets/nexora-eagle-logo.jpg"
+              src="assets/nexora-eagle-logo.jpg"
               alt="NEXORA AI Official Metallic Eagle Logo"
               className="w-11 h-11 rounded-xl object-cover border border-cyan-400/50 shadow-[0_0_20px_rgba(6,182,212,0.35)]"
             />
@@ -407,7 +407,7 @@ export const NexoraLandingPage: React.FC = () => {
         >
           <div className="relative w-full rounded-2xl overflow-hidden border border-cyan-500/25 shadow-[0_0_70px_rgba(6,182,212,0.2)] bg-[#02050b]">
             <img
-              src="/assets/nexora-eagle-hero.jpg"
+              src="assets/nexora-eagle-hero.jpg"
               alt="NEXORA AI Metallic Robotic Eagle Centerpiece"
               loading="eager"
               fetchPriority="high"
@@ -869,7 +869,7 @@ export const NexoraLandingPage: React.FC = () => {
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
               <img
-                src="/assets/nexora-eagle-logo.jpg"
+                src="assets/nexora-eagle-logo.jpg"
                 alt="NEXORA AI Logo"
                 className="w-7 h-7 rounded-lg object-cover border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
               />
