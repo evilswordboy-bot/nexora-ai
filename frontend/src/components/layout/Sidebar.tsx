@@ -300,16 +300,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ onConfirmDelete }) => {
             {/* Bottom active model badge */}
             <div className="p-3 border-t border-slate-800/80 bg-midnight-950/40 shrink-0">
               <div className="flex items-center justify-between text-xs text-slate-400">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-lg bg-cyan-500/10 flex items-center justify-center text-cyan-400 border border-cyan-500/20">
-                    <Bot className="w-3.5 h-3.5" />
-                  </div>
+                <div className="flex items-center gap-2.5">
+                  <img
+                    src="/assets/nexora-eagle-logo.jpg"
+                    alt="NEXORA AI Logo"
+                    className="w-7 h-7 rounded-lg object-cover border border-cyan-400/40 shadow-sm"
+                  />
                   <div>
                     <div className="text-[11px] font-semibold text-slate-200">
                       {settings.selectedModel}
                     </div>
                     <div className="text-[10px] text-slate-500 uppercase tracking-wider">
-                      Active Model
+                      NEXORA AI · Active Model
                     </div>
                   </div>
                 </div>

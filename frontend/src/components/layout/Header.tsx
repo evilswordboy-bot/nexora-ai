@@ -38,9 +38,11 @@ export const Header: React.FC = () => {
           className="flex items-center gap-2.5 text-left group"
           title="Return to NEXORA AI Futuristic Landing Page"
         >
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 shadow-cyan-glow">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
+          <img
+            src="/assets/nexora-eagle-logo.jpg"
+            alt="NEXORA AI Metallic Eagle Logo"
+            className="w-9 h-9 rounded-xl object-cover border border-cyan-400/50 shadow-cyan-glow group-hover:scale-105 transition-transform"
+          />
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-base sm:text-lg tracking-wider bg-gradient-to-r from-slate-100 via-cyan-100 to-slate-200 bg-clip-text text-transparent group-hover:text-cyan-300">

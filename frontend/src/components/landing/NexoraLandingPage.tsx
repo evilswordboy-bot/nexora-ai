@@ -279,9 +279,11 @@ export const NexoraLandingPage: React.FC = () => {
         >
           {/* Brand Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/25 via-slate-900 to-cyan-950 border border-cyan-400/40 flex items-center justify-center shadow-[0_0_20px_rgba(6,182,212,0.25)]">
-              <Sparkles className="w-5 h-5 text-cyan-300" />
-            </div>
+            <img
+              src="/assets/nexora-eagle-logo.jpg"
+              alt="NEXORA AI Official Metallic Eagle Logo"
+              className="w-11 h-11 rounded-xl object-cover border border-cyan-400/50 shadow-[0_0_20px_rgba(6,182,212,0.35)]"
+            />
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span
@@ -866,6 +868,11 @@ export const NexoraLandingPage: React.FC = () => {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
           <div className="space-y-2">
             <div className="flex items-center gap-2.5">
+              <img
+                src="/assets/nexora-eagle-logo.jpg"
+                alt="NEXORA AI Logo"
+                className="w-7 h-7 rounded-lg object-cover border border-cyan-400/40 shadow-[0_0_12px_rgba(6,182,212,0.25)]"
+              />
               <span
                 style={{ fontFamily: "'Orbitron', sans-serif" }}
                 className="text-sm font-bold tracking-[0.25em] text-cyan-400"

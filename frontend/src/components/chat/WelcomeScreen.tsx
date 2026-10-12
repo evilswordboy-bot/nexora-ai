@@ -67,8 +67,12 @@ export const WelcomeScreen: React.FC = () => {
     <div className="flex-1 overflow-y-auto px-4 py-8 sm:py-12 flex flex-col items-center justify-center max-w-4xl mx-auto w-full">
       {/* Brand Hero */}
       <div className="text-center space-y-3 mb-8">
-        <div className="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-cyan-500 via-violet-600 to-indigo-600 shadow-cyan-glow mb-2 animate-pulse-subtle">
-          <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+        <div className="relative inline-flex items-center justify-center mb-2">
+          <img
+            src="/assets/nexora-eagle-logo.jpg"
+            alt="NEXORA AI Official Metallic Eagle Logo"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border border-cyan-400/50 shadow-[0_0_30px_rgba(6,182,212,0.35)]"
+          />
         </div>
 
         <div className="flex items-center justify-center gap-2">
@@ -76,12 +80,12 @@ export const WelcomeScreen: React.FC = () => {
             NEXORA AI
           </h1>
           <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 font-semibold border border-cyan-500/30">
-            Stage 3
+            Stage 24
           </span>
         </div>
 
         <p className="text-sm sm:text-base text-slate-400 max-w-lg mx-auto">
-          Universal Search & Deep Research Engine — Evidence-grounded intelligence with verified citations and multi-pass inquiry vectors.
+          Unified Intelligence Workspace — Evidence-grounded research, multi-agent collaboration, sandboxed coding, and embedded systems engineering.
         </p>
       </div>
 

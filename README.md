@@ -1,4 +1,13 @@
-# NEXORA AI — Stage 24: Embedded Firmware Engineering Studio
+<div align="center">
+  <img src="frontend/public/assets/nexora-eagle-logo.jpg" alt="NEXORA AI Official Metallic Eagle Logo" width="160" style="border-radius: 24px;" />
+  <h1>NEXORA AI — SKS // BKKLSSNJ</h1>
+  <p><strong>THE NEXT EVOLUTION OF INTELLIGENCE · INTELLIGENCE. BEYOND LIMITS.</strong></p>
+  <img src="frontend/public/assets/nexora-eagle-hero.jpg" alt="NEXORA AI Futuristic Metallic Eagle Hero" width="100%" style="border-radius: 16px;" />
+</div>
+
+---
+
+# NEXORA AI — Stage 24: Embedded Firmware Engineering Studio & Futuristic Landing Page
 
 **NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 24** introduces the **Embedded Firmware Engineering Studio (`EmbeddedFirmwareStudioEngine`)**: a professional multi-file embedded firmware IDE that reuses the Stage 23 IoT Project Builder board profiles and validated wiring netlists to generate modular C/C++/MicroPython drivers, interrupt service routines (ISRs), hardware watchdog management, static embedded safety analysis, isolated compilation & unit testing, simulated vs. physical serial monitoring, approval-gated device flashing, version rollback, and authentic release artifact export (`FirmwareEngineeringStudio.tsx`).
 
