@@ -2895,3 +2895,470 @@ class KGMetadataResponse(BaseModel):
     max_page_size: int = 200
 
 
+# ============================================================================
+# STAGE 23: IOT PROJECT BUILDER ENGINE SCHEMAS
+# ============================================================================
+
+IoTBoardId = Literal[
+    "esp32_devkit_v1",
+    "arduino_uno_r3",
+    "stm32_nucleo_f401re",
+    "raspberry_pi_pico_w",
+    "raspberry_pi_4b",
+]
+
+IoTPowerSource = Literal[
+    "usb_5v",
+    "battery_lipo_3v7",
+    "dc_barrel_7v_12v",
+    "solar_mppt_5v",
+    "mains_ac_isolated_psu",
+]
+
+IoTEnvironmentType = Literal[
+    "indoor_lab",
+    "outdoor_weatherproof",
+    "industrial_harsh",
+    "greenhouse_humid",
+    "wearable_portable",
+]
+
+IoTComponentCategory = Literal[
+    "sensor",
+    "actuator",
+    "relay",
+    "display",
+    "motor",
+    "motor_driver",
+    "communication",
+    "power",
+    "logic_adapter",
+]
+
+IoTSpecVerificationStatus = Literal[
+    "verified_datasheet_spec",
+    "estimated_typical_range",
+]
+
+IoTFirmwareLanguage = Literal[
+    "arduino_cpp",
+    "micropython",
+    "esp_idf_c",
+    "rpi_python_gpiozero",
+]
+
+IoTConnectivityProtocol = Literal[
+    "none_local_only",
+    "wifi_mqtt",
+    "wifi_http_rest",
+    "ble_gatt",
+    "serial_usb_telemetry",
+]
+
+IoTIssueSeverity = Literal["critical", "error", "warning", "info"]
+
+
+class IoTBoardPin(BaseModel):
+    pin_id: str
+    label: str
+    gpio_number: Optional[int] = None
+    capabilities: List[str] = Field(default_factory=list)
+    voltage_level_v: float = 3.3
+    five_volt_tolerant: bool = False
+    max_current_ma: float = 12.0
+    notes: str = ""
+
+
+class IoTBoardProfile(BaseModel):
+    board_id: IoTBoardId
+    name: str
+    family: str
+    mcu_or_soc: str
+    architecture: str
+    clock_mhz: float
+    operating_voltage_v: float
+    io_logic_voltage_v: float
+    five_volt_tolerant_pins: bool
+    total_gpio_count: int
+    analog_in_count: int
+    pwm_pins_count: int
+    flash_kb: int
+    sram_kb: int
+    max_pin_current_ma: float
+    max_regulator_3v3_current_ma: float
+    max_regulator_5v_current_ma: float
+    communication_interfaces: List[str] = Field(default_factory=list)
+    builtin_wireless: List[str] = Field(default_factory=list)
+    supported_languages: List[IoTFirmwareLanguage] = Field(default_factory=list)
+    pins: List[IoTBoardPin] = Field(default_factory=list)
+    toolchain_commands: Dict[str, str] = Field(default_factory=dict)
+    toolchain_installed: Dict[str, bool] = Field(default_factory=dict)
+    compatibility_warnings: List[str] = Field(default_factory=list)
+    estimated_cost_min_usd: float = 4.0
+    estimated_cost_max_usd: float = 12.0
+    spec_verification_status: IoTSpecVerificationStatus = "verified_datasheet_spec"
+    datasheet_url: str = ""
+
+
+class IoTComponentPin(BaseModel):
+    pin_name: str
+    pin_role: Literal[
+        "POWER_VCC",
+        "POWER_GND",
+        "DIGITAL_IN",
+        "DIGITAL_OUT",
+        "ANALOG_OUT",
+        "PWM_IN",
+        "I2C_SDA",
+        "I2C_SCL",
+        "SPI_MOSI",
+        "SPI_MISO",
+        "SPI_SCK",
+        "SPI_CS",
+        "UART_TX",
+        "UART_RX",
+        "ONEWIRE",
+        "MOTOR_TERMINAL",
+        "MAINS_AC_TERMINAL",
+    ]
+    voltage_min_v: float = 0.0
+    voltage_max_v: float = 5.0
+    logic_level_v: float = 3.3
+    required: bool = True
+    description: str = ""
+
+
+class IoTComponentSpec(BaseModel):
+    component_id: str
+    name: str
+    category: IoTComponentCategory
+    description: str
+    operating_voltage_min_v: float
+    operating_voltage_max_v: float
+    logic_voltage_v: float
+    five_volt_logic_output: bool = False
+    current_typical_ma: float
+    current_peak_ma: float
+    interfaces: List[str] = Field(default_factory=list)
+    pins: List[IoTComponentPin] = Field(default_factory=list)
+    i2c_default_address: Optional[str] = None
+    requires_external_driver: bool = False
+    is_inductive_load: bool = False
+    is_mains_voltage_hazard: bool = False
+    is_high_current_battery: bool = False
+    spec_verification_status: IoTSpecVerificationStatus = "verified_datasheet_spec"
+    datasheet_url: str = ""
+    availability_status: Literal["common_in_stock", "specialty_module", "lead_time_varies"] = "common_in_stock"
+    cost_min_usd: float = 1.5
+    cost_max_usd: float = 5.0
+    recommended_libraries: Dict[str, List[str]] = Field(default_factory=dict)
+    notes: str = ""
+
+
+class IoTPlacedComponent(BaseModel):
+    instance_id: str
+    component_id: str
+    label: str
+    x: float = 320.0
+    y: float = 120.0
+    i2c_address_override: Optional[str] = None
+    notes: str = ""
+
+
+class IoTWireConnection(BaseModel):
+    wire_id: str
+    from_node_id: str  # "board" or component instance_id
+    from_pin: str
+    to_node_id: str  # "board" or component instance_id
+    to_pin: str
+    signal_type: str = "DIGITAL"
+    wire_color: str = "#38bdf8"
+    label: str = ""
+    voltage_v: float = 3.3
+
+
+class IoTWiringValidationIssue(BaseModel):
+    issue_id: str
+    code: str
+    severity: IoTIssueSeverity
+    category: Literal[
+        "pin_conflict",
+        "voltage_incompatibility",
+        "missing_connection",
+        "overcurrent_or_driver",
+        "polarity_or_short",
+        "interface_mismatch",
+        "strapping_or_boot",
+    ]
+    title: str
+    description: str
+    affected_nodes: List[str] = Field(default_factory=list)
+    affected_pins: List[str] = Field(default_factory=list)
+    remediation: str
+
+
+class IoTWiringValidationReport(BaseModel):
+    valid: bool
+    critical_count: int = 0
+    error_count: int = 0
+    warning_count: int = 0
+    info_count: int = 0
+    issues: List[IoTWiringValidationIssue] = Field(default_factory=list)
+    power_rail_summary: Dict[str, Any] = Field(default_factory=dict)
+    svg_diagram: str = ""
+    markdown_pinout_table: str = ""
+
+
+class IoTFirmwareArtifact(BaseModel):
+    language: IoTFirmwareLanguage
+    filename: str
+    source_code: str
+    secrets_template_filename: str
+    secrets_template_code: str
+    libraries_required: List[str] = Field(default_factory=list)
+    pin_mappings: Dict[str, str] = Field(default_factory=dict)
+    compile_command: str
+    flash_command: str
+    compilation_tested: bool = False
+    compilation_passed: Optional[bool] = None
+    compiler_used: Optional[str] = None
+    verification_mode: Literal[
+        "real_compiler_binary",
+        "python_ast_and_py_compile",
+        "static_structural_check_toolchain_not_installed",
+    ] = "static_structural_check_toolchain_not_installed"
+    compiler_output: str = ""
+    missing_dependencies: List[str] = Field(default_factory=list)
+    configuration_instructions: List[str] = Field(default_factory=list)
+    generated_at: str
+
+
+class IoTSimulationStimulus(BaseModel):
+    instance_id: str
+    parameter: str
+    unit: str = ""
+    values: List[float] = Field(default_factory=list)
+
+
+class IoTSimulationTickResult(BaseModel):
+    tick: int
+    timestamp_ms: int
+    sensor_readings: Dict[str, Any] = Field(default_factory=dict)
+    actuator_states: Dict[str, Any] = Field(default_factory=dict)
+    serial_log: str
+    estimated_current_ma: float
+    estimated_power_mw: float
+    alerts: List[str] = Field(default_factory=list)
+
+
+class IoTSimulationRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    ticks: int = Field(default=6, ge=1, le=32)
+    stimuli: List[IoTSimulationStimulus] = Field(default_factory=list)
+    inject_fault: Optional[Literal["none", "sensor_disconnect", "overtemperature", "brownout_voltage", "mqtt_broker_offline"]] = "none"
+
+
+class IoTSimulationResponse(BaseModel):
+    simulation_id: str
+    project_id: str
+    board_id: IoTBoardId
+    execution_environment: Literal["deterministic_virtual_simulation"] = "deterministic_virtual_simulation"
+    is_physical_hardware_execution: bool = False
+    hardware_disclaimer: str = (
+        "SIMULATION ONLY: Executed in NEXORA's deterministic virtual device simulator. "
+        "No physical microcontroller, sensor, or actuator hardware was controlled or tested."
+    )
+    wiring_valid_before_run: bool = True
+    ticks_executed: int = 0
+    peak_current_ma: float = 0.0
+    average_current_ma: float = 0.0
+    ticks: List[IoTSimulationTickResult] = Field(default_factory=list)
+    summary: str
+
+
+class IoTConnectivityConfig(BaseModel):
+    protocol: IoTConnectivityProtocol = "wifi_mqtt"
+    enabled: bool = True
+    mock_mode: bool = True
+    endpoint_or_broker: str = "mqtt://broker.hivemq.com"
+    port: int = 1883
+    topic_prefix: str = "nexora/iot/prototype"
+    publish_interval_ms: int = 5000
+    tls_enabled: bool = True
+    credentials_env_vars: List[str] = Field(
+        default_factory=lambda: ["IOT_WIFI_SSID", "IOT_WIFI_PASSWORD", "IOT_BROKER_TOKEN"]
+    )
+    masked_credentials_preview: Dict[str, str] = Field(
+        default_factory=lambda: {
+            "IOT_WIFI_SSID": "<set-in-secrets.h>",
+            "IOT_WIFI_PASSWORD": "******** (never stored in plaintext)",
+            "IOT_BROKER_TOKEN": "******** (loaded via env/secrets)",
+        }
+    )
+    sample_telemetry_payload: Dict[str, Any] = Field(default_factory=dict)
+
+
+class IoTBOMItem(BaseModel):
+    item_id: str
+    name: str
+    category: str
+    quantity: int = 1
+    unit_cost_min_usd: float
+    unit_cost_max_usd: float
+    subtotal_min_usd: float
+    subtotal_max_usd: float
+    spec_verification_status: IoTSpecVerificationStatus
+    datasheet_url: str = ""
+    notes: str = ""
+
+
+class IoTBuildDocumentation(BaseModel):
+    bom_items: List[IoTBOMItem] = Field(default_factory=list)
+    total_cost_min_usd: float = 0.0
+    total_cost_max_usd: float = 0.0
+    target_budget_usd: float = 50.0
+    within_budget: bool = True
+    budget_notes: str = ""
+    unverified_specs_notice: str = ""
+    wiring_steps: List[str] = Field(default_factory=list)
+    assembly_instructions: List[str] = Field(default_factory=list)
+    test_procedures: List[str] = Field(default_factory=list)
+    troubleshooting_guide: List[str] = Field(default_factory=list)
+
+
+class IoTSafetyCheckItem(BaseModel):
+    check_id: str
+    category: Literal[
+        "electrical_limits",
+        "current_budget",
+        "polarity_and_shorts",
+        "isolation_and_flyback",
+        "motor_driver_compatibility",
+        "hazardous_voltage_or_battery",
+        "credential_security",
+    ]
+    status: Literal["pass", "warning", "hazard_review_required", "fail"]
+    title: str
+    detail: str
+    recommendation: str
+
+
+class IoTSafetyReport(BaseModel):
+    passed_nominal_checks: bool
+    requires_qualified_electrical_review: bool = False
+    mains_voltage_detected: bool = False
+    high_current_battery_detected: bool = False
+    inductive_load_without_driver: bool = False
+    regulator_3v3_load_ma: float = 0.0
+    regulator_3v3_limit_ma: float = 250.0
+    regulator_5v_load_ma: float = 0.0
+    regulator_5v_limit_ma: float = 500.0
+    power_budget_exceeded: bool = False
+    checks: List[IoTSafetyCheckItem] = Field(default_factory=list)
+    physical_safety_disclaimer: str = (
+        "IMPORTANT SAFETY NOTICE: Software electrical rules check nominal pin ratings and topology only. "
+        "Software validation is NEVER proof of physical electrical safety, thermal stability, or regulatory compliance. "
+        "Any design involving mains AC voltage, lithium battery packs, or high-power loads requires inspection by a qualified electrical engineer."
+    )
+
+
+class IoTProjectRecord(BaseModel):
+    project_id: str
+    user_id: str
+    workspace_id: str
+    name: str
+    purpose_description: str
+    target_budget_usd: float = 45.0
+    power_source: IoTPowerSource = "usb_5v"
+    environment: IoTEnvironmentType = "indoor_lab"
+    board_id: IoTBoardId = "esp32_devkit_v1"
+    board_profile: IoTBoardProfile
+    placed_components: List[IoTPlacedComponent] = Field(default_factory=list)
+    wires: List[IoTWireConnection] = Field(default_factory=list)
+    wiring_report: IoTWiringValidationReport
+    firmware: IoTFirmwareArtifact
+    connectivity: IoTConnectivityConfig
+    build_docs: IoTBuildDocumentation
+    safety_report: IoTSafetyReport
+    last_simulation: Optional[IoTSimulationResponse] = None
+    version: str = "1.0.0"
+    export_count: int = 0
+    created_at: str
+    updated_at: str
+
+
+class IoTProjectCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    name: str = Field(..., min_length=2, max_length=160)
+    invention_description: str = Field(..., min_length=5, max_length=3000)
+    target_budget_usd: float = Field(default=45.0, ge=5.0, le=5000.0)
+    power_source: IoTPowerSource = "usb_5v"
+    environment: IoTEnvironmentType = "indoor_lab"
+    preferred_board_id: Optional[IoTBoardId] = None
+    component_ids: List[str] = Field(default_factory=list)
+    firmware_language: Optional[IoTFirmwareLanguage] = None
+    connectivity_protocol: IoTConnectivityProtocol = "wifi_mqtt"
+    auto_wire: bool = True
+
+
+class IoTProjectUpdateWiringRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    board_id: Optional[IoTBoardId] = None
+    power_source: Optional[IoTPowerSource] = None
+    placed_components: List[IoTPlacedComponent] = Field(default_factory=list)
+    wires: List[IoTWireConnection] = Field(default_factory=list)
+    auto_regenerate_firmware: bool = True
+
+
+class IoTProjectGenerateFirmwareRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    language: IoTFirmwareLanguage = "arduino_cpp"
+    custom_source_code: Optional[str] = None
+    run_compiler_check: bool = True
+
+
+class IoTProjectExportRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    bump_version: Literal["none", "patch", "minor", "major"] = "patch"
+    write_to_workspace_files: bool = True
+
+
+class IoTExportFileEntry(BaseModel):
+    relative_path: str
+    size_bytes: int
+    sha256: str
+    description: str
+    content_preview: str
+
+
+class IoTProjectExportResponse(BaseModel):
+    export_id: str
+    project_id: str
+    project_name: str
+    version: str
+    export_directory: str
+    workspace_relative_dir: Optional[str] = None
+    files: List[IoTExportFileEntry] = Field(default_factory=list)
+    wiring_valid: bool
+    requires_qualified_electrical_review: bool
+    exported_at: str
+    summary: str
+
+
+class IoTMetadataResponse(BaseModel):
+    stage: int = 23
+    engine: str = "IoTProjectBuilderEngine"
+    boards_count: int
+    components_count: int
+    supported_languages: List[str] = Field(default_factory=list)
+    supported_connectivity: List[str] = Field(default_factory=list)
+    detected_toolchains: Dict[str, bool] = Field(default_factory=dict)
+    hardware_execution_disclaimer: str
+
+
+

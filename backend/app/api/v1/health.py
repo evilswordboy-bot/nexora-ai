@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 22,
-        "stage_title": "Knowledge Graph Intelligence",
+        "stage": 23,
+        "stage_title": "IoT Project Builder",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -40,6 +40,7 @@ async def health_check():
             "evaluation_qa": "operational",
             "universal_discovery": "operational",
             "knowledge_graph": "operational",
+            "iot_project_builder": "operational",
         },
     }
 

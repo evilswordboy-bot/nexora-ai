@@ -2265,3 +2265,362 @@ export interface KGMetadataResponse {
   default_page_size: number;
   max_page_size: number;
 }
+
+// ============================================================================
+// STAGE 23: IOT PROJECT BUILDER ENGINE TYPES
+// ============================================================================
+
+export type IoTBoardId =
+  | 'esp32_devkit_v1'
+  | 'arduino_uno_r3'
+  | 'stm32_nucleo_f401re'
+  | 'raspberry_pi_pico_w'
+  | 'raspberry_pi_4b';
+
+export type IoTPowerSource =
+  | 'usb_5v'
+  | 'battery_lipo_3v7'
+  | 'dc_barrel_7v_12v'
+  | 'solar_mppt_5v'
+  | 'mains_ac_isolated_psu';
+
+export type IoTEnvironmentType =
+  | 'indoor_lab'
+  | 'outdoor_weatherproof'
+  | 'industrial_harsh'
+  | 'greenhouse_humid'
+  | 'wearable_portable';
+
+export type IoTComponentCategory =
+  | 'sensor'
+  | 'actuator'
+  | 'relay'
+  | 'display'
+  | 'motor'
+  | 'motor_driver'
+  | 'communication'
+  | 'power'
+  | 'logic_adapter';
+
+export type IoTSpecVerificationStatus =
+  | 'verified_datasheet_spec'
+  | 'estimated_typical_range';
+
+export type IoTFirmwareLanguage =
+  | 'arduino_cpp'
+  | 'micropython'
+  | 'esp_idf_c'
+  | 'rpi_python_gpiozero';
+
+export type IoTConnectivityProtocol =
+  | 'none_local_only'
+  | 'wifi_mqtt'
+  | 'wifi_http_rest'
+  | 'ble_gatt'
+  | 'serial_usb_telemetry';
+
+export interface IoTBoardPin {
+  pin_id: string;
+  label: string;
+  gpio_number?: number | null;
+  capabilities: string[];
+  voltage_level_v: number;
+  five_volt_tolerant: boolean;
+  max_current_ma: number;
+  notes: string;
+}
+
+export interface IoTBoardProfile {
+  board_id: IoTBoardId;
+  name: string;
+  family: string;
+  mcu_or_soc: string;
+  architecture: string;
+  clock_mhz: number;
+  operating_voltage_v: number;
+  io_logic_voltage_v: number;
+  five_volt_tolerant_pins: boolean;
+  total_gpio_count: number;
+  analog_in_count: number;
+  pwm_pins_count: number;
+  flash_kb: number;
+  sram_kb: number;
+  max_pin_current_ma: number;
+  max_regulator_3v3_current_ma: number;
+  max_regulator_5v_current_ma: number;
+  communication_interfaces: string[];
+  builtin_wireless: string[];
+  supported_languages: IoTFirmwareLanguage[];
+  pins: IoTBoardPin[];
+  toolchain_commands: Record<string, string>;
+  toolchain_installed: Record<string, boolean>;
+  compatibility_warnings: string[];
+  estimated_cost_min_usd: number;
+  estimated_cost_max_usd: number;
+  spec_verification_status: IoTSpecVerificationStatus;
+  datasheet_url: string;
+}
+
+export interface IoTComponentPin {
+  pin_name: string;
+  pin_role: string;
+  voltage_min_v: number;
+  voltage_max_v: number;
+  logic_level_v: number;
+  required: boolean;
+  description: string;
+}
+
+export interface IoTComponentSpec {
+  component_id: string;
+  name: string;
+  category: IoTComponentCategory;
+  description: string;
+  operating_voltage_min_v: number;
+  operating_voltage_max_v: number;
+  logic_voltage_v: number;
+  five_volt_logic_output: boolean;
+  current_typical_ma: number;
+  current_peak_ma: number;
+  interfaces: string[];
+  pins: IoTComponentPin[];
+  i2c_default_address?: string | null;
+  requires_external_driver: boolean;
+  is_inductive_load: boolean;
+  is_mains_voltage_hazard: boolean;
+  is_high_current_battery: boolean;
+  spec_verification_status: IoTSpecVerificationStatus;
+  datasheet_url: string;
+  availability_status: string;
+  cost_min_usd: number;
+  cost_max_usd: number;
+  recommended_libraries: Record<string, string[]>;
+  notes: string;
+}
+
+export interface IoTPlacedComponent {
+  instance_id: string;
+  component_id: string;
+  label: string;
+  x: number;
+  y: number;
+  i2c_address_override?: string | null;
+  notes: string;
+}
+
+export interface IoTWireConnection {
+  wire_id: string;
+  from_node_id: string;
+  from_pin: string;
+  to_node_id: string;
+  to_pin: string;
+  signal_type: string;
+  wire_color: string;
+  label: string;
+  voltage_v: number;
+}
+
+export interface IoTWiringValidationIssue {
+  issue_id: string;
+  code: string;
+  severity: 'critical' | 'error' | 'warning' | 'info';
+  category: string;
+  title: string;
+  description: string;
+  affected_nodes: string[];
+  affected_pins: string[];
+  remediation: string;
+}
+
+export interface IoTWiringValidationReport {
+  valid: boolean;
+  critical_count: number;
+  error_count: number;
+  warning_count: number;
+  info_count: number;
+  issues: IoTWiringValidationIssue[];
+  power_rail_summary: Record<string, number>;
+  svg_diagram: string;
+  markdown_pinout_table: string;
+}
+
+export interface IoTFirmwareArtifact {
+  language: IoTFirmwareLanguage;
+  filename: string;
+  source_code: string;
+  secrets_template_filename: string;
+  secrets_template_code: string;
+  libraries_required: string[];
+  pin_mappings: Record<string, string>;
+  compile_command: string;
+  flash_command: string;
+  compilation_tested: boolean;
+  compilation_passed?: boolean | null;
+  compiler_used?: string | null;
+  verification_mode:
+    | 'real_compiler_binary'
+    | 'python_ast_and_py_compile'
+    | 'static_structural_check_toolchain_not_installed';
+  compiler_output: string;
+  missing_dependencies: string[];
+  configuration_instructions: string[];
+  generated_at: string;
+}
+
+export interface IoTSimulationStimulus {
+  instance_id: string;
+  parameter: string;
+  unit: string;
+  values: number[];
+}
+
+export interface IoTSimulationTickResult {
+  tick: number;
+  timestamp_ms: number;
+  sensor_readings: Record<string, any>;
+  actuator_states: Record<string, any>;
+  serial_log: string;
+  estimated_current_ma: number;
+  estimated_power_mw: number;
+  alerts: string[];
+}
+
+export interface IoTSimulationResponse {
+  simulation_id: string;
+  project_id: string;
+  board_id: IoTBoardId;
+  execution_environment: 'deterministic_virtual_simulation';
+  is_physical_hardware_execution: boolean;
+  hardware_disclaimer: string;
+  wiring_valid_before_run: boolean;
+  ticks_executed: number;
+  peak_current_ma: number;
+  average_current_ma: number;
+  ticks: IoTSimulationTickResult[];
+  summary: string;
+}
+
+export interface IoTConnectivityConfig {
+  protocol: IoTConnectivityProtocol;
+  enabled: boolean;
+  mock_mode: boolean;
+  endpoint_or_broker: string;
+  port: number;
+  topic_prefix: string;
+  publish_interval_ms: number;
+  tls_enabled: boolean;
+  credentials_env_vars: string[];
+  masked_credentials_preview: Record<string, string>;
+  sample_telemetry_payload: Record<string, any>;
+}
+
+export interface IoTBOMItem {
+  item_id: string;
+  name: string;
+  category: string;
+  quantity: number;
+  unit_cost_min_usd: number;
+  unit_cost_max_usd: number;
+  subtotal_min_usd: number;
+  subtotal_max_usd: number;
+  spec_verification_status: IoTSpecVerificationStatus;
+  datasheet_url: string;
+  notes: string;
+}
+
+export interface IoTBuildDocumentation {
+  bom_items: IoTBOMItem[];
+  total_cost_min_usd: number;
+  total_cost_max_usd: number;
+  target_budget_usd: number;
+  within_budget: boolean;
+  budget_notes: string;
+  unverified_specs_notice: string;
+  wiring_steps: string[];
+  assembly_instructions: string[];
+  test_procedures: string[];
+  troubleshooting_guide: string[];
+}
+
+export interface IoTSafetyCheckItem {
+  check_id: string;
+  category: string;
+  status: 'pass' | 'warning' | 'hazard_review_required' | 'fail';
+  title: string;
+  detail: string;
+  recommendation: string;
+}
+
+export interface IoTSafetyReport {
+  passed_nominal_checks: boolean;
+  requires_qualified_electrical_review: boolean;
+  mains_voltage_detected: boolean;
+  high_current_battery_detected: boolean;
+  inductive_load_without_driver: boolean;
+  regulator_3v3_load_ma: number;
+  regulator_3v3_limit_ma: number;
+  regulator_5v_load_ma: number;
+  regulator_5v_limit_ma: number;
+  power_budget_exceeded: boolean;
+  checks: IoTSafetyCheckItem[];
+  physical_safety_disclaimer: string;
+}
+
+export interface IoTProjectRecord {
+  project_id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  purpose_description: string;
+  target_budget_usd: number;
+  power_source: IoTPowerSource;
+  environment: IoTEnvironmentType;
+  board_id: IoTBoardId;
+  board_profile: IoTBoardProfile;
+  placed_components: IoTPlacedComponent[];
+  wires: IoTWireConnection[];
+  wiring_report: IoTWiringValidationReport;
+  firmware: IoTFirmwareArtifact;
+  connectivity: IoTConnectivityConfig;
+  build_docs: IoTBuildDocumentation;
+  safety_report: IoTSafetyReport;
+  last_simulation?: IoTSimulationResponse | null;
+  version: string;
+  export_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IoTExportFileEntry {
+  relative_path: string;
+  size_bytes: number;
+  sha256: string;
+  description: string;
+  content_preview: string;
+}
+
+export interface IoTProjectExportResponse {
+  export_id: string;
+  project_id: string;
+  project_name: string;
+  version: string;
+  export_directory: string;
+  workspace_relative_dir?: string | null;
+  files: IoTExportFileEntry[];
+  wiring_valid: boolean;
+  requires_qualified_electrical_review: boolean;
+  exported_at: string;
+  summary: string;
+}
+
+export interface IoTMetadataResponse {
+  stage: number;
+  engine: string;
+  boards_count: number;
+  components_count: number;
+  supported_languages: string[];
+  supported_connectivity: string[];
+  detected_toolchains: Record<string, boolean>;
+  hardware_execution_disclaimer: string;
+}
+

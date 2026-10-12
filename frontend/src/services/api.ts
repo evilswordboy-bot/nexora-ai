@@ -111,6 +111,20 @@ import {
   KGQueryMode,
   KGQueryResponse,
   KGRelationType,
+  IoTBoardId,
+  IoTBoardProfile,
+  IoTComponentSpec,
+  IoTConnectivityProtocol,
+  IoTEnvironmentType,
+  IoTFirmwareLanguage,
+  IoTMetadataResponse,
+  IoTPlacedComponent,
+  IoTPowerSource,
+  IoTProjectExportResponse,
+  IoTProjectRecord,
+  IoTSimulationResponse,
+  IoTSimulationStimulus,
+  IoTWireConnection,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -2604,5 +2618,169 @@ export const api = {
     return request<KGChangeLogEntry[]>(
       `/knowledge-graph/history?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}&limit=${limit}`
     );
+  },
+
+  // Stage 23: IoT Project Builder Methods
+  async getIoTMetadata(): Promise<IoTMetadataResponse> {
+    return request<IoTMetadataResponse>('/iot/metadata');
+  },
+
+  async listIoTBoards(): Promise<IoTBoardProfile[]> {
+    return request<IoTBoardProfile[]>('/iot/boards');
+  },
+
+  async listIoTComponents(params?: {
+    category?: string;
+    interface?: string;
+    query?: string;
+  }): Promise<IoTComponentSpec[]> {
+    const qs = new URLSearchParams();
+    if (params?.category && params.category !== 'all') qs.set('category', params.category);
+    if (params?.interface && params.interface !== 'all') qs.set('interface', params.interface);
+    if (params?.query) qs.set('query', params.query);
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    return request<IoTComponentSpec[]>(`/iot/components${suffix}`);
+  },
+
+  async listIoTProjects(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<IoTProjectRecord[]> {
+    return request<IoTProjectRecord[]>(
+      `/iot/projects?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async createIoTProject(params: {
+    user_id?: string;
+    workspace_id?: string;
+    name: string;
+    invention_description: string;
+    target_budget_usd?: number;
+    power_source?: IoTPowerSource;
+    environment?: IoTEnvironmentType;
+    preferred_board_id?: IoTBoardId;
+    component_ids?: string[];
+    firmware_language?: IoTFirmwareLanguage;
+    connectivity_protocol?: IoTConnectivityProtocol;
+    auto_wire?: boolean;
+  }): Promise<IoTProjectRecord> {
+    return request<IoTProjectRecord>('/iot/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        name: params.name,
+        invention_description: params.invention_description,
+        target_budget_usd: params.target_budget_usd ?? 45.0,
+        power_source: params.power_source || 'usb_5v',
+        environment: params.environment || 'indoor_lab',
+        preferred_board_id: params.preferred_board_id,
+        component_ids: params.component_ids || [],
+        firmware_language: params.firmware_language,
+        connectivity_protocol: params.connectivity_protocol || 'wifi_mqtt',
+        auto_wire: params.auto_wire ?? true,
+      }),
+    });
+  },
+
+  async getIoTProject(
+    projectId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<IoTProjectRecord> {
+    return request<IoTProjectRecord>(
+      `/iot/projects/${encodeURIComponent(projectId)}?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async updateIoTWiring(
+    projectId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      board_id?: IoTBoardId;
+      power_source?: IoTPowerSource;
+      placed_components: IoTPlacedComponent[];
+      wires: IoTWireConnection[];
+      auto_regenerate_firmware?: boolean;
+    }
+  ): Promise<IoTProjectRecord> {
+    return request<IoTProjectRecord>(`/iot/projects/${encodeURIComponent(projectId)}/wiring`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        board_id: params.board_id,
+        power_source: params.power_source,
+        placed_components: params.placed_components,
+        wires: params.wires,
+        auto_regenerate_firmware: params.auto_regenerate_firmware ?? true,
+      }),
+    });
+  },
+
+  async generateIoTFirmware(
+    projectId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      language: IoTFirmwareLanguage;
+      custom_source_code?: string;
+      run_compiler_check?: boolean;
+    }
+  ): Promise<IoTProjectRecord> {
+    return request<IoTProjectRecord>(`/iot/projects/${encodeURIComponent(projectId)}/firmware`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        language: params.language,
+        custom_source_code: params.custom_source_code,
+        run_compiler_check: params.run_compiler_check ?? true,
+      }),
+    });
+  },
+
+  async simulateIoTProject(
+    projectId: string,
+    params: {
+      user_id?: string;
+      workspace_id?: string;
+      ticks?: number;
+      stimuli?: IoTSimulationStimulus[];
+      inject_fault?: 'none' | 'sensor_disconnect' | 'overtemperature' | 'brownout_voltage' | 'mqtt_broker_offline';
+    }
+  ): Promise<IoTSimulationResponse> {
+    return request<IoTSimulationResponse>(`/iot/projects/${encodeURIComponent(projectId)}/simulate`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        ticks: params.ticks ?? 6,
+        stimuli: params.stimuli || [],
+        inject_fault: params.inject_fault || 'none',
+      }),
+    });
+  },
+
+  async exportIoTProject(
+    projectId: string,
+    params?: {
+      user_id?: string;
+      workspace_id?: string;
+      bump_version?: 'none' | 'patch' | 'minor' | 'major';
+      write_to_workspace_files?: boolean;
+    }
+  ): Promise<IoTProjectExportResponse> {
+    return request<IoTProjectExportResponse>(`/iot/projects/${encodeURIComponent(projectId)}/export`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params?.user_id || 'default_user',
+        workspace_id: params?.workspace_id || 'default_workspace',
+        bump_version: params?.bump_version || 'patch',
+        write_to_workspace_files: params?.write_to_workspace_files ?? true,
+      }),
+    });
   },
 };

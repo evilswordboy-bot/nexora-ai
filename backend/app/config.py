@@ -259,6 +259,25 @@ class Settings(BaseModel):
         "KG_ENABLE_AI_INFERRED_EDGES", "true"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 23: IoT Project Builder Engine
+    iot_db_path: str = os.getenv(
+        "IOT_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "iot_projects" / "nexora_iot.db"),
+    )
+    iot_exports_dir: str = os.getenv(
+        "IOT_EXPORTS_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "iot_projects" / "exports"),
+    )
+    iot_default_simulation_ticks: int = int(
+        os.getenv("IOT_DEFAULT_SIMULATION_TICKS", "8")
+    )
+    iot_max_simulation_ticks: int = int(
+        os.getenv("IOT_MAX_SIMULATION_TICKS", "32")
+    )
+    iot_enable_toolchain_probing: bool = os.getenv(
+        "IOT_ENABLE_TOOLCHAIN_PROBING", "true"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

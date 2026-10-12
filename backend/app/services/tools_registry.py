@@ -628,6 +628,43 @@ class ToolRegistry:
             handler=self._handle_knowledge_graph_reasoner,
         )
 
+        # 24. Stage 23: IoT Project Builder Tool
+        self.register(
+            tool=ToolDefinition(
+                name="iot_project_builder",
+                description=(
+                    "Designs IoT hardware prototypes, selects microcontroller boards (ESP32, Arduino Uno, STM32, "
+                    "Raspberry Pi Pico W, Raspberry Pi 4B), validates pin-to-pin wiring and electrical budgets, "
+                    "generates firmware, and runs deterministic virtual simulations using the Stage 23 IoT Project Builder Engine."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["create_project", "list_boards", "list_components"],
+                            "default": "create_project",
+                        },
+                        "name": {
+                            "type": "string",
+                            "default": "Smart Environmental Telemetry Node",
+                        },
+                        "invention_description": {
+                            "type": "string",
+                            "default": "ESP32 node reading BME280 temperature/humidity and displaying on SSD1306 OLED with MQTT telemetry.",
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=23,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_iot_project_builder,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1425,6 +1462,61 @@ class ToolRegistry:
             "explicit_facts_count": q_res.explicit_facts_count,
             "inferred_facts_count": q_res.inferred_facts_count,
             "summary": q_res.answer_summary,
+        }
+
+    async def _handle_iot_project_builder(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.iot.engine import iot_project_builder_engine
+        from app.models.schemas import IoTProjectCreateRequest
+
+        action = str(params.get("action", "create_project")).strip().lower()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+
+        if action == "list_boards":
+            boards = iot_project_builder_engine.list_boards()
+            return {
+                "action": "list_boards",
+                "boards_count": len(boards),
+                "board_ids": [b.board_id for b in boards],
+                "summary": f"Available IoT boards ({len(boards)}): {', '.join(b.name for b in boards)}",
+            }
+
+        if action == "list_components":
+            comps = iot_project_builder_engine.list_components()
+            return {
+                "action": "list_components",
+                "components_count": len(comps),
+                "component_ids": [c.component_id for c in comps],
+                "summary": f"Available IoT components ({len(comps)}): {', '.join(c.name for c in comps[:8])}...",
+            }
+
+        name = str(params.get("name", "Smart Environmental Telemetry Node")).strip()
+        desc = str(
+            params.get(
+                "invention_description",
+                "ESP32 node reading BME280 temperature/humidity and displaying on SSD1306 OLED with MQTT telemetry.",
+            )
+        ).strip()
+        proj = iot_project_builder_engine.create_project(
+            IoTProjectCreateRequest(
+                user_id=user_id,
+                workspace_id=workspace_id,
+                name=name,
+                invention_description=desc,
+            )
+        )
+        return {
+            "action": "create_project",
+            "project_id": proj.project_id,
+            "board_id": proj.board_id,
+            "wiring_valid": proj.wiring_report.valid,
+            "components_count": len(proj.placed_components),
+            "wires_count": len(proj.wires),
+            "summary": (
+                f"Created IoT project '{proj.name}' ({proj.project_id}) on {proj.board_profile.name} "
+                f"with {len(proj.placed_components)} components, {len(proj.wires)} wires "
+                f"(wiring_valid={proj.wiring_report.valid}), and {proj.firmware.language} firmware."
+            ),
         }
 
 

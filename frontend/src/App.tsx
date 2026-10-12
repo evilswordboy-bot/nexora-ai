@@ -24,6 +24,7 @@ import { GitVersionControlStudio } from './components/git/GitVersionControlStudi
 import { EvaluationStudio } from './components/evaluation/EvaluationStudio';
 import { DiscoveryStudio } from './components/discovery/DiscoveryStudio';
 import { KnowledgeGraphStudio } from './components/knowledgegraph/KnowledgeGraphStudio';
+import { IoTProjectBuilderStudio } from './components/iot/IoTProjectBuilderStudio';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
@@ -72,6 +73,8 @@ const MainLayout: React.FC = () => {
           <DiscoveryStudio />
         ) : activeWorkspaceView === 'knowledgegraph' ? (
           <KnowledgeGraphStudio />
+        ) : activeWorkspaceView === 'iot' ? (
+          <IoTProjectBuilderStudio />
         ) : (
           <ChatArea />
         )}

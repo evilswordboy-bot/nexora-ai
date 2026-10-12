@@ -1,6 +1,27 @@
-# NEXORA AI — Stage 22: Knowledge Graph Intelligence
+# NEXORA AI — Stage 23: IoT Project Builder & Embedded Firmware Studio
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 22** introduces the **Knowledge Graph Intelligence Engine (`KnowledgeGraphIntelligenceEngine`)**: a structured-reasoning and provenance-grounded graph engine that extracts entities and relationships from authorized documents and verified research results, strictly separates explicit source facts from AI-inferred transitive relationships, answers multi-hop dependency/path/contradiction queries safely over cyclic graphs, and provides an interactive SVG Graph Explorer (`KnowledgeGraphStudio.tsx`) with approval-gated duplicate merging and deletion.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 23** introduces the **IoT Project Builder Engine (`IoTProjectBuilderEngine`)**: an interactive embedded-systems and electronics engineering workspace where users can design IoT inventions from natural language, select hardware board profiles (`ESP32`, `Arduino Uno R3`, `STM32 Nucleo-F401RE`, `Raspberry Pi Pico W`, `Raspberry Pi 4B`), browse a datasheet-grounded component library, build and validate pin-to-pin wiring schematics, generate editable firmware with honest host toolchain/syntax checks, run deterministic virtual sensor simulations (`is_physical_hardware_execution=False`), audit electrical safety and power budgets, and export versioned prototype bundles (`IoTProjectBuilderStudio.tsx`).
+
+---
+
+## 🌟 Stage 23 Core Deliverables
+
+- **Project Designer & Configurable Board Profiles (`IoTProjectBuilderEngine`)**:
+  - Transforms natural-language invention descriptions, target budgets, power requirements (`usb_5v`, `battery_lipo_3v7`, `dc_barrel_7v_12v`, `solar_mppt_5v`, `mains_ac_isolated_psu`), and operating environments (`indoor_lab`, `greenhouse_humid`, `outdoor_weatherproof`, `industrial_harsh`, `wearable_portable`) into complete hardware-firmware blueprints.
+  - Supports 5 detailed board profiles (`esp32_devkit_v1`, `arduino_uno_r3`, `stm32_nucleo_f401re`, `raspberry_pi_pico_w`, `raspberry_pi_4b`) with exact pin counts, logic voltage levels (`3.3V` vs. `5.0V`), 5V-tolerance flags, SRAM/Flash memory limits, communication buses (`I2C`, `SPI`, `UART`, `PWM`, `ADC`, `ONEWIRE`), host toolchain probing, and compatibility warnings.
+- **Component Library & Spec Verification Provenance**:
+  - Searchable catalog across `sensor`, `display`, `relay`, `actuator`, `motor`, `motor_driver`, `logic_adapter`, and `power` categories.
+  - Explicitly labels every component specification and BOM row as either `verified_datasheet_spec` (with primary manufacturer datasheet URL) or `estimated_typical_range`.
+- **Interactive Pin-to-Pin Wiring Designer & Electrical Validator**:
+  - Validates netlists against `SHORT_CIRCUIT_POWER_GND`, `REVERSE_POLARITY`, `OVERVOLTAGE_SUPPLY`, `UNDERVOLTAGE_SUPPLY`, `DIRECT_MOTOR_ON_GPIO` (bare inductive motor without H-bridge driver), `VOLTAGE_MISMATCH_5V_TO_3V3` (e.g. 5V `HC-SR04 ECHO` on non-5V-tolerant 3.3V GPIO without `TXS0108E` level shifter), `ADC_CAPABILITY_MISSING`, `INPUT_ONLY_PIN_OUTPUT_DRIVE` (`GPIO34`/`GPIO35`), `PIN_CONFLICT`, `I2C_ADDRESS_COLLISION`, `MISSING_PIN_CONNECTION`, and `STRAPPING_PIN_WARNING`.
+  - Exports interactive SVG wiring schematics (`wiring/diagram.svg`) and Markdown pinout tables (`wiring/pinout_table.md`).
+- **Firmware Studio & Honest Compiler Verification**:
+  - Generates editable `arduino_cpp` (`.ino`), `micropython` (`main.py`), `esp_idf_c` (`main.c`), and `rpi_python_gpiozero` (`app.py`) firmware with netlist-derived pin constants and isolated credential templates (`secrets.example.h` / `secrets_example.py`).
+  - Executes real Python `ast.parse` + `py_compile` verification for `micropython`/`rpi_python_gpiozero` (`compilation_tested=True`, `verification_mode="python_ast_and_py_compile"`) and honestly reports `compilation_tested=False` (`verification_mode="static_structural_check_toolchain_not_installed"`) with `missing_dependencies` when `arduino-cli` or `platformio` is not installed on the host.
+- **Deterministic Virtual Device Simulator, Safety Auditor & Versioned Export**:
+  - Runs multi-tick virtual sensor stimuli and fault injection (`overtemperature`, `sensor_disconnect`, `brownout_voltage`, `mqtt_broker_offline`) while explicitly setting `execution_environment="deterministic_virtual_simulation"` and `is_physical_hardware_execution=False`.
+  - Audits 3.3V and 5V regulator current budgets, inductive load isolation, and flags Mains AC (`110V–240V`) and High-Current Lithium battery packs (`18650 LiPo`) with `requires_qualified_electrical_review=True` and a mandatory physical safety disclaimer.
+  - Exports versioned project bundles (`v1.0.0`, `v1.0.1`, etc.) to disk and directly into the Stage 17 File Workspace (`iot_projects/<slug>_v<version>/`).
 
 ---
 
