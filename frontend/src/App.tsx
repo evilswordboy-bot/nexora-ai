@@ -26,11 +26,23 @@ import { DiscoveryStudio } from './components/discovery/DiscoveryStudio';
 import { KnowledgeGraphStudio } from './components/knowledgegraph/KnowledgeGraphStudio';
 import { IoTProjectBuilderStudio } from './components/iot/IoTProjectBuilderStudio';
 import { FirmwareEngineeringStudio } from './components/firmware/FirmwareEngineeringStudio';
+import { NexoraLandingPage } from './components/landing/NexoraLandingPage';
 import { Conversation } from './types';
 
 const MainLayout: React.FC = () => {
   const { deleteConversation, activeWorkspaceView } = useChat();
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
+
+  if (activeWorkspaceView === 'landing') {
+    return (
+      <>
+        <NexoraLandingPage />
+        <SettingsModal />
+        <SetupGuideModal />
+        <ToastContainer />
+      </>
+    );
+  }
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-midnight-950 text-slate-100">

@@ -33,13 +33,17 @@ export const Header: React.FC = () => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2.5">
+        <button
+          onClick={() => setActiveWorkspaceView('landing')}
+          className="flex items-center gap-2.5 text-left group"
+          title="Return to NEXORA AI Futuristic Landing Page"
+        >
           <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-violet-600 shadow-cyan-glow">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base sm:text-lg tracking-wider bg-gradient-to-r from-slate-100 via-cyan-100 to-slate-200 bg-clip-text text-transparent">
+              <span className="font-bold text-base sm:text-lg tracking-wider bg-gradient-to-r from-slate-100 via-cyan-100 to-slate-200 bg-clip-text text-transparent group-hover:text-cyan-300">
                 NEXORA
               </span>
               <span className="text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
@@ -47,10 +51,17 @@ export const Header: React.FC = () => {
               </span>
             </div>
           </div>
-        </div>
+        </button>
 
         {/* Workspace Switcher */}
         <div className="hidden md:flex items-center p-1 rounded-xl bg-midnight-950/80 border border-slate-800/80 ml-2 overflow-x-auto">
+          <button
+            onClick={() => setActiveWorkspaceView('landing')}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all text-cyan-300 hover:bg-cyan-500/15"
+          >
+            <Globe className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Landing</span>
+          </button>
           <button
             onClick={() => setActiveWorkspaceView('chat')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
