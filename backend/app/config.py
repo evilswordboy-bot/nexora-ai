@@ -297,6 +297,34 @@ class Settings(BaseModel):
         os.getenv("FIRMWARE_DEFAULT_BAUD_RATE", "115200")
     )
 
+    # Stage 25: IoT Device Connectivity & Live Telemetry
+    telemetry_db_path: str = os.getenv(
+        "TELEMETRY_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "telemetry" / "nexora_telemetry.db"),
+    )
+    telemetry_exports_dir: str = os.getenv(
+        "TELEMETRY_EXPORTS_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "telemetry" / "exports"),
+    )
+    telemetry_rate_limit_per_minute: int = int(
+        os.getenv("TELEMETRY_RATE_LIMIT_PER_MINUTE", "60")
+    )
+    telemetry_max_payload_size_bytes: int = int(
+        os.getenv("TELEMETRY_MAX_PAYLOAD_SIZE_BYTES", "65536")
+    )
+    telemetry_max_events_per_device: int = int(
+        os.getenv("TELEMETRY_MAX_EVENTS_PER_DEVICE", "2000")
+    )
+    telemetry_offline_timeout_seconds: float = float(
+        os.getenv("TELEMETRY_OFFLINE_TIMEOUT_SECONDS", "90.0")
+    )
+    telemetry_default_cooldown_seconds: int = int(
+        os.getenv("TELEMETRY_DEFAULT_COOLDOWN_SECONDS", "300")
+    )
+    mqtt_broker_host: str = os.getenv("MQTT_BROKER_HOST", "mqtt.nexora.local")
+    mqtt_broker_port: int = int(os.getenv("MQTT_BROKER_PORT", "8883"))
+    mqtt_use_tls: bool = os.getenv("MQTT_USE_TLS", "true").lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

@@ -12,6 +12,40 @@
 
 ---
 
+# NEXORA AI — Stage 25: IoT Device Connectivity & Live Telemetry
+
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 25** introduces the **IoT Device Connectivity & Live Telemetry Engine (`IoTTelemetryEngine`)**: a high-throughput, secure device management and telemetry ingestion platform that provisions microcontrollers (`ESP32`, `STM32`, `Arduino`, `Raspberry Pi`, `generic`), generates salted PBKDF2 device credentials, ingests authenticated HTTP and MQTT measurements, validates physical sensor bounds with strict anti-fabrication enforcement, manages threshold alerts with cooldown windows and auto-resolution, guards consequential downlinks (`reboot`, `ota_firmware_update`) with explicit user confirmation gates, and streams real-time updates to `IoTTelemetryStudio.tsx`.
+
+---
+
+## 🌟 Stage 25 Core Deliverables
+
+- **Device Registry & Credential Management (`IoTTelemetryEngine`)**:
+  - Supports registration of `esp32_devkit_v1`, `stm32_nucleo_f401re`, `arduino_uno_r3`, `raspberry_pi_pico_w`, and `generic` MQTT/HTTP devices with assigned hardware profiles and firmware versions.
+  - Clearly identifies simulated devices (`is_simulated=True`) from physical devices.
+  - Generates secure random tokens (`nxt_...`) hashed with salted PBKDF2 (`sha256`, 100,000 iterations); raw plaintext secrets are returned once upon creation and never stored on the server or exposed in frontend code.
+  - Supports credential rotation and immediate credential revocation.
+- **Secure Telemetry Ingestion Pipeline**:
+  - Ingestion via authenticated HTTP (`POST /api/v1/telemetry/devices/{device_id}/events` with `X-Device-Token`) and MQTT topics (`nexora/{workspace_id}/{device_id}/telemetry`).
+  - Rate limiting (default 60 events/minute per device) and sequence deduplication (dedup window 1000 events).
+  - Physical measurement validation (`temperature` in °C, `humidity` in %, `vibration` in mm/s, `voltage` in V, `current` in A, `distance` in cm, `pressure` in hPa); out-of-range readings are flagged as anomalies rather than silently accepted or dropped.
+- **Alert Rules, Cooldown Windows & Auto-Resolution**:
+  - Configurable threshold rules (`gt`, `lt`, `gte`, `lte`, `eq`, `outside_range`) across any physical metric.
+  - Bounded cooldown periods to debounce transient sensor oscillations and avoid notification fatigue.
+  - State tracking (`active` -> `acknowledged` -> `resolved`) with automatic resolution when telemetry returns to safe physical limits.
+- **Controlled Device Actuation & Consequential Action Gates**:
+  - Downlink commands dispatched via HTTP/MQTT with parameter validation.
+  - Consequential actions (`reboot`, `ota_firmware_update`, `format_storage`) are placed in `pending_confirmation` and require explicit user confirmation (`POST /api/v1/telemetry/commands/{command_id}/confirm`) before execution.
+  - Complete command audit trail with timestamp, user ID, parameters, confirmation status, and dispatch result.
+- **Deterministic Virtual Telemetry Simulator & Dataset Export**:
+  - Generates deterministic simulated ticks with optional fault injection (`spike_temperature`, `high_vibration`, `low_voltage`, `pressure_drop`).
+  - Exports validated timeseries datasets to CSV and JSON formats with handoff to the Stage 17 File Workspace.
+- **Interactive UI & Anti-Fabrication Guarantee (`IoTTelemetryStudio.tsx`)**:
+  - 5 dedicated views: *Device Registry*, *Live Telemetry*, *Alerts & Rules*, *Commands & Gates*, and *Simulator & Export*.
+  - Strictly presents zero fabricated sensor readings for offline or disconnected devices.
+
+---
+
 # NEXORA AI — Stage 24: Embedded Firmware Engineering Studio & Futuristic Landing Page
 
 **NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 24** introduces the **Embedded Firmware Engineering Studio (`EmbeddedFirmwareStudioEngine`)**: a professional multi-file embedded firmware IDE that reuses the Stage 23 IoT Project Builder board profiles and validated wiring netlists to generate modular C/C++/MicroPython drivers, interrupt service routines (ISRs), hardware watchdog management, static embedded safety analysis, isolated compilation & unit testing, simulated vs. physical serial monitoring, approval-gated device flashing, version rollback, and authentic release artifact export (`FirmwareEngineeringStudio.tsx`).

@@ -710,6 +710,55 @@ class ToolRegistry:
             handler=self._handle_embedded_firmware_studio,
         )
 
+        # 26. Stage 25: IoT Device Connectivity & Live Telemetry Tool
+        self.register(
+            tool=ToolDefinition(
+                name="iot_telemetry_engine",
+                description=(
+                    "Registers IoT hardware and simulated devices, queries live telemetry measurements and ranges, "
+                    "injects deterministic simulated ticks, checks threshold alerts, dispatches validated device commands, "
+                    "and exports telemetry datasets using the Stage 25 IoT Telemetry Engine."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["list_devices", "register_device", "query_telemetry", "simulate_tick", "check_alerts", "dispatch_command"],
+                            "default": "list_devices",
+                        },
+                        "name": {
+                            "type": "string",
+                            "default": "Smart Telemetry Gateway",
+                        },
+                        "board_id": {
+                            "type": "string",
+                            "default": "esp32_devkit_v1",
+                        },
+                        "is_simulated": {
+                            "type": "boolean",
+                            "default": True,
+                        },
+                        "device_id": {
+                            "type": "string",
+                            "default": "",
+                        },
+                        "command_type": {
+                            "type": "string",
+                            "default": "set_telemetry_interval",
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=25,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_iot_telemetry_engine,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1646,7 +1695,130 @@ class ToolRegistry:
             ),
         }
 
+    async def _handle_iot_telemetry_engine(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.telemetry.engine import iot_telemetry_engine
+        from app.models.schemas import (
+            IoTDeviceRegistrationRequest,
+            TelemetrySimulatorTickRequest,
+            DeviceCommandCreateRequest,
+        )
+
+        action = str(params.get("action", "list_devices")).strip()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+
+        if action == "list_devices":
+            devices = iot_telemetry_engine.list_devices(user_id=user_id, workspace_id=workspace_id)
+            return {
+                "action": "list_devices",
+                "devices_count": len(devices),
+                "devices": [d.model_dump() for d in devices[:10]],
+                "summary": f"Retrieved {len(devices)} registered IoT device(s) in workspace '{workspace_id}'.",
+            }
+
+        if action == "register_device":
+            name = str(params.get("name", "Smart Telemetry Gateway")).strip()
+            board_id = str(params.get("board_id", "esp32_devkit_v1")).strip()
+            is_sim = bool(params.get("is_simulated", True))
+            dev, token_resp = iot_telemetry_engine.register_device(
+                IoTDeviceRegistrationRequest(
+                    user_id=user_id,
+                    workspace_id=workspace_id,
+                    name=name,
+                    board_id=board_id,  # type: ignore[arg-type]
+                    is_simulated=is_sim,
+                )
+            )
+            return {
+                "action": "register_device",
+                "device_id": dev.device_id,
+                "name": dev.name,
+                "status": dev.status,
+                "token_prefix": token_resp.token_prefix,
+                "mqtt_topic": dev.mqtt_topic_telemetry,
+                "summary": f"Registered device '{dev.name}' ({dev.device_id}) on board {dev.board_id}.",
+            }
+
+        if action == "simulate_tick":
+            device_id = str(params.get("device_id", "")).strip()
+            if not device_id:
+                existing = iot_telemetry_engine.list_devices(user_id=user_id, workspace_id=workspace_id)
+                sim_devs = [d for d in existing if d.is_simulated]
+                if sim_devs:
+                    device_id = sim_devs[0].device_id
+                else:
+                    dev, _ = iot_telemetry_engine.register_device(
+                        IoTDeviceRegistrationRequest(
+                            user_id=user_id,
+                            workspace_id=workspace_id,
+                            name="Auto Simulated ESP32 Node",
+                            board_id="esp32_devkit_v1",
+                            is_simulated=True,
+                        )
+                    )
+                    device_id = dev.device_id
+
+            sim_res = iot_telemetry_engine.simulate_tick(
+                device_id,
+                TelemetrySimulatorTickRequest(user_id=user_id, workspace_id=workspace_id, tick_count=1),
+            )
+            return {
+                "action": "simulate_tick",
+                "device_id": device_id,
+                "ticks_generated": sim_res.ticks_generated,
+                "alerts_triggered": sim_res.triggered_alerts,
+                "summary": sim_res.message,
+            }
+
+        if action == "check_alerts":
+            alerts = iot_telemetry_engine.list_alerts(workspace_id=workspace_id)
+            return {
+                "action": "check_alerts",
+                "alerts_count": len(alerts),
+                "active_alerts": [a.model_dump() for a in alerts if a.status == "active"],
+                "summary": f"Found {len(alerts)} alert record(s) across workspace '{workspace_id}'.",
+            }
+
+        if action == "dispatch_command":
+            device_id = str(params.get("device_id", "")).strip()
+            cmd_type = str(params.get("command_type", "set_telemetry_interval")).strip()
+            if not device_id:
+                existing = iot_telemetry_engine.list_devices(user_id=user_id, workspace_id=workspace_id)
+                if existing:
+                    device_id = existing[0].device_id
+                else:
+                    return {"action": "dispatch_command", "error": "No registered devices found to receive command."}
+
+            cmd_rec = iot_telemetry_engine.create_command(
+                device_id,
+                DeviceCommandCreateRequest(
+                    user_id=user_id,
+                    workspace_id=workspace_id,
+                    command_type=cmd_type,  # type: ignore[arg-type]
+                    parameters={"interval_seconds": 30},
+                ),
+            )
+            return {
+                "action": "dispatch_command",
+                "command_id": cmd_rec.command_id,
+                "device_id": device_id,
+                "dispatch_status": cmd_rec.dispatch_status,
+                "summary": cmd_rec.result_message,
+            }
+
+        # Default: query_telemetry
+        device_id = str(params.get("device_id", "")).strip()
+        events = iot_telemetry_engine.list_events(device_id=device_id, workspace_id=workspace_id, limit=10) if device_id else []
+        return {
+            "action": "query_telemetry",
+            "device_id": device_id,
+            "events_count": len(events),
+            "events": [e.model_dump() for e in events],
+            "summary": f"Retrieved {len(events)} telemetry event(s) for device '{device_id}'.",
+        }
+
 
 tool_registry = ToolRegistry()
+
 
 

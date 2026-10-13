@@ -2880,3 +2880,160 @@ export interface FirmwareMetadataResponse {
   safety_and_honesty_policy: string;
 }
 
+// Stage 25: IoT Device Connectivity & Live Telemetry Interfaces
+export type IoTDeviceStatus = 'online' | 'offline' | 'degraded' | 'unprovisioned';
+export type IoTIngestionProtocol = 'http' | 'mqtt' | 'dual';
+export type TelemetryDataProvenance = 'physical_device' | 'deterministic_simulation' | 'predicted';
+export type AlertOperator = 'gt' | 'lt' | 'gte' | 'lte' | 'eq' | 'neq' | 'outside_range' | 'device_offline';
+export type AlertSeverity = 'info' | 'warning' | 'critical';
+export type AlertRecordStatus = 'active' | 'acknowledged' | 'resolved';
+export type DeviceCommandType =
+  | 'reboot'
+  | 'set_telemetry_interval'
+  | 'actuator_set_state'
+  | 'set_relay'
+  | 'trigger_calibration'
+  | 'ota_firmware_update'
+  | 'custom_control';
+export type CommandConfirmationStatus = 'not_required' | 'pending_confirmation' | 'confirmed' | 'rejected';
+export type CommandDispatchStatus = 'queued' | 'dispatched' | 'acknowledged' | 'timed_out' | 'failed';
+
+export interface IoTDeviceRecord {
+  device_id: string;
+  user_id: string;
+  workspace_id: string;
+  name: string;
+  board_id: IoTBoardId;
+  is_simulated: boolean;
+  mac_address?: string | null;
+  chip_id?: string | null;
+  firmware_version: string;
+  status: IoTDeviceStatus;
+  iot_project_id?: string | null;
+  fw_project_id?: string | null;
+  ingestion_protocol: IoTIngestionProtocol;
+  mqtt_topic_telemetry: string;
+  mqtt_topic_commands: string;
+  rate_limit_per_minute: number;
+  last_seen_at?: string | null;
+  last_reading_age_seconds?: number | null;
+  total_events_received: number;
+  active_alerts_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IoTDeviceTokenResponse {
+  device_id: string;
+  name: string;
+  plaintext_token: string;
+  token_prefix: string;
+  ingestion_url: string;
+  mqtt_topic: string;
+  security_notice: string;
+}
+
+export interface TelemetryEventRecord {
+  event_id: string;
+  device_id: string;
+  workspace_id: string;
+  sequence_id?: number | null;
+  device_timestamp: string;
+  ingestion_timestamp: string;
+  metrics: Record<string, number>;
+  units: Record<string, string>;
+  data_provenance: TelemetryDataProvenance;
+  is_valid: boolean;
+  anomalies: string[];
+}
+
+export interface AlertRuleRecord {
+  rule_id: string;
+  device_id: string;
+  workspace_id: string;
+  metric_key: string;
+  operator: AlertOperator;
+  threshold_val_primary: number;
+  threshold_val_secondary?: number | null;
+  severity: AlertSeverity;
+  cooldown_seconds: number;
+  description: string;
+  is_enabled: boolean;
+  last_triggered_at?: string | null;
+  created_at: string;
+}
+
+export interface AlertRecord {
+  alert_id: string;
+  rule_id: string;
+  device_id: string;
+  device_name: string;
+  workspace_id: string;
+  metric_key: string;
+  measured_value: number;
+  threshold_description: string;
+  severity: AlertSeverity;
+  status: AlertRecordStatus;
+  data_provenance: TelemetryDataProvenance;
+  cooldown_until?: string | null;
+  created_at: string;
+  resolved_at?: string | null;
+}
+
+export interface DeviceCommandRecord {
+  command_id: string;
+  device_id: string;
+  device_name: string;
+  workspace_id: string;
+  user_id: string;
+  command_type: DeviceCommandType;
+  parameters: Record<string, any>;
+  is_consequential: boolean;
+  requires_confirmation: boolean;
+  confirmation_status: CommandConfirmationStatus;
+  dispatch_status: CommandDispatchStatus;
+  result_message: string;
+  dispatched_at?: string | null;
+  acknowledged_at?: string | null;
+  created_at: string;
+}
+
+export interface TelemetryDeviceStatsResponse {
+  device_id: string;
+  device_name: string;
+  status: IoTDeviceStatus;
+  is_simulated: boolean;
+  last_seen_at?: string | null;
+  last_seen_seconds_ago?: number | null;
+  data_freshness_label: string;
+  total_events: number;
+  latest_metrics: Record<string, number>;
+  metric_ranges: Record<string, { min: number; max: number; avg: number; current: number }>;
+  recent_events: TelemetryEventRecord[];
+  active_alerts: AlertRecord[];
+  pending_commands: DeviceCommandRecord[];
+}
+
+export interface TelemetryExportResponse {
+  export_id: string;
+  device_id: string;
+  format: 'csv' | 'json';
+  time_range: string;
+  total_events_exported: number;
+  file_path?: string | null;
+  workspace_relative_path?: string | null;
+  content_preview: string;
+  exported_at: string;
+}
+
+export interface TelemetryMetadataResponse {
+  stage: number;
+  engine: string;
+  supported_metrics: Array<{ key: string; unit: string; min: number; max: number; description: string }>;
+  supported_protocols: IoTIngestionProtocol[];
+  mqtt_broker_config: Record<string, any>;
+  security_policy: Record<string, any>;
+  reliability_specs: Record<string, any>;
+}
+
+

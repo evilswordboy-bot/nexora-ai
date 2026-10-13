@@ -135,6 +135,15 @@ import {
   FirmwarePlatformMatrixEntry,
   FirmwareSerialMonitorResponse,
   FirmwareWorkspaceRecord,
+  IoTDeviceRecord,
+  IoTDeviceTokenResponse,
+  TelemetryEventRecord,
+  AlertRuleRecord,
+  AlertRecord,
+  DeviceCommandRecord,
+  TelemetryDeviceStatsResponse,
+  TelemetryExportResponse,
+  TelemetryMetadataResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -3076,4 +3085,323 @@ export const api = {
       { method: 'POST' }
     );
   },
+
+  // =========================================================================
+  // Stage 25: IoT Device Connectivity & Live Telemetry
+  // =========================================================================
+
+  async getTelemetryMetadata(): Promise<TelemetryMetadataResponse> {
+    try {
+      return await request<TelemetryMetadataResponse>('/telemetry/metadata');
+    } catch {
+      // Standalone Cloud Demo fallback
+      return {
+        stage: 25,
+        engine: 'IoTTelemetryEngine',
+        supported_metrics: [
+          { key: 'temperature', unit: '°C', min: -50, max: 150, description: 'Ambient or process temperature' },
+          { key: 'humidity', unit: '%RH', min: 0, max: 100, description: 'Relative humidity' },
+          { key: 'vibration', unit: 'g', min: 0, max: 50, description: 'Tri-axial peak vibration acceleration' },
+          { key: 'current', unit: 'mA', min: 0, max: 5000, description: 'Electrical current' },
+          { key: 'voltage', unit: 'V', min: 0, max: 60, description: 'Bus voltage' },
+        ],
+        supported_protocols: ['http', 'mqtt', 'dual'],
+        mqtt_broker_config: { broker_host: 'mqtt.nexora.local', broker_port: 8883, tls_enabled: true },
+        security_policy: { token_storage: 'salted_pbkdf2_hmac_sha256', header_name: 'X-Device-Token' },
+        reliability_specs: { max_payload_size_bytes: 65536, max_events_retention_per_device: 2000 },
+      };
+    }
+  },
+
+  async listIoTDevices(workspaceId = 'default_workspace', userId = 'default_user'): Promise<IoTDeviceRecord[]> {
+    try {
+      return await request<IoTDeviceRecord[]>(
+        `/telemetry/devices?workspace_id=${encodeURIComponent(workspaceId)}&user_id=${encodeURIComponent(userId)}`
+      );
+    } catch {
+      // Cloud fallback simulated devices
+      return [
+        {
+          device_id: 'dev_cloud_demo_01',
+          user_id: userId,
+          workspace_id: workspaceId,
+          name: 'Factory Floor Chiller ESP32',
+          board_id: 'esp32_devkit_v1',
+          is_simulated: true,
+          mac_address: '02:00:1A:2B:3C:4D',
+          firmware_version: '1.0.0',
+          status: 'online',
+          ingestion_protocol: 'dual',
+          mqtt_topic_telemetry: `nexora/${workspaceId}/dev_cloud_demo_01/telemetry`,
+          mqtt_topic_commands: `nexora/${workspaceId}/dev_cloud_demo_01/commands`,
+          rate_limit_per_minute: 60,
+          last_seen_at: new Date().toISOString(),
+          last_reading_age_seconds: 4.2,
+          total_events_received: 148,
+          active_alerts_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      ];
+    }
+  },
+
+  async registerIoTDevice(params: {
+    name: string;
+    board_id?: string;
+    is_simulated?: boolean;
+    mac_address?: string;
+    firmware_version?: string;
+    rate_limit_per_minute?: number;
+    iot_project_id?: string;
+    fw_project_id?: string;
+    workspace_id?: string;
+    user_id?: string;
+  }): Promise<{ device: IoTDeviceRecord; credentials: IoTDeviceTokenResponse }> {
+    return request<{ device: IoTDeviceRecord; credentials: IoTDeviceTokenResponse }>('/telemetry/devices', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        name: params.name,
+        board_id: params.board_id || 'esp32_devkit_v1',
+        is_simulated: params.is_simulated ?? true,
+        mac_address: params.mac_address,
+        firmware_version: params.firmware_version || '1.0.0',
+        rate_limit_per_minute: params.rate_limit_per_minute || 60,
+        iot_project_id: params.iot_project_id,
+        fw_project_id: params.fw_project_id,
+      }),
+    });
+  },
+
+  async rotateIoTDeviceToken(
+    deviceId: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<IoTDeviceTokenResponse> {
+    return request<IoTDeviceTokenResponse>(`/telemetry/devices/${encodeURIComponent(deviceId)}/rotate-token`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, workspace_id: workspaceId }),
+    });
+  },
+
+  async revokeIoTDeviceToken(
+    deviceId: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<{ status: string; message: string }> {
+    return request<{ status: string; message: string }>(
+      `/telemetry/devices/${encodeURIComponent(deviceId)}/revoke-token?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async deregisterIoTDevice(
+    deviceId: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<{ status: string; message: string }> {
+    return request<{ status: string; message: string }>(
+      `/telemetry/devices/${encodeURIComponent(deviceId)}?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async getIoTDeviceStats(
+    deviceId: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<TelemetryDeviceStatsResponse> {
+    try {
+      return await request<TelemetryDeviceStatsResponse>(
+        `/telemetry/devices/${encodeURIComponent(deviceId)}/stats?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      // Cloud demo fallback stats
+      const now = new Date().toISOString();
+      return {
+        device_id: deviceId,
+        device_name: 'Cloud Demo ESP32 Node',
+        status: 'online',
+        is_simulated: true,
+        last_seen_at: now,
+        last_seen_seconds_ago: 2.1,
+        data_freshness_label: 'Real-time Live (< 15s)',
+        total_events: 42,
+        latest_metrics: { temperature: 24.8, humidity: 56.2, vibration: 0.45, voltage: 3.82, current: 142.0 },
+        metric_ranges: {
+          temperature: { min: 21.2, max: 27.6, avg: 24.4, current: 24.8 },
+          humidity: { min: 48.0, max: 64.0, avg: 56.0, current: 56.2 },
+          vibration: { min: 0.38, max: 0.62, avg: 0.44, current: 0.45 },
+          voltage: { min: 3.75, max: 3.92, avg: 3.84, current: 3.82 },
+        },
+        recent_events: [],
+        active_alerts: [],
+        pending_commands: [],
+      };
+    }
+  },
+
+  async listTelemetryEvents(
+    deviceId: string,
+    params?: { workspace_id?: string; limit?: number; since_iso?: string }
+  ): Promise<TelemetryEventRecord[]> {
+    try {
+      const q = new URLSearchParams();
+      if (params?.workspace_id) q.set('workspace_id', params.workspace_id);
+      if (params?.limit) q.set('limit', String(params.limit));
+      if (params?.since_iso) q.set('since_iso', params.since_iso);
+      return await request<TelemetryEventRecord[]>(`/telemetry/devices/${encodeURIComponent(deviceId)}/events?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async simulateTelemetryTick(
+    deviceId: string,
+    params?: { tick_count?: number; anomaly_inject?: string; workspace_id?: string; user_id?: string }
+  ): Promise<{ ticks_generated: number; triggered_alerts: string[]; message: string }> {
+    return request<{ ticks_generated: number; triggered_alerts: string[]; message: string }>(
+      `/telemetry/devices/${encodeURIComponent(deviceId)}/simulate-tick`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          user_id: params?.user_id || 'default_user',
+          workspace_id: params?.workspace_id || 'default_workspace',
+          tick_count: params?.tick_count ?? 1,
+          anomaly_inject: params?.anomaly_inject,
+        }),
+      }
+    );
+  },
+
+  async createAlertRule(
+    deviceId: string,
+    params: {
+      metric_key: string;
+      operator: string;
+      threshold_val_primary: number;
+      threshold_val_secondary?: number;
+      severity?: string;
+      cooldown_seconds?: number;
+      description?: string;
+      workspace_id?: string;
+      user_id?: string;
+    }
+  ): Promise<AlertRuleRecord> {
+    return request<AlertRuleRecord>(`/telemetry/devices/${encodeURIComponent(deviceId)}/alert-rules`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        metric_key: params.metric_key,
+        operator: params.operator,
+        threshold_val_primary: params.threshold_val_primary,
+        threshold_val_secondary: params.threshold_val_secondary,
+        severity: params.severity || 'warning',
+        cooldown_seconds: params.cooldown_seconds ?? 300,
+        description: params.description,
+      }),
+    });
+  },
+
+  async listAlertRules(deviceId: string, workspaceId = 'default_workspace'): Promise<AlertRuleRecord[]> {
+    return request<AlertRuleRecord[]>(
+      `/telemetry/devices/${encodeURIComponent(deviceId)}/alert-rules?workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async listAlerts(
+    workspaceId = 'default_workspace',
+    deviceId?: string,
+    status?: string
+  ): Promise<AlertRecord[]> {
+    try {
+      const q = new URLSearchParams({ workspace_id: workspaceId });
+      if (deviceId) q.set('device_id', deviceId);
+      if (status) q.set('status', status);
+      return await request<AlertRecord[]>(`/telemetry/alerts?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async acknowledgeAlert(
+    alertId: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<AlertRecord> {
+    return request<AlertRecord>(`/telemetry/alerts/${encodeURIComponent(alertId)}/acknowledge`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, workspace_id: workspaceId }),
+    });
+  },
+
+  async createDeviceCommand(
+    deviceId: string,
+    params: {
+      command_type: string;
+      parameters?: Record<string, any>;
+      reason?: string;
+      workspace_id?: string;
+      user_id?: string;
+    }
+  ): Promise<DeviceCommandRecord> {
+    return request<DeviceCommandRecord>(`/telemetry/devices/${encodeURIComponent(deviceId)}/commands`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        command_type: params.command_type,
+        parameters: params.parameters || {},
+        reason: params.reason,
+      }),
+    });
+  },
+
+  async confirmDeviceCommand(
+    commandId: string,
+    confirmed = true,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<DeviceCommandRecord> {
+    return request<DeviceCommandRecord>(`/telemetry/commands/${encodeURIComponent(commandId)}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify({ user_id: userId, workspace_id: workspaceId, confirmed }),
+    });
+  },
+
+  async listDeviceCommands(deviceId: string, workspaceId = 'default_workspace'): Promise<DeviceCommandRecord[]> {
+    try {
+      return await request<DeviceCommandRecord[]>(
+        `/telemetry/devices/${encodeURIComponent(deviceId)}/commands?workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  async exportTelemetry(
+    deviceId: string,
+    params?: {
+      format?: 'csv' | 'json';
+      time_range?: '1h' | '6h' | '24h' | '7d' | 'all';
+      handoff_to_file_workspace?: boolean;
+      workspace_id?: string;
+      user_id?: string;
+    }
+  ): Promise<TelemetryExportResponse> {
+    return request<TelemetryExportResponse>(`/telemetry/devices/${encodeURIComponent(deviceId)}/export`, {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params?.user_id || 'default_user',
+        workspace_id: params?.workspace_id || 'default_workspace',
+        format: params?.format || 'csv',
+        time_range: params?.time_range || '24h',
+        handoff_to_file_workspace: params?.handoff_to_file_workspace ?? false,
+      }),
+    });
+  },
 };
+

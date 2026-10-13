@@ -26,6 +26,7 @@ import { DiscoveryStudio } from './components/discovery/DiscoveryStudio';
 import { KnowledgeGraphStudio } from './components/knowledgegraph/KnowledgeGraphStudio';
 import { IoTProjectBuilderStudio } from './components/iot/IoTProjectBuilderStudio';
 import { FirmwareEngineeringStudio } from './components/firmware/FirmwareEngineeringStudio';
+import { IoTTelemetryStudio } from './components/telemetry/IoTTelemetryStudio';
 import { NexoraLandingPage } from './components/landing/NexoraLandingPage';
 import { Conversation } from './types';
 
@@ -90,6 +91,8 @@ const MainLayout: React.FC = () => {
           <IoTProjectBuilderStudio />
         ) : activeWorkspaceView === 'firmware' ? (
           <FirmwareEngineeringStudio />
+        ) : activeWorkspaceView === 'telemetry' ? (
+          <IoTTelemetryStudio />
         ) : (
           <ChatArea />
         )}

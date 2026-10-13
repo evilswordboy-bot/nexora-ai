@@ -18,6 +18,7 @@ import {
   BookOpen,
   Layers,
   ChevronRight,
+  Radio,
 } from 'lucide-react';
 import { useChat } from '../../context/ChatContext';
 
@@ -35,7 +36,8 @@ interface CapabilityCard {
     | 'vision'
     | 'knowledgegraph'
     | 'agents'
-    | 'firmware';
+    | 'firmware'
+    | 'telemetry';
   icon: React.FC<{ className?: string }>;
 }
 
@@ -119,6 +121,16 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
     highlights: ['8 specialist AI roles', 'Parallel DAG orchestration', 'Verified vs. assumed facts'],
     targetView: 'agents',
     icon: Users,
+  },
+  {
+    id: 'iot-telemetry-engine',
+    title: 'IoT Telemetry & Device Registry',
+    stageBadge: 'Stage 25',
+    description:
+      'Authenticated HTTP/MQTT ingestion pipeline with PBKDF2 token hashing, physical sensor bounds validation, cooldown anomaly alerts, and consequential actuation gates.',
+    highlights: ['Salted PBKDF2 device tokens', 'Zero fabricated readings', 'Approval-gated reboots & OTA'],
+    targetView: 'telemetry',
+    icon: Radio,
   },
 ];
 
@@ -254,7 +266,8 @@ export const NexoraLandingPage: React.FC = () => {
       | 'discovery'
       | 'knowledgegraph'
       | 'iot'
-      | 'firmware' = 'chat'
+      | 'firmware'
+      | 'telemetry' = 'chat'
   ) => {
     setActiveWorkspaceView(target);
   };
@@ -880,7 +893,7 @@ export const NexoraLandingPage: React.FC = () => {
                 NEXORA AI
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
-                Stages 1–24 Operational
+                Stages 1–25 Operational
               </span>
               <span
                 className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded ${

@@ -3685,5 +3685,274 @@ class FirmwareMetadataResponse(BaseModel):
     safety_and_honesty_policy: str
 
 
+# ============================================================================
+# Stage 25: IoT Device Connectivity & Live Telemetry Schemas
+# ============================================================================
+
+IoTDeviceStatus = Literal["online", "offline", "degraded", "unprovisioned"]
+IoTIngestionProtocol = Literal["http", "mqtt", "dual"]
+TelemetryDataProvenance = Literal["physical_device", "deterministic_simulation", "predicted"]
+
+AlertOperator = Literal["gt", "lt", "gte", "lte", "eq", "neq", "outside_range", "device_offline"]
+AlertSeverity = Literal["info", "warning", "critical"]
+AlertRecordStatus = Literal["active", "acknowledged", "resolved"]
+
+DeviceCommandType = Literal[
+    "reboot",
+    "set_telemetry_interval",
+    "actuator_set_state",
+    "set_relay",
+    "trigger_calibration",
+    "ota_firmware_update",
+    "custom_control",
+]
+CommandConfirmationStatus = Literal["not_required", "pending_confirmation", "confirmed", "rejected"]
+CommandDispatchStatus = Literal["queued", "dispatched", "acknowledged", "timed_out", "failed"]
+
+
+class IoTDeviceRegistrationRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    name: str = Field(..., min_length=2, max_length=120)
+    board_id: IoTBoardId = "esp32_devkit_v1"
+    is_simulated: bool = False
+    mac_address: Optional[str] = None
+    chip_id: Optional[str] = None
+    firmware_version: str = "1.0.0"
+    iot_project_id: Optional[str] = None
+    fw_project_id: Optional[str] = None
+    ingestion_protocol: IoTIngestionProtocol = "http"
+    rate_limit_per_minute: int = Field(default=60, ge=1, le=600)
+
+
+class IoTDeviceRecord(BaseModel):
+    device_id: str
+    user_id: str
+    workspace_id: str
+    name: str
+    board_id: IoTBoardId
+    is_simulated: bool
+    mac_address: Optional[str] = None
+    chip_id: Optional[str] = None
+    firmware_version: str
+    status: IoTDeviceStatus = "unprovisioned"
+    iot_project_id: Optional[str] = None
+    fw_project_id: Optional[str] = None
+    ingestion_protocol: IoTIngestionProtocol = "http"
+    mqtt_topic_telemetry: str
+    mqtt_topic_commands: str
+    rate_limit_per_minute: int
+    last_seen_at: Optional[str] = None
+    last_reading_age_seconds: Optional[float] = None
+    total_events_received: int = 0
+    active_alerts_count: int = 0
+    created_at: str
+    updated_at: str
+
+
+class IoTDeviceTokenResponse(BaseModel):
+    device_id: str
+    name: str
+    plaintext_token: str
+    token_prefix: str
+    ingestion_url: str
+    mqtt_topic: str
+    security_notice: str = (
+        "Keep this device token secure. It will never be shown again in plain text. "
+        "Include it in the 'X-Device-Token' header for authenticated HTTP telemetry ingestion."
+    )
+
+
+class IoTDeviceTokenRotateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+
+
+class TelemetryMetricReading(BaseModel):
+    key: str = Field(..., min_length=1, max_length=64)
+    value: float
+    unit: str = Field(default="", max_length=16)
+
+
+class TelemetryIngestRequest(BaseModel):
+    device_id: str
+    sequence_id: Optional[int] = None
+    device_timestamp: Optional[str] = None
+    metrics: Dict[str, float] = Field(..., min_length=1)
+    units: Optional[Dict[str, str]] = None
+    firmware_version: Optional[str] = None
+    battery_level_pct: Optional[float] = Field(default=None, ge=0.0, le=100.0)
+    data_provenance: TelemetryDataProvenance = "physical_device"
+
+
+class TelemetryIngestResponse(BaseModel):
+    status: Literal["ACCEPTED", "RATE_LIMITED", "DUPLICATE_IGNORED", "VALIDATION_FAILED"]
+    event_id: Optional[str] = None
+    device_id: str
+    received_metrics_count: int = 0
+    triggered_alerts: List[str] = Field(default_factory=list)
+    message: str
+    ingested_at: str
+
+
+class TelemetryEventRecord(BaseModel):
+    event_id: str
+    device_id: str
+    workspace_id: str
+    sequence_id: Optional[int] = None
+    device_timestamp: str
+    ingestion_timestamp: str
+    metrics: Dict[str, float]
+    units: Dict[str, str] = Field(default_factory=dict)
+    data_provenance: TelemetryDataProvenance
+    is_valid: bool = True
+    anomalies: List[str] = Field(default_factory=list)
+
+
+class AlertRuleCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    metric_key: str = Field(..., min_length=1, max_length=64)
+    operator: AlertOperator
+    threshold_val_primary: float
+    threshold_val_secondary: Optional[float] = None
+    severity: AlertSeverity = "warning"
+    cooldown_seconds: int = Field(default=300, ge=10, le=86400)
+    description: Optional[str] = None
+
+
+class AlertRuleRecord(BaseModel):
+    rule_id: str
+    device_id: str
+    workspace_id: str
+    metric_key: str
+    operator: AlertOperator
+    threshold_val_primary: float
+    threshold_val_secondary: Optional[float] = None
+    severity: AlertSeverity
+    cooldown_seconds: int
+    description: str
+    is_enabled: bool = True
+    last_triggered_at: Optional[str] = None
+    created_at: str
+
+
+class AlertRecord(BaseModel):
+    alert_id: str
+    rule_id: str
+    device_id: str
+    device_name: str
+    workspace_id: str
+    metric_key: str
+    measured_value: float
+    threshold_description: str
+    severity: AlertSeverity
+    status: AlertRecordStatus
+    data_provenance: TelemetryDataProvenance
+    cooldown_until: Optional[str] = None
+    created_at: str
+    resolved_at: Optional[str] = None
+
+
+class AlertAcknowledgeRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    note: Optional[str] = None
+
+
+class DeviceCommandCreateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    command_type: DeviceCommandType
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+    reason: Optional[str] = None
+
+
+class DeviceCommandConfirmRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    confirmed: bool = True
+
+
+class DeviceCommandRecord(BaseModel):
+    command_id: str
+    device_id: str
+    device_name: str
+    workspace_id: str
+    user_id: str
+    command_type: DeviceCommandType
+    parameters: Dict[str, Any]
+    is_consequential: bool
+    requires_confirmation: bool
+    confirmation_status: CommandConfirmationStatus
+    dispatch_status: CommandDispatchStatus
+    result_message: str
+    dispatched_at: Optional[str] = None
+    acknowledged_at: Optional[str] = None
+    created_at: str
+
+
+class TelemetrySimulatorTickRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    anomaly_inject: Optional[Literal["spike_temperature", "high_vibration", "low_voltage", "sensor_disconnect"]] = None
+    tick_count: int = Field(default=1, ge=1, le=10)
+
+
+class TelemetrySimulatorResponse(BaseModel):
+    device_id: str
+    ticks_generated: int
+    generated_events: List[TelemetryEventRecord] = Field(default_factory=list)
+    triggered_alerts: List[str] = Field(default_factory=list)
+    message: str
+
+
+class TelemetryDeviceStatsResponse(BaseModel):
+    device_id: str
+    device_name: str
+    status: IoTDeviceStatus
+    is_simulated: bool
+    last_seen_at: Optional[str] = None
+    last_seen_seconds_ago: Optional[float] = None
+    data_freshness_label: str
+    total_events: int
+    latest_metrics: Dict[str, float] = Field(default_factory=dict)
+    metric_ranges: Dict[str, Dict[str, float]] = Field(default_factory=dict)
+    recent_events: List[TelemetryEventRecord] = Field(default_factory=list)
+    active_alerts: List[AlertRecord] = Field(default_factory=list)
+    pending_commands: List[DeviceCommandRecord] = Field(default_factory=list)
+
+
+class TelemetryExportRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    format: Literal["csv", "json"] = "csv"
+    time_range: Literal["1h", "6h", "24h", "7d", "all"] = "24h"
+    handoff_to_file_workspace: bool = False
+
+
+class TelemetryExportResponse(BaseModel):
+    export_id: str
+    device_id: str
+    format: Literal["csv", "json"]
+    time_range: str
+    total_events_exported: int
+    file_path: Optional[str] = None
+    workspace_relative_path: Optional[str] = None
+    content_preview: str
+    exported_at: str
+
+
+class TelemetryMetadataResponse(BaseModel):
+    stage: int = 25
+    engine: str = "IoTTelemetryEngine"
+    supported_metrics: List[Dict[str, Any]]
+    supported_protocols: List[IoTIngestionProtocol]
+    mqtt_broker_config: Dict[str, Any]
+    security_policy: Dict[str, Any]
+    reliability_specs: Dict[str, Any]
+
+
+
 
 
