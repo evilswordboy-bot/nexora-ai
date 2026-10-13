@@ -1,6 +1,6 @@
 <div align="center">
   <img src="frontend/public/assets/nexora-eagle-logo.jpg" alt="NEXORA AI Official Metallic Eagle Logo" width="160" style="border-radius: 24px;" />
-  <h1>NEXORA AI — SKS // BKKLSSNJ</h1>
+  <h1>NEXORA AI — SKS // A BKKLSSNJ</h1>
   <p><strong>THE NEXT EVOLUTION OF INTELLIGENCE · INTELLIGENCE. BEYOND LIMITS.</strong></p>
   <p>
     <a href="https://evilswordboy-bot.github.io/nexora-ai/"><strong>🚀 Launch 24/7 Cloud Live Demo (GitHub Pages)</strong></a>

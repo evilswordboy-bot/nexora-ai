@@ -415,12 +415,12 @@ export const NexoraLandingPage: React.FC = () => {
             />
           </div>
 
-          {/* Discreet Small Uppercase Text "BKKLSSNJ" Directly Below the Eagle */}
+          {/* Discreet Small Uppercase Text "A BKKLSSNJ" Directly Below the Eagle */}
           <div
             style={{ fontFamily: "'Orbitron', sans-serif" }}
             className="mt-3 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.55em] text-cyan-300/90 drop-shadow-[0_0_10px_rgba(34,211,238,0.65)] select-all"
           >
-            B K K L S S N J
+            A &nbsp; B K K L S S N J
           </div>
         </div>
 
