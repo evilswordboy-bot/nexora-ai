@@ -759,6 +759,52 @@ class ToolRegistry:
             handler=self._handle_iot_telemetry_engine,
         )
 
+        # 27. Stage 26: IoT Security & Device Threat Detection Tool
+        self.register(
+            tool=ToolDefinition(
+                name="iot_security_engine",
+                description=(
+                    "Assesses IoT fleet security posture and risk scores, audits device configurations for exposed credentials and "
+                    "plaintext transport, analyzes telemetry streams for behavioral anomalies (frequency bursts, unexpected crashloops, "
+                    "abnormal measurement z-scores), tracks security incidents, and triggers gated defensive responses."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["overview", "assess_device", "audit_config", "analyze_behavior", "list_anomalies", "list_incidents", "defensive_action"],
+                            "default": "overview",
+                        },
+                        "device_id": {
+                            "type": "string",
+                            "default": "",
+                        },
+                        "config_text": {
+                            "type": "string",
+                            "default": "",
+                        },
+                        "action_type": {
+                            "type": "string",
+                            "enum": ["revoke_credential", "quarantine_device", "isolate_network", "throttle_telemetry", "restore_device"],
+                            "default": "throttle_telemetry",
+                        },
+                        "confirmed": {
+                            "type": "boolean",
+                            "default": False,
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=26,
+                requires_approval=False,
+                risk_level="medium",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_iot_security_engine,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1815,6 +1861,122 @@ class ToolRegistry:
             "events_count": len(events),
             "events": [e.model_dump() for e in events],
             "summary": f"Retrieved {len(events)} telemetry event(s) for device '{device_id}'.",
+        }
+
+    async def _handle_iot_security_engine(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.iot_security.engine import iot_security_engine
+        from app.models.schemas import ConfigAuditRequest, DefensiveActionRequest
+
+        action = str(params.get("action", "overview")).strip()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+        device_id = str(params.get("device_id", "")).strip()
+
+        if action == "overview":
+            overview = iot_security_engine.get_security_overview(workspace_id=workspace_id)
+            return {
+                "action": "overview",
+                "summary": (
+                    f"Fleet Security Overview: {overview.fleet_posture_summary['total_devices_monitored']} devices monitored, "
+                    f"average risk score {overview.fleet_posture_summary['average_fleet_risk_score']}/100, "
+                    f"{overview.fleet_posture_summary['active_config_findings']} active configuration findings, "
+                    f"{overview.fleet_posture_summary['open_security_incidents']} open incidents."
+                ),
+                "fleet_summary": overview.fleet_posture_summary,
+            }
+
+        if action == "assess_device":
+            if not device_id:
+                from app.services.telemetry.engine import iot_telemetry_engine
+                devs = iot_telemetry_engine.list_devices(workspace_id=workspace_id)
+                if devs:
+                    device_id = devs[0].device_id
+                else:
+                    return {"action": "assess_device", "error": "No registered devices found to assess."}
+            posture = iot_security_engine.assess_device_posture(device_id, workspace_id=workspace_id)
+            return {
+                "action": "assess_device",
+                "device_id": device_id,
+                "risk_score": posture.risk_score,
+                "risk_level": posture.risk_level,
+                "transport_encryption": posture.transport_encryption,
+                "authentication_status": posture.authentication_status,
+                "update_status": posture.update_status,
+                "supports_secure_boot": posture.supports_secure_boot,
+                "summary": f"Device '{posture.device_name}' security posture assessed: Risk Level '{posture.risk_level}' ({posture.risk_score}/100).",
+            }
+
+        if action == "audit_config":
+            config_text = str(params.get("config_text", "")).strip()
+            findings = iot_security_engine.audit_configuration(
+                ConfigAuditRequest(
+                    user_id=user_id,
+                    workspace_id=workspace_id,
+                    device_id=device_id or None,
+                    config_file_text=config_text or None,
+                    filename="agent_tool_input.conf",
+                )
+            )
+            return {
+                "action": "audit_config",
+                "findings_count": len(findings),
+                "findings": [f.model_dump() for f in findings],
+                "summary": f"Configuration audit complete: {len(findings)} potential security finding(s) detected.",
+            }
+
+        if action == "analyze_behavior":
+            if not device_id:
+                return {"action": "analyze_behavior", "error": "device_id parameter is required."}
+            anomalies = iot_security_engine.analyze_device_behavior(device_id, workspace_id=workspace_id)
+            return {
+                "action": "analyze_behavior",
+                "device_id": device_id,
+                "anomalies_count": len(anomalies),
+                "anomalies": [a.model_dump() for a in anomalies],
+                "summary": f"Behavioral analysis complete for '{device_id}': {len(anomalies)} anomaly indicator(s) identified.",
+            }
+
+        if action == "list_incidents":
+            incidents = iot_security_engine.list_incidents(workspace_id=workspace_id)
+            return {
+                "action": "list_incidents",
+                "incidents_count": len(incidents),
+                "incidents": [i.model_dump() for i in incidents],
+                "summary": f"Retrieved {len(incidents)} security incident(s) in workspace '{workspace_id}'.",
+            }
+
+        if action == "defensive_action":
+            action_type = str(params.get("action_type", "throttle_telemetry")).strip()
+            confirmed = bool(params.get("confirmed", False))
+            if not device_id:
+                return {"action": "defensive_action", "error": "device_id parameter is required for defensive action."}
+            res = iot_security_engine.execute_defensive_action(
+                DefensiveActionRequest(
+                    user_id=user_id,
+                    workspace_id=workspace_id,
+                    device_id=device_id,
+                    action_type=action_type,  # type: ignore[arg-type]
+                    reason="Defensive response triggered via agent tool registry",
+                    confirmed=confirmed,
+                )
+            )
+            return {
+                "action": "defensive_action",
+                "action_id": res.action_id,
+                "status": res.status,
+                "result_message": res.result_message,
+                "requires_confirmation": res.requires_confirmation,
+                "recovery_procedure": res.recovery_procedure,
+                "summary": res.result_message,
+            }
+
+        # Default fallback: list_anomalies
+        anomalies = iot_security_engine.list_anomalies(workspace_id=workspace_id, limit=20)
+        return {
+            "action": "list_anomalies",
+            "anomalies_count": len(anomalies),
+            "anomalies": [a.model_dump() for a in anomalies],
+            "summary": f"Retrieved {len(anomalies)} recent behavioral anomalies.",
         }
 
 

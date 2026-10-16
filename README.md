@@ -12,6 +12,41 @@
 
 ---
 
+# NEXORA AI — Stage 26: IoT Security & Device Threat Detection
+
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 26** introduces the **IoT Security & Device Threat Detection Engine (`IoTSecurityEngine`)**: a defensive IoT security workspace that maintains honest device security postures, executes rule-based configuration audits with secret redaction, detects behavioral anomalies (frequency bursts, unexpected sequence resets / crashloops, metric z-score leaps, sensor saturation), correlates security incidents without unproven attacker attribution, enforces consequential defensive gates (`quarantine_device`, `revoke_credential`, `isolate_network` with anti-fabrication adapter check), documents hardware-backed firmware integrity architectures, and provides a defensive dashboard in `IoTSecurityStudio.tsx`.
+
+---
+
+## 🌟 Stage 26 Core Deliverables
+
+- **Device Security Posture & Inventory Honesty (`IoTSecurityEngine`)**:
+  - Maintains a defensive posture inventory across registered devices (`esp32`, `stm32`, `arduino`, `raspberry_pi`, `generic`).
+  - Tracks firmware version, authentication status, transport encryption (`tls`, `plain_tcp`, `none`), exposed ports/services, update status, and security assessment timestamps.
+  - Strictly labels unprobed or unverified security attributes as `unknown` rather than asserting `secure`.
+- **Configuration Auditing with Secret Redaction**:
+  - Rule-based auditing for insecure MQTT wildcard topics (`#`, `+`), missing transport encryption, weak authentication, exposed API tokens / passwords, unsafe defaults, and outdated firmware.
+  - Every finding documents severity (`critical`, `high`, `medium`, `low`, `info`), impacted device, category, evidence, impact, and actionable remediation steps.
+  - Automatically redacts matched secrets with `***` in evidence strings to prevent credential exposure in UI logs or reports.
+- **Behavioral Anomaly Detection & Benign Baselines**:
+  - Analyzes device telemetry streams and authentication events against sliding baseline windows.
+  - Detects reporting frequency bursts ($> 3.0\times$ baseline), sequence resets / reboot crashloops (resets from high sequence numbers to $\le 1$), metric jumps ($|z| > 3.0$), repeated authentication failures, and sensor saturation at physical limits.
+  - Normal, within-baseline telemetry passes cleanly without triggering false alarms.
+- **Incident Investigation & Anti-Fabrication Correlation**:
+  - Automatically aggregates related anomalies, failed authentication attempts, and audit findings into tracked security incidents with aggregate risk scores (0–100).
+  - Preserves evidentiary honesty: never fabricates IP geo-locations or asserts unproven attacker identities without direct evidence.
+- **Defensive Containment with Consequential Confirmation Gates**:
+  - Supports configurable defensive actions: `quarantine_device`, `revoke_credential`, `isolate_network`, `throttle_telemetry`, and `restore_device`.
+  - Consequential, disruptive actions require explicit user confirmation (`confirmed=True` with `confirmation_reason`).
+  - Network isolation strictly enforces anti-fabrication: when the host lacks a configured network-management adapter, it returns an honest failure rather than falsely claiming isolation succeeded.
+- **Hardware-Backed Firmware Integrity Matrix**:
+  - Documents cryptographic signature standards (RSA-3072 / ECDSA P-256), Hardware Secure Boot with eFuse OTP keys, hardware rollback protection, and recovery strategies across ESP32, STM32, Arduino, and Raspberry Pi Pico W.
+  - Prominently warns that software-only checksums do not prove hardware authenticity without hardware-enforced Secure Boot.
+- **Defensive Studio UI (`IoTSecurityStudio.tsx`)**:
+  - 5 interactive tabs: *Device Posture*, *Configuration Audit*, *Behavioral Anomalies*, *Incidents & Investigation*, and *Defensive Controls & Firmware Integrity*.
+
+---
+
 # NEXORA AI — Stage 25: IoT Device Connectivity & Live Telemetry
 
 **NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 25** introduces the **IoT Device Connectivity & Live Telemetry Engine (`IoTTelemetryEngine`)**: a high-throughput, secure device management and telemetry ingestion platform that provisions microcontrollers (`ESP32`, `STM32`, `Arduino`, `Raspberry Pi`, `generic`), generates salted PBKDF2 device credentials, ingests authenticated HTTP and MQTT measurements, validates physical sensor bounds with strict anti-fabrication enforcement, manages threshold alerts with cooldown windows and auto-resolution, guards consequential downlinks (`reboot`, `ota_firmware_update`) with explicit user confirmation gates, and streams real-time updates to `IoTTelemetryStudio.tsx`.

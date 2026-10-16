@@ -3953,6 +3953,179 @@ class TelemetryMetadataResponse(BaseModel):
     reliability_specs: Dict[str, Any]
 
 
+# Stage 26: IoT Security & Device Threat Detection Schemas
+
+SecurityRiskLevel = Literal["critical", "high", "medium", "low", "info", "unknown"]
+ThreatClassification = Literal[
+    "confirmed_event", "suspicious_indicator", "heuristic_alert", "unverified_hypothesis"
+]
+IncidentStatus = Literal[
+    "new", "under_investigation", "mitigated", "false_positive", "closed"
+]
+ConfigAuditSeverity = Literal["critical", "high", "medium", "low", "info"]
+DefensiveActionType = Literal[
+    "revoke_credential",
+    "quarantine_device",
+    "isolate_network",
+    "throttle_telemetry",
+    "restore_device",
+]
+DefensiveActionStatus = Literal[
+    "pending_confirmation", "executed", "rejected", "failed"
+]
+
+
+class DeviceSecurityPosture(BaseModel):
+    device_id: str
+    device_name: str
+    board_id: str
+    status: str
+    is_simulated: bool
+    firmware_version: str
+    authentication_status: Literal[
+        "token_active", "token_revoked", "weak_token", "unprovisioned", "unknown"
+    ] = "unknown"
+    token_age_days: Optional[float] = None
+    token_last_rotated_at: Optional[str] = None
+    transport_encryption: Literal["tls_enabled", "plaintext_unencrypted", "unknown"] = "unknown"
+    exposed_services: List[str] = Field(default_factory=list)
+    update_status: Literal["up_to_date", "update_available", "critical_outdated", "unknown"] = "unknown"
+    supports_secure_boot: bool = False
+    secure_boot_mechanism: str = "unknown"
+    supports_signed_firmware: bool = False
+    supports_anti_rollback: bool = False
+    last_security_assessment_at: Optional[str] = None
+    risk_score: int = Field(default=0, ge=0, le=100)
+    risk_level: SecurityRiskLevel = "unknown"
+    active_findings_count: int = 0
+    active_threats_count: int = 0
+
+
+class ConfigurationAuditFinding(BaseModel):
+    finding_id: str
+    device_id: str
+    device_name: str
+    workspace_id: str
+    rule_id: str
+    title: str
+    severity: ConfigAuditSeverity
+    evidence: str
+    impact: str
+    remediation: str
+    status: Literal["active", "remediated", "suppressed", "false_positive"] = "active"
+    detected_at: str
+    remediated_at: Optional[str] = None
+
+
+class BehavioralAnomalyRecord(BaseModel):
+    anomaly_id: str
+    device_id: str
+    device_name: str
+    workspace_id: str
+    anomaly_type: Literal[
+        "unusual_reporting_frequency",
+        "unexpected_restart_crashloop",
+        "abnormal_measurement_pattern",
+        "repeated_auth_failures",
+        "baseline_deviation",
+        "sensor_saturation_stuck",
+    ]
+    severity: ConfigAuditSeverity
+    classification: ThreatClassification
+    confidence: Literal["high", "medium", "low"]
+    metric_key: Optional[str] = None
+    observed_value: Any = None
+    baseline_expected: Any = None
+    evidence_summary: str
+    detected_at: str
+
+
+class SecurityIncidentRecord(BaseModel):
+    incident_id: str
+    workspace_id: str
+    title: str
+    severity: ConfigAuditSeverity
+    classification: ThreatClassification
+    status: IncidentStatus
+    affected_device_ids: List[str] = Field(default_factory=list)
+    affected_devices_count: int = 1
+    root_cause_hypothesis: str
+    confidence_level: Literal["high", "medium", "low"]
+    evidence_records: List[Dict[str, Any]] = Field(default_factory=list)
+    telemetry_correlations: List[Dict[str, Any]] = Field(default_factory=list)
+    recommended_remediations: List[str] = Field(default_factory=list)
+    created_at: str
+    updated_at: str
+    resolved_at: Optional[str] = None
+    assigned_responder: Optional[str] = None
+
+
+class DefensiveActionRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    device_id: str
+    action_type: DefensiveActionType
+    reason: str
+    confirmed: bool = False
+
+
+class DefensiveActionRecord(BaseModel):
+    action_id: str
+    user_id: str
+    workspace_id: str
+    device_id: str
+    device_name: str
+    action_type: DefensiveActionType
+    reason: str
+    requires_confirmation: bool
+    status: DefensiveActionStatus
+    result_message: str
+    recovery_procedure: str
+    executed_at: Optional[str] = None
+    created_at: str
+
+
+class FirmwareIntegritySpec(BaseModel):
+    board_id: str
+    board_name: str
+    supports_secure_boot: bool
+    secure_boot_version: str
+    crypto_keys_supported: List[str] = Field(default_factory=list)
+    supports_signed_firmware: bool
+    supports_hardware_root_of_trust: bool
+    supports_anti_rollback: bool
+    recovery_strategy: str
+    checksum_trust_limitation: str
+
+
+class ConfigAuditRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    device_id: Optional[str] = None
+    config_payload: Optional[Dict[str, Any]] = None
+    config_file_text: Optional[str] = None
+    filename: Optional[str] = None
+
+
+class SecurityIncidentUpdateRequest(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    status: IncidentStatus
+    resolution_notes: Optional[str] = None
+
+
+class IoTSecurityOverviewResponse(BaseModel):
+    stage: int = 26
+    fleet_posture_summary: Dict[str, Any]
+    devices_posture: List[DeviceSecurityPosture] = Field(default_factory=list)
+    active_incidents: List[SecurityIncidentRecord] = Field(default_factory=list)
+    recent_anomalies: List[BehavioralAnomalyRecord] = Field(default_factory=list)
+    config_findings: List[ConfigurationAuditFinding] = Field(default_factory=list)
+    firmware_integrity_matrix: List[FirmwareIntegritySpec] = Field(default_factory=list)
+    last_assessment_at: str
+
+
+
 
 
 

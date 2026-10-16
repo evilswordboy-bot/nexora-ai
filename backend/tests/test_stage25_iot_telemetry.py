@@ -14,7 +14,7 @@ def test_stage25_health_metadata_and_subsystem():
     health_res = client.get("/api/v1/health")
     assert health_res.status_code == 200
     h_data = health_res.json()
-    assert h_data["stage"] == 25
+    assert h_data["stage"] >= 25
     assert h_data["subsystems"]["iot_telemetry"] == "operational"
 
     # 2. Metadata returns supported physical metrics, broker config, and security specs

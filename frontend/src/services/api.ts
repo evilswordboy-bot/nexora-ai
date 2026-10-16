@@ -144,6 +144,15 @@ import {
   TelemetryDeviceStatsResponse,
   TelemetryExportResponse,
   TelemetryMetadataResponse,
+  DeviceSecurityPosture,
+  ConfigurationAuditFinding,
+  BehavioralAnomalyRecord,
+  SecurityIncidentRecord,
+  DefensiveActionRecord,
+  FirmwareIntegritySpec,
+  IoTSecurityOverviewResponse,
+  DefensiveActionType,
+  IncidentStatus,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -3402,6 +3411,221 @@ export const api = {
         handoff_to_file_workspace: params?.handoff_to_file_workspace ?? false,
       }),
     });
+  },
+
+  // Stage 26: IoT Security & Device Threat Detection APIs
+  async getIoTSecurityOverview(workspaceId = 'default_workspace'): Promise<IoTSecurityOverviewResponse> {
+    try {
+      return await request<IoTSecurityOverviewResponse>(
+        `/iot-security/overview?workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return {
+        stage: 26,
+        fleet_posture_summary: {
+          total_devices_monitored: 0,
+          average_fleet_risk_score: 0,
+          risk_distribution: { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 },
+          active_config_findings: 0,
+          recent_behavioral_anomalies: 0,
+          open_security_incidents: 0,
+          tls_enforced_devices_count: 0,
+          unencrypted_transport_devices_count: 0,
+        },
+        devices_posture: [],
+        active_incidents: [],
+        recent_anomalies: [],
+        config_findings: [],
+        firmware_integrity_matrix: [],
+        last_assessment_at: new Date().toISOString(),
+      };
+    }
+  },
+
+  async getDeviceSecurityPosture(
+    deviceId: string,
+    workspaceId = 'default_workspace'
+  ): Promise<DeviceSecurityPosture> {
+    return request<DeviceSecurityPosture>(
+      `/iot-security/devices/${encodeURIComponent(deviceId)}/posture?workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async auditIoTConfiguration(params: {
+    user_id?: string;
+    workspace_id?: string;
+    device_id?: string;
+    config_file_text?: string;
+    filename?: string;
+    config_payload?: Record<string, any>;
+  }): Promise<ConfigurationAuditFinding[]> {
+    return request<ConfigurationAuditFinding[]>('/iot-security/audit/config', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        device_id: params.device_id,
+        config_file_text: params.config_file_text,
+        filename: params.filename,
+        config_payload: params.config_payload,
+      }),
+    });
+  },
+
+  async listIoTFindings(
+    workspace_id = 'default_workspace',
+    deviceId?: string,
+    severity?: string,
+    status = 'active'
+  ): Promise<ConfigurationAuditFinding[]> {
+    try {
+      const q = new URLSearchParams({ workspace_id, status });
+      if (deviceId) q.set('device_id', deviceId);
+      if (severity) q.set('severity', severity);
+      return await request<ConfigurationAuditFinding[]>(`/iot-security/audit/findings?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async analyzeDeviceBehavior(
+    deviceId: string,
+    workspaceId = 'default_workspace'
+  ): Promise<BehavioralAnomalyRecord[]> {
+    return request<BehavioralAnomalyRecord[]>(
+      `/iot-security/devices/${encodeURIComponent(deviceId)}/analyze-behavior?workspace_id=${encodeURIComponent(workspaceId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async listIoTAnomalies(
+    workspace_id = 'default_workspace',
+    deviceId?: string,
+    severity?: string,
+    limit = 50
+  ): Promise<BehavioralAnomalyRecord[]> {
+    try {
+      const q = new URLSearchParams({ workspace_id, limit: String(limit) });
+      if (deviceId) q.set('device_id', deviceId);
+      if (severity) q.set('severity', severity);
+      return await request<BehavioralAnomalyRecord[]>(`/iot-security/anomalies?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async listSecurityIncidents(
+    workspace_id = 'default_workspace',
+    status?: string,
+    severity?: string
+  ): Promise<SecurityIncidentRecord[]> {
+    try {
+      const q = new URLSearchParams({ workspace_id });
+      if (status) q.set('status', status);
+      if (severity) q.set('severity', severity);
+      return await request<SecurityIncidentRecord[]>(`/iot-security/incidents?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async createSecurityIncident(payload: {
+    workspace_id?: string;
+    title: string;
+    severity?: string;
+    classification?: string;
+    affected_device_ids?: string[];
+    root_cause_hypothesis?: string;
+    confidence_level?: string;
+    evidence_records?: Record<string, any>[];
+    recommended_remediations?: string[];
+  }): Promise<SecurityIncidentRecord> {
+    return request<SecurityIncidentRecord>('/iot-security/incidents', {
+      method: 'POST',
+      body: JSON.stringify({
+        workspace_id: payload.workspace_id || 'default_workspace',
+        title: payload.title,
+        severity: payload.severity || 'medium',
+        classification: payload.classification || 'heuristic_alert',
+        affected_device_ids: payload.affected_device_ids || [],
+        root_cause_hypothesis: payload.root_cause_hypothesis || 'Under investigation',
+        confidence_level: payload.confidence_level || 'medium',
+        evidence_records: payload.evidence_records || [],
+        recommended_remediations: payload.recommended_remediations || [],
+      }),
+    });
+  },
+
+  async getSecurityIncident(
+    incidentId: string,
+    workspaceId = 'default_workspace'
+  ): Promise<SecurityIncidentRecord> {
+    return request<SecurityIncidentRecord>(
+      `/iot-security/incidents/${encodeURIComponent(incidentId)}?workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async updateSecurityIncidentStatus(
+    incidentId: string,
+    status: IncidentStatus,
+    resolutionNotes?: string,
+    workspaceId = 'default_workspace',
+    userId = 'default_user'
+  ): Promise<SecurityIncidentRecord> {
+    return request<SecurityIncidentRecord>(
+      `/iot-security/incidents/${encodeURIComponent(incidentId)}`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          user_id: userId,
+          workspace_id: workspaceId,
+          status,
+          resolution_notes: resolutionNotes,
+        }),
+      }
+    );
+  },
+
+  async executeDefensiveAction(params: {
+    device_id: string;
+    action_type: DefensiveActionType;
+    reason: string;
+    confirmed?: boolean;
+    workspace_id?: string;
+    user_id?: string;
+  }): Promise<DefensiveActionRecord> {
+    return request<DefensiveActionRecord>('/iot-security/defensive-actions', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        device_id: params.device_id,
+        action_type: params.action_type,
+        reason: params.reason,
+        confirmed: params.confirmed ?? false,
+      }),
+    });
+  },
+
+  async listDefensiveActions(
+    workspaceId = 'default_workspace',
+    deviceId?: string
+  ): Promise<DefensiveActionRecord[]> {
+    try {
+      const q = new URLSearchParams({ workspace_id: workspaceId });
+      if (deviceId) q.set('device_id', deviceId);
+      return await request<DefensiveActionRecord[]>(`/iot-security/defensive-actions?${q.toString()}`);
+    } catch {
+      return [];
+    }
+  },
+
+  async getFirmwareIntegrityMatrix(): Promise<FirmwareIntegritySpec[]> {
+    try {
+      return await request<FirmwareIntegritySpec[]>('/iot-security/firmware-integrity-matrix');
+    } catch {
+      return [];
+    }
   },
 };
 

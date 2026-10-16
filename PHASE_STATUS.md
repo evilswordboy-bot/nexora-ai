@@ -12,7 +12,7 @@ Status Key:
 
 ---
 
-## 📊 Stages 1–25 Status: COMPLETE (Verified & Validated)
+## 📊 Stages 1–26 Status: COMPLETE (Verified & Validated)
 
 | Phase | Description | Status | Verification Notes |
 |---|---|---|---|
@@ -41,6 +41,7 @@ Status Key:
 | **Phase 94** | **IoT Project Builder (Stage 23)** | **COMPLETE** | Configurable board profiles (`ESP32`, `Arduino Uno R3`, `STM32 Nucleo-F401RE`, `Raspberry Pi Pico W`, `Raspberry Pi 4B`), searchable component library (`verified_datasheet_spec` vs. `estimated_typical_range`), interactive pin-to-pin wiring validator (pin conflicts, 5V-to-3.3V logic mismatches, short circuits, reverse polarity, bare inductive motor on GPIO), honest firmware generation & syntax/compiler checks (`arduino_cpp`, `micropython`, `esp_idf_c`, `rpi_python_gpiozero`), deterministic virtual sensor simulator (`is_physical_hardware_execution=False`), Mains AC / LiPo safety hazard screening, BOM & build manual generator, versioned project export, and `IoTProjectBuilderStudio.tsx`, 147/147 Pytest tests passing. |
 | **Phase 94B** | **Embedded Firmware Engineering Studio (Stage 24)** | **COMPLETE** | Multi-platform firmware workspace (`arduino_cpp`, `esp_idf_c`, `stm32_hal_c`, `micropython`, `rpi_python_gpiozero`) reusing Stage 23 IoT Project Builder profiles & validated netlists, explicit unsupported combination rejection, multi-file modular driver/ISR/watchdog code generator (`include/pin_config.h`, `src/peripheral_drivers.cpp`, `src/main.cpp`, `platformio.ini`, `test/test_embedded_logic.py`), hardware-aware diagnostics (`invalid_pin`, `missing_library`, `unsupported_peripheral`), static safety analyzer (`unsafe_buffer_handling`, `blocking_loop`, `watchdog_issue`, `credential_exposure`), sandboxed bytecode/compiler execution (`SUCCEEDED`, `FAILED_COMPILATION_ERROR`, `BLOCKED_TOOLCHAIN_MISSING`), simulated vs. physical serial monitor, approval-gated flash/reset with unbricking guide, version rollback, authentic artifact export, and `FirmwareEngineeringStudio.tsx`, 152/152 Pytest tests passing. |
 | **Phase 94C** | **IoT Device Connectivity & Live Telemetry (Stage 25)** | **COMPLETE** | Secure device registry (`ESP32`, `STM32`, `Arduino`, `Raspberry Pi`, `generic`), authenticated ingestion (HTTP with `X-Device-Token` & MQTT topic templates), server-side PBKDF2 token hashing, token rotation and revocation, live sensor validation (`temperature`, `humidity`, `vibration`, `current`, `voltage`, `distance`, `pressure`), deduplication & rate limiting, threshold alerts with cooldown windows & auto-resolution, consequential actuation confirmation gates (`reboot`, `ota_firmware_update`), deterministic simulator ticks, CSV/JSON dataset export, and `IoTTelemetryStudio.tsx`, 158/158 Pytest tests passing. |
+| **Phase 70** | **IoT Security & Device Threat Detection (Stage 26)** | **COMPLETE** | Defensive device security posture tracking (firmware, auth, TLS, exposed services with unknown honesty), rule-based config auditing with secret redaction, behavioral anomaly detection (z-score, sequence reset / crashloops, rate bursts, sensor saturation), incident correlation without unproven attacker claims, consequential defensive confirmation gates (`quarantine_device`, `revoke_credential`, `isolate_network` with anti-fabrication adapter check), hardware-backed firmware integrity matrix, and `IoTSecurityStudio.tsx`, 165/165 Pytest tests passing. |
 
 ---
 
@@ -142,7 +143,7 @@ Status Key:
 | **67** | Secure Model Gateway & Prompt Injection Shield| **COMPLETE** | `<user_memory_context>` and `<untrusted_tool_output>` prompt injection quarantine shields |
 | **68** | Data Retention Policies & GDPR Forget Protocol| **COMPLETE** | Natural-language forget commands, Temporary Chat zero-persistence mode, 1-click user memory erasure |
 | **69** | Rate Limiting, Quotas & Token Cost Guardrails| NOT STARTED | Token billing calculators, hard budget ceilings, per-user tier rate limits |
-| **70** | Threat Intelligence & Anomaly Detector | NOT STARTED | Suspicious prompt pattern detection, API key abuse alerts, IP geo-fencing |
+| **70** | Threat Intelligence & Anomaly Detector | **COMPLETE** | Stage 26 IoT Security: defensive posture inventory, rule-based config audit with secret redaction, behavioral anomalies, approval-gated containment |
 
 ### Tier 8: Creative Tools, Writing & Media Production (Phases 71–80)
 | Phase | Title | Status | Target Scope |

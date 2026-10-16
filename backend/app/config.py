@@ -325,6 +325,30 @@ class Settings(BaseModel):
     mqtt_broker_port: int = int(os.getenv("MQTT_BROKER_PORT", "8883"))
     mqtt_use_tls: bool = os.getenv("MQTT_USE_TLS", "true").lower() in ("true", "1", "yes")
 
+    # Stage 26: IoT Security & Device Threat Detection
+    iot_security_db_path: str = os.getenv(
+        "IOT_SECURITY_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "iot_security" / "nexora_iot_security.db"),
+    )
+    iot_security_baseline_window_events: int = int(
+        os.getenv("IOT_SECURITY_BASELINE_WINDOW_EVENTS", "100")
+    )
+    iot_security_auth_failure_threshold: int = int(
+        os.getenv("IOT_SECURITY_AUTH_FAILURE_THRESHOLD", "5")
+    )
+    iot_security_zscore_threshold: float = float(
+        os.getenv("IOT_SECURITY_ZSCORE_THRESHOLD", "3.0")
+    )
+    iot_security_rate_spike_multiplier: float = float(
+        os.getenv("IOT_SECURITY_RATE_SPIKE_MULTIPLIER", "3.0")
+    )
+    iot_security_max_incidents_retained: int = int(
+        os.getenv("IOT_SECURITY_MAX_INCIDENTS_RETAINED", "1000")
+    )
+    iot_security_network_adapter_configured: bool = os.getenv(
+        "IOT_SECURITY_NETWORK_ADAPTER_CONFIGURED", "false"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

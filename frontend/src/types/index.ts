@@ -3036,4 +3036,138 @@ export interface TelemetryMetadataResponse {
   reliability_specs: Record<string, any>;
 }
 
+// Stage 26: IoT Security & Device Threat Detection Interfaces
+export type SecurityRiskLevel = 'critical' | 'high' | 'medium' | 'low' | 'info' | 'unknown';
+export type ThreatClassification = 'confirmed_event' | 'suspicious_indicator' | 'heuristic_alert' | 'unverified_hypothesis';
+export type IncidentStatus = 'new' | 'under_investigation' | 'mitigated' | 'false_positive' | 'closed';
+export type ConfigAuditSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
+export type DefensiveActionType = 'revoke_credential' | 'quarantine_device' | 'isolate_network' | 'throttle_telemetry' | 'restore_device';
+export type DefensiveActionStatus = 'pending_confirmation' | 'executed' | 'rejected' | 'failed';
+
+export interface DeviceSecurityPosture {
+  device_id: string;
+  device_name: string;
+  board_id: string;
+  status: string;
+  is_simulated: boolean;
+  firmware_version: string;
+  authentication_status: 'token_active' | 'token_revoked' | 'weak_token' | 'unprovisioned' | 'unknown';
+  token_age_days?: number | null;
+  token_last_rotated_at?: string | null;
+  transport_encryption: 'tls_enabled' | 'plaintext_unencrypted' | 'unknown';
+  exposed_services: string[];
+  update_status: 'up_to_date' | 'update_available' | 'critical_outdated' | 'unknown';
+  supports_secure_boot: boolean;
+  secure_boot_mechanism: string;
+  supports_signed_firmware: boolean;
+  supports_anti_rollback: boolean;
+  last_security_assessment_at?: string | null;
+  risk_score: number;
+  risk_level: SecurityRiskLevel;
+  active_findings_count: number;
+  active_threats_count: number;
+}
+
+export interface ConfigurationAuditFinding {
+  finding_id: string;
+  device_id: string;
+  device_name: string;
+  workspace_id: string;
+  rule_id: string;
+  title: string;
+  severity: ConfigAuditSeverity;
+  evidence: string;
+  impact: string;
+  remediation: string;
+  status: 'active' | 'remediated' | 'suppressed' | 'false_positive';
+  detected_at: string;
+  remediated_at?: string | null;
+}
+
+export interface BehavioralAnomalyRecord {
+  anomaly_id: string;
+  device_id: string;
+  device_name: string;
+  workspace_id: string;
+  anomaly_type: 'unusual_reporting_frequency' | 'unexpected_restart_crashloop' | 'abnormal_measurement_pattern' | 'repeated_auth_failures' | 'baseline_deviation' | 'sensor_saturation_stuck';
+  severity: ConfigAuditSeverity;
+  classification: ThreatClassification;
+  confidence: 'high' | 'medium' | 'low';
+  metric_key?: string | null;
+  observed_value?: any;
+  baseline_expected?: any;
+  evidence_summary: string;
+  detected_at: string;
+}
+
+export interface SecurityIncidentRecord {
+  incident_id: string;
+  workspace_id: string;
+  title: string;
+  severity: ConfigAuditSeverity;
+  classification: ThreatClassification;
+  status: IncidentStatus;
+  affected_device_ids: string[];
+  affected_devices_count: number;
+  root_cause_hypothesis: string;
+  confidence_level: 'high' | 'medium' | 'low';
+  evidence_records: Record<string, any>[];
+  telemetry_correlations: Record<string, any>[];
+  recommended_remediations: string[];
+  created_at: string;
+  updated_at: string;
+  resolved_at?: string | null;
+  assigned_responder?: string | null;
+}
+
+export interface DefensiveActionRecord {
+  action_id: string;
+  user_id: string;
+  workspace_id: string;
+  device_id: string;
+  device_name: string;
+  action_type: DefensiveActionType;
+  reason: string;
+  requires_confirmation: boolean;
+  status: DefensiveActionStatus;
+  result_message: string;
+  recovery_procedure: string;
+  executed_at?: string | null;
+  created_at: string;
+}
+
+export interface FirmwareIntegritySpec {
+  board_id: string;
+  board_name: string;
+  supports_secure_boot: boolean;
+  secure_boot_version: string;
+  crypto_keys_supported: string[];
+  supports_signed_firmware: boolean;
+  supports_hardware_root_of_trust: boolean;
+  supports_anti_rollback: boolean;
+  recovery_strategy: string;
+  checksum_trust_limitation: string;
+}
+
+export interface IoTSecurityOverviewResponse {
+  stage: number;
+  fleet_posture_summary: {
+    total_devices_monitored: number;
+    average_fleet_risk_score: number;
+    risk_distribution: Record<string, number>;
+    active_config_findings: number;
+    recent_behavioral_anomalies: number;
+    open_security_incidents: number;
+    tls_enforced_devices_count: number;
+    unencrypted_transport_devices_count: number;
+  };
+  devices_posture: DeviceSecurityPosture[];
+  active_incidents: SecurityIncidentRecord[];
+  recent_anomalies: BehavioralAnomalyRecord[];
+  config_findings: ConfigurationAuditFinding[];
+  firmware_integrity_matrix: FirmwareIntegritySpec[];
+  last_assessment_at: string;
+}
+
+
 

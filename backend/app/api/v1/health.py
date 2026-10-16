@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 25,
-        "stage_title": "IoT Device Connectivity & Live Telemetry",
+        "stage": 26,
+        "stage_title": "IoT Security & Device Threat Detection",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -43,6 +43,7 @@ async def health_check():
             "iot_project_builder": "operational",
             "firmware_studio": "operational",
             "iot_telemetry": "operational",
+            "iot_security": "operational",
         },
     }
 
