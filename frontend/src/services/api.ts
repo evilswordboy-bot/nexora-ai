@@ -172,6 +172,32 @@ import {
   AICircuitDesignResponse,
   SchematicExportResponse,
   SchematicOverviewResponse,
+  PCBPadDef,
+  PCBFootprintDef,
+  PCBComponent,
+  PCBTrack,
+  PCBVia,
+  PCBZone,
+  PCBNetPadConnection,
+  PCBNet,
+  PCBRatsnestLine,
+  PCBDesignRules,
+  PCBBoard,
+  PCBProject,
+  SchematicToPCBRequest,
+  SchematicToPCBResponse,
+  PCBDrcFinding,
+  PCBDrcReport,
+  TraceWidthRequest,
+  TraceWidthResult,
+  ImpedanceRequest,
+  ImpedanceResult,
+  PCBBOMItem,
+  PCBCostEstimateRequest,
+  PCBCostEstimateResult,
+  PCBExportRequest,
+  PCBExportResponse,
+  PCBOverviewResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -3885,6 +3911,147 @@ export const api = {
         body: JSON.stringify(sheet),
       }
     );
+  },
+};
+
+export const schematicApi = {
+  getProjects: (userId = 'default_user', workspaceId = 'default_workspace') =>
+    api.listSchematicProjects(userId, workspaceId),
+  getProject: (projectId: string, userId = 'default_user', workspaceId = 'default_workspace') =>
+    api.getSchematicProject(projectId, userId, workspaceId),
+  getOverview: (userId = 'default_user') => api.getSchematicOverview(userId),
+};
+
+export const pcbApi = {
+  async getOverview(userId = 'default_user'): Promise<PCBOverviewResponse> {
+    return request<PCBOverviewResponse>(`/pcb/overview?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async getFootprints(): Promise<PCBFootprintDef[]> {
+    return request<PCBFootprintDef[]>('/pcb/footprints');
+  },
+
+  async convertSchematic(req: SchematicToPCBRequest): Promise<SchematicToPCBResponse> {
+    return request<SchematicToPCBResponse>('/pcb/convert-schematic', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async getProjects(userId = 'default_user'): Promise<PCBProject[]> {
+    return request<PCBProject[]>(`/pcb/projects?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async getProject(projectId: string): Promise<PCBProject> {
+    return request<PCBProject>(`/pcb/projects/${encodeURIComponent(projectId)}`);
+  },
+
+  async saveProject(project: PCBProject, versionBump = false, notes = ''): Promise<PCBProject> {
+    return request<PCBProject>(
+      `/pcb/projects?version_bump=${versionBump}&notes=${encodeURIComponent(notes)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(project),
+      }
+    );
+  },
+
+  async deleteProject(projectId: string): Promise<{ success: boolean; message: string }> {
+    return request<{ success: boolean; message: string }>(
+      `/pcb/projects/${encodeURIComponent(projectId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async getRevisions(projectId: string): Promise<Array<Record<string, any>>> {
+    return request<Array<Record<string, any>>>(
+      `/pcb/projects/${encodeURIComponent(projectId)}/revisions`
+    );
+  },
+
+  async rollbackProject(projectId: string, revisionId: string): Promise<PCBProject> {
+    return request<PCBProject>(
+      `/pcb/projects/${encodeURIComponent(projectId)}/rollback?revision_id=${encodeURIComponent(revisionId)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async runDRC(board: PCBBoard): Promise<PCBDrcReport> {
+    return request<PCBDrcReport>('/pcb/drc', {
+      method: 'POST',
+      body: JSON.stringify(board),
+    });
+  },
+
+  async computeRatsnest(board: PCBBoard): Promise<{
+    total_connections: number;
+    routed_connections: number;
+    unrouted_connections: number;
+    completion_percentage: number;
+    ratsnest: PCBRatsnestLine[];
+  }> {
+    return request('/pcb/routing/ratsnest', {
+      method: 'POST',
+      body: JSON.stringify(board),
+    });
+  },
+
+  async computeAssistedRoute(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    mode = '45_degree'
+  ): Promise<{ mode: string; waypoints: Array<{ x: number; y: number }> }> {
+    return request(
+      `/pcb/routing/assist?start_x=${startX}&start_y=${startY}&end_x=${endX}&end_y=${endY}&mode=${encodeURIComponent(mode)}`,
+      { method: 'POST' }
+    );
+  },
+
+  async calculateTraceWidth(req: TraceWidthRequest): Promise<TraceWidthResult> {
+    return request<TraceWidthResult>('/pcb/calculate/trace-width', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async calculateImpedance(req: ImpedanceRequest): Promise<ImpedanceResult> {
+    return request<ImpedanceResult>('/pcb/calculate/impedance', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async getBOM(board: PCBBoard): Promise<PCBBOMItem[]> {
+    return request<PCBBOMItem[]>('/pcb/bom', {
+      method: 'POST',
+      body: JSON.stringify(board),
+    });
+  },
+
+  async estimateCost(req: PCBCostEstimateRequest): Promise<PCBCostEstimateResult> {
+    return request<PCBCostEstimateResult>('/pcb/cost-estimate', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async exportPcb(req: PCBExportRequest): Promise<PCBExportResponse> {
+    return request<PCBExportResponse>('/pcb/export', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async diffBoards(
+    boardA: PCBBoard,
+    boardB: PCBBoard
+  ): Promise<Record<string, any>> {
+    return request<Record<string, any>>('/pcb/diff', {
+      method: 'POST',
+      body: JSON.stringify({ board_a: boardA, board_b: boardB }),
+    });
   },
 };
 

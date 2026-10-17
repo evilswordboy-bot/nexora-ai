@@ -3481,6 +3481,292 @@ export interface SchematicOverviewResponse {
   toolchains: Record<string, boolean>;
 }
 
+// ============================================================================
+// Stage 28: PCB Layout & Design Studio Interfaces
+// ============================================================================
+
+export interface PCBPadDef {
+  pad_number: string;
+  shape: 'rect' | 'roundrect' | 'circle' | 'oval';
+  width_mm: number;
+  height_mm: number;
+  rel_x_mm: number;
+  rel_y_mm: number;
+  pad_type: 'smd' | 'thru_hole';
+  drill_diameter_mm?: number | null;
+  layers: string[];
+}
+
+export interface PCBFootprintDef {
+  footprint_id: string;
+  name: string;
+  category: string;
+  description: string;
+  width_mm: number;
+  height_mm: number;
+  pads: PCBPadDef[];
+  courtyard: Record<string, number>;
+  model_3d: Record<string, any>;
+}
+
+export interface PCBComponent {
+  component_instance_id: string;
+  ref_des: string;
+  value: string;
+  footprint_id: string;
+  pos_x_mm: number;
+  pos_y_mm: number;
+  rotation_deg: number;
+  side: 'top' | 'bottom';
+  attributes?: Record<string, any>;
+}
+
+export interface PCBTrack {
+  track_id: string;
+  net_id: string;
+  layer: string;
+  start_x_mm: number;
+  start_y_mm: number;
+  end_x_mm: number;
+  end_y_mm: number;
+  width_mm: number;
+}
+
+export interface PCBVia {
+  via_id: string;
+  net_id: string;
+  x_mm: number;
+  y_mm: number;
+  diameter_mm: number;
+  drill_mm: number;
+  start_layer: string;
+  end_layer: string;
+}
+
+export interface PCBZone {
+  zone_id: string;
+  net_id: string;
+  layer: string;
+  polygon_points: Array<{ x: number; y: number }>;
+  clearance_mm: number;
+}
+
+export interface PCBNetPadConnection {
+  component_instance_id: string;
+  pad_number: string;
+}
+
+export interface PCBNet {
+  net_id: string;
+  name: string;
+  color?: string | null;
+  is_power: boolean;
+  is_ground: boolean;
+  voltage_level_v?: number | null;
+  connections: PCBNetPadConnection[];
+}
+
+export interface PCBRatsnestLine {
+  net_id: string;
+  start_x: number;
+  start_y: number;
+  end_x: number;
+  end_y: number;
+  start_ref: string;
+  end_ref: string;
+}
+
+export interface PCBDesignRules {
+  min_trace_width_mm: number;
+  min_clearance_mm: number;
+  min_board_edge_clearance_mm: number;
+  min_drill_diameter_mm: number;
+  default_via_diameter_mm: number;
+  copper_thickness_oz: number;
+  layer_count: number;
+}
+
+export interface PCBBoard {
+  board_id: string;
+  title: string;
+  width_mm: number;
+  height_mm: number;
+  corner_radius_mm: number;
+  layer_count: number;
+  copper_thickness_oz: number;
+  board_thickness_mm: number;
+  material: string;
+  components: PCBComponent[];
+  tracks: PCBTrack[];
+  vias: PCBVia[];
+  zones: PCBZone[];
+  nets: PCBNet[];
+  design_rules: PCBDesignRules;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PCBProject {
+  project_id: string;
+  user_id: string;
+  workspace_id: string;
+  title: string;
+  description: string;
+  schematic_project_id?: string | null;
+  version: string;
+  board: PCBBoard;
+  created_at: string;
+  updated_at: string;
+  history_revisions: Array<Record<string, any>>;
+}
+
+export interface SchematicToPCBRequest {
+  schematic_project_id?: string | null;
+  schematic_sheet?: any | null;
+  board_width_mm?: number;
+  board_height_mm?: number;
+  layer_count?: number;
+  custom_footprint_overrides?: Record<string, string>;
+}
+
+export interface SchematicToPCBResponse {
+  board: PCBBoard;
+  mapped_count: number;
+  unmapped_components: Array<Record<string, string>>;
+  conversion_notes: string[];
+  warnings: string[];
+}
+
+export interface PCBDrcFinding {
+  finding_id: string;
+  rule_code: string;
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  message: string;
+  affected_layer?: string | null;
+  affected_net?: string | null;
+  pos_x_mm?: number | null;
+  pos_y_mm?: number | null;
+  remediation_steps: string;
+}
+
+export interface PCBDrcReport {
+  timestamp: string;
+  total_findings: number;
+  critical_count: number;
+  warning_count: number;
+  passed: boolean;
+  findings: PCBDrcFinding[];
+  routing_completion_pct: number;
+  unrouted_nets_count: number;
+}
+
+export interface TraceWidthRequest {
+  current_a: number;
+  temp_rise_c?: number;
+  copper_thickness_oz?: number;
+  layer_type?: 'external' | 'internal';
+}
+
+export interface TraceWidthResult {
+  current_a: number;
+  temp_rise_c: number;
+  copper_thickness_oz: number;
+  layer_type: string;
+  min_width_mm: number;
+  min_width_mils: number;
+  cross_section_area_sq_mils: number;
+  resistance_per_meter_ohms: number;
+  voltage_drop_per_meter_v: number;
+  power_loss_per_meter_w: number;
+  standard_documented_formula: string;
+  advisory_notes: string[];
+}
+
+export interface ImpedanceRequest {
+  trace_width_mm: number;
+  dielectric_height_mm?: number;
+  copper_thickness_oz?: number;
+  dielectric_constant_er?: number;
+}
+
+export interface ImpedanceResult {
+  trace_width_mm: number;
+  dielectric_height_mm: number;
+  copper_thickness_oz: number;
+  dielectric_constant_er: number;
+  characteristic_impedance_ohms: number;
+  propagation_delay_ps_per_mm: number;
+  effective_dielectric_constant: number;
+  is_rf_controlled: boolean;
+  advisory: string;
+}
+
+export interface PCBBOMItem {
+  ref_des: string;
+  value: string;
+  package_footprint: string;
+  quantity: number;
+  datasheet_url?: string | null;
+  supplier_part_id?: string | null;
+  approx_unit_cost_usd: number;
+  approx_total_cost_usd: number;
+  source_status: string;
+}
+
+export interface PCBCostEstimateRequest {
+  board_width_mm: number;
+  board_height_mm: number;
+  layer_count: number;
+  quantity: number;
+  surface_finish: 'HASL_lead_free' | 'ENIG';
+  lead_time_days: number;
+}
+
+export interface PCBCostEstimateResult {
+  board_width_mm: number;
+  board_height_mm: number;
+  board_area_cm2: number;
+  layer_count: number;
+  quantity: number;
+  surface_finish: string;
+  lead_time_days: number;
+  estimated_pcb_fabrication_cost_usd: number;
+  estimated_unit_cost_usd: number;
+  estimated_component_cost_usd: number;
+  estimated_total_prototype_cost_usd: number;
+  cost_breakdown: Record<string, number>;
+  pricing_assumptions: string[];
+  is_formal_quote: boolean;
+}
+
+export interface PCBExportRequest {
+  board: PCBBoard;
+  export_format:
+    | 'gerber_zip'
+    | 'kicad_pcb'
+    | 'excellon_drill'
+    | 'pick_and_place_csv'
+    | 'bom_csv'
+    | 'svg_board';
+}
+
+export interface PCBExportResponse {
+  export_format: string;
+  filename: string;
+  mime_type: string;
+  content: string;
+  files?: Record<string, string> | null;
+}
+
+export interface PCBOverviewResponse {
+  stage: number;
+  projects_count: number;
+  footprints_count: number;
+  recent_projects: PCBProject[];
+  toolchains: Record<string, boolean>;
+}
+
 
 
 

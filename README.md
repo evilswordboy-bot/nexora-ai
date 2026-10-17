@@ -12,6 +12,49 @@
 
 ---
 
+# NEXORA AI — Stage 28: PCB Layout & Design Studio
+
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 28** introduces the **PCB Layout & Design Studio (`PCBStudioEngine`)**: a professional printed circuit board (PCB) design workspace featuring schematic-to-PCB conversion with strict unmapped-footprint protection (never silently substituting unknown packages), an interactive multilayer SVG/Canvas board editor (`F.Cu`, `B.Cu`, `F.SilkS`, `B.SilkS`, `Edge.Cuts`), component placement with fine grid snapping, interactive & 45-degree orthogonal trace routing with Euclidean MST ratsnest flylines and live completion metrics, 8-rule geometric and electrical Design Rule Checking (DRC) with actionable remediation, IPC-2152 current/temperature trace width and IPC-2141 microstrip controlled impedance calculators, an interactive 3D board visualizer with customizable solder mask (classic green, matte black, royal blue, crimson red) and 360° orbital tilt, aggregated BOM & transparent prototype fabrication cost estimation, industry exports (Gerber RS-274X 7-layer suite, Excellon NC drill, KiCad S-expr `.kicad_pcb`, Pick-and-Place centroid CSV, BOM CSV, SVG), SQLite persistence (`data/pcb/nexora_pcb.db`) with revision snapshots & board diffing, and Tool #26 `pcb_studio_engine` in `PCBStudio.tsx`.
+
+---
+
+## 🌟 Stage 28 Core Deliverables
+
+- **Schematic-to-PCB Conversion & Footprint Safety**:
+  - Automatically translates validated Stage 27 schematics and netlists into 2-layer or multilayer PCB projects.
+  - Maps schematic symbols to standard library footprints (`0805`, `SOD-123`, `TO-92`, `TO-220`, `SOT-223`, `SOIC-8`, `DIP-8`, `DIP-14`, `Radial_Cap_D6.3mm`, `PinHeader_1x02_P2.54mm`, `MountingHole_M3`).
+  - Strict footprint verification: components with unknown or unmapped footprints are flagged in `unmapped_components` and excluded from automatic placement until mapped — **never silently substituting an unknown footprint**.
+- **Interactive Multilayer Board Editor (`PCBStudio.tsx`)**:
+  - Full-featured EDA layout canvas with configurable dimensions (e.g. 100×80mm, 80×55mm), corner radius, and 1.6mm FR-4 substrate.
+  - Multilayer visibility stack: Top Copper (`F.Cu` in cyan/amber), Bottom Copper (`B.Cu` in blue), Top/Bottom Silkscreen (`F.SilkS` in white), Board Outline (`Edge.Cuts` in yellow dashed), Vias, and Pads.
+  - Real-time drag-and-drop component positioning with configurable grid snapping (0.25mm, 0.50mm, 1.0mm, 2.54mm) and 90° rotation.
+- **Routing Engine & Euclidean MST Ratsnest**:
+  - Minimum Spanning Tree (MST) ratsnest algorithm computes optimal unrouted flylines across all active electrical nets.
+  - Live routing metrics: total connections, routed count, unrouted flylines count, and completion percentage.
+  - Interactive manual trace routing with pad snapping and assisted 45°/90° orthogonal dogleg waypoints.
+- **8-Rule Geometric & Electrical Design Rule Checking (DRC)**:
+  - Validates minimum trace width ($< 0.25\text{mm}$), copper-to-copper clearance ($< 0.20\text{mm}$), board-edge clearance ($< 0.50\text{mm}$), minimum drill diameter ($< 0.30\text{mm}$), direct short circuits (crossing traces of different nets), unrouted nets, physical component overlaps, and high-current power rail sizing recommendations.
+  - Findings table with rule codes, severity pills (`critical`, `warning`, `info`), coordinates, and actionable engineering remediation steps.
+- **IPC Constraints & Transmission Line Calculators**:
+  - *IPC-2152 Trace Width*: Computes minimum trace cross-sectional area and width based on target current ($I$), allowable temperature rise ($\Delta T$), copper thickness (1 oz / 2 oz), and surface vs. internal layer placement, along with resistance per meter, voltage drop, and power dissipation.
+  - *IPC-2141 Controlled Impedance*: Computes single-ended microstrip characteristic impedance ($Z_0$), effective dielectric constant ($\epsilon_{eff}$), and propagation delay ($T_{pd}$) for high-speed digital and RF traces.
+- **Interactive 3D Board Orbit Viewer**:
+  - Realistic 3D perspective with customizable solder mask colors (Forest Green, Midnight Onyx, Cobalt Blue, Ruby Red), metallic gold ENIG / silver HASL pad plating, 3D extruded component bodies with height, silkscreen references, and 360° orbital tilt/yaw controls.
+- **BOM & Transparent Prototype Cost Estimation**:
+  - Aggregates BOM by footprint and component value, calculating quantities, unit costs, total costs, and generating direct supplier search links (DigiKey).
+  - Prototype cost calculator based on surface area, layer count (2/4/6 layers), surface finish (HASL vs. ENIG), quantity (5–100 pcs), and turnaround lead times (2–5 days) with transparent cost breakdowns — labeled strictly as estimates, never claiming fictional formal quotes.
+- **Standard Fabrication Exports**:
+  - Full RS-274X Gerber suite packaged in a ZIP archive (`.gtl`, `.gbl`, `.gto`, `.gbo`, `.gts`, `.gbs`, `.gml`).
+  - Industry-standard Excellon NC drill file (`.drl`) with tool diameter headers and metric coordinates.
+  - Native KiCad 7 / 8 PCB layout format (`.kicad_pcb`) in valid S-expression syntax for opening in KiCad.
+  - SMT Centroid Pick-and-Place CSV (`_positions.csv`) and BOM CSV (`_bom.csv`).
+  - Scalable Vector Graphic (`_preview.svg`) vector board rendering.
+- **Database Persistence & Tool Registry Integration**:
+  - SQLite persistence (`data/pcb/nexora_pcb.db`) with automatic revision snapshots (`v1.0.0`, `v1.0.1`), rollback support, and board layout diffing.
+  - Registered Tool #26 (`pcb_studio_engine`) in the NEXORA runtime tool registry for autonomous agent execution.
+
+---
+
 # NEXORA AI — Stage 27: Electronic Circuit Schematic Design Studio
 
 **NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 27** introduces the **Electronic Circuit Schematic Design Studio (`SchematicStudioEngine`)**: a professional electronic design automation (EDA) workspace featuring an interactive SVG netlist canvas, comprehensive discrete and IC component library, topological Electrical Rule Checks (ERC) with actionable diagnostic hints, standard SPICE netlist generation with local `ngspice` execution and deterministic analytical linear solving, 7 precision engineering calculators, multi-format exports (SPICE `.cir`, KiCad `.net`, BOM CSV/JSON, connection tables, SVG), and natural-language AI circuit synthesis with mandatory engineering review banners in `SchematicStudio.tsx`.

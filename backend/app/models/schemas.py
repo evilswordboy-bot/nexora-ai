@@ -4527,6 +4527,294 @@ class SchematicOverviewResponse(BaseModel):
     toolchains: Dict[str, bool] = Field(default_factory=dict)
 
 
+# ============================================================================
+# Stage 28: PCB Layout & Design Studio Schemas
+# ============================================================================
+
+class PCBPadDef(BaseModel):
+    pad_number: str
+    shape: Literal["rect", "roundrect", "circle", "oval"] = "roundrect"
+    width_mm: float
+    height_mm: float
+    rel_x_mm: float
+    rel_y_mm: float
+    pad_type: Literal["smd", "thru_hole"] = "smd"
+    drill_diameter_mm: Optional[float] = None
+    layers: List[str] = Field(default_factory=lambda: ["F.Cu"])
+
+
+class PCBFootprintDef(BaseModel):
+    footprint_id: str
+    name: str
+    category: str
+    description: str
+    width_mm: float
+    height_mm: float
+    pads: List[PCBPadDef] = Field(default_factory=list)
+    courtyard: Dict[str, float] = Field(default_factory=dict)
+    model_3d: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PCBComponent(BaseModel):
+    component_instance_id: str
+    ref_des: str
+    value: str
+    footprint_id: str
+    pos_x_mm: float
+    pos_y_mm: float
+    rotation_deg: float = 0.0
+    side: Literal["top", "bottom"] = "top"
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PCBTrack(BaseModel):
+    track_id: str
+    net_id: str
+    layer: str = "F.Cu"  # e.g. "F.Cu", "B.Cu"
+    start_x_mm: float
+    start_y_mm: float
+    end_x_mm: float
+    end_y_mm: float
+    width_mm: float = 0.25
+
+
+class PCBVia(BaseModel):
+    via_id: str
+    net_id: str
+    x_mm: float
+    y_mm: float
+    diameter_mm: float = 0.6
+    drill_mm: float = 0.3
+    start_layer: str = "F.Cu"
+    end_layer: str = "B.Cu"
+
+
+class PCBZone(BaseModel):
+    zone_id: str
+    net_id: str
+    layer: str = "B.Cu"
+    polygon_points: List[Dict[str, float]] = Field(default_factory=list)
+    clearance_mm: float = 0.3
+
+
+class PCBNetPadConnection(BaseModel):
+    component_instance_id: str
+    pad_number: str
+
+
+class PCBNet(BaseModel):
+    net_id: str
+    name: str
+    color: Optional[str] = "#06b6d4"
+    is_power: bool = False
+    is_ground: bool = False
+    voltage_level_v: Optional[float] = None
+    connections: List[PCBNetPadConnection] = Field(default_factory=list)
+
+
+class PCBRatsnestLine(BaseModel):
+    net_id: str
+    start_x: float
+    start_y: float
+    end_x: float
+    end_y: float
+    start_ref: str
+    end_ref: str
+
+
+class PCBDesignRules(BaseModel):
+    min_trace_width_mm: float = 0.25
+    min_clearance_mm: float = 0.20
+    min_board_edge_clearance_mm: float = 0.50
+    min_drill_diameter_mm: float = 0.30
+    default_via_diameter_mm: float = 0.60
+    copper_thickness_oz: float = 1.0
+    layer_count: int = 2
+
+
+class PCBBoard(BaseModel):
+    board_id: str
+    title: str = "Main Board"
+    width_mm: float = 100.0
+    height_mm: float = 80.0
+    corner_radius_mm: float = 2.0
+    layer_count: int = 2
+    copper_thickness_oz: float = 1.0
+    board_thickness_mm: float = 1.6
+    material: str = "FR-4"
+    components: List[PCBComponent] = Field(default_factory=list)
+    tracks: List[PCBTrack] = Field(default_factory=list)
+    vias: List[PCBVia] = Field(default_factory=list)
+    zones: List[PCBZone] = Field(default_factory=list)
+    nets: List[PCBNet] = Field(default_factory=list)
+    design_rules: PCBDesignRules = Field(default_factory=PCBDesignRules)
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class PCBProject(BaseModel):
+    project_id: str
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    title: str
+    description: str = ""
+    schematic_project_id: Optional[str] = None
+    version: str = "v1.0.0"
+    board: PCBBoard
+    created_at: datetime = Field(default_factory=utc_now)
+    updated_at: datetime = Field(default_factory=utc_now)
+    history_revisions: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class SchematicToPCBRequest(BaseModel):
+    schematic_project_id: Optional[str] = None
+    schematic_sheet: Optional[SchematicSheet] = None
+    board_width_mm: Optional[float] = 100.0
+    board_height_mm: Optional[float] = 80.0
+    layer_count: Optional[int] = 2
+    custom_footprint_overrides: Optional[Dict[str, str]] = None
+
+
+class SchematicToPCBResponse(BaseModel):
+    board: PCBBoard
+    mapped_count: int
+    unmapped_components: List[Dict[str, str]] = Field(default_factory=list)
+    conversion_notes: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+
+
+class PCBDrcFinding(BaseModel):
+    finding_id: str
+    rule_code: str
+    severity: Literal["critical", "warning", "info"]
+    title: str
+    message: str
+    affected_layer: Optional[str] = None
+    affected_net: Optional[str] = None
+    pos_x_mm: Optional[float] = None
+    pos_y_mm: Optional[float] = None
+    remediation_steps: str
+
+
+class PCBDrcReport(BaseModel):
+    timestamp: datetime = Field(default_factory=utc_now)
+    total_findings: int
+    critical_count: int
+    warning_count: int
+    passed: bool
+    findings: List[PCBDrcFinding] = Field(default_factory=list)
+    routing_completion_pct: float
+    unrouted_nets_count: int
+
+
+class TraceWidthRequest(BaseModel):
+    current_a: float
+    temp_rise_c: Optional[float] = 10.0
+    copper_thickness_oz: Optional[float] = 1.0
+    layer_type: Literal["external", "internal"] = "external"
+
+
+class TraceWidthResult(BaseModel):
+    current_a: float
+    temp_rise_c: float
+    copper_thickness_oz: float
+    layer_type: str
+    min_width_mm: float
+    min_width_mils: float
+    cross_section_area_sq_mils: float
+    resistance_per_meter_ohms: float
+    voltage_drop_per_meter_v: float
+    power_loss_per_meter_w: float
+    standard_documented_formula: str
+    advisory_notes: List[str] = Field(default_factory=list)
+
+
+class ImpedanceRequest(BaseModel):
+    trace_width_mm: float
+    dielectric_height_mm: Optional[float] = 1.6
+    copper_thickness_oz: Optional[float] = 1.0
+    dielectric_constant_er: Optional[float] = 4.5
+
+
+class ImpedanceResult(BaseModel):
+    trace_width_mm: float
+    dielectric_height_mm: float
+    copper_thickness_oz: float
+    dielectric_constant_er: float
+    characteristic_impedance_ohms: float
+    propagation_delay_ps_per_mm: float
+    effective_dielectric_constant: float
+    is_rf_controlled: bool
+    advisory: str
+
+
+class PCBBOMItem(BaseModel):
+    ref_des: str
+    value: str
+    package_footprint: str
+    quantity: int
+    datasheet_url: Optional[str] = None
+    supplier_part_id: Optional[str] = None
+    approx_unit_cost_usd: float
+    approx_total_cost_usd: float
+    source_status: str
+
+
+class PCBCostEstimateRequest(BaseModel):
+    board_width_mm: float = 100.0
+    board_height_mm: float = 80.0
+    layer_count: int = 2
+    quantity: int = 5
+    surface_finish: Literal["HASL_lead_free", "ENIG"] = "HASL_lead_free"
+    lead_time_days: int = 5
+
+
+class PCBCostEstimateResult(BaseModel):
+    board_width_mm: float
+    board_height_mm: float
+    board_area_cm2: float
+    layer_count: int
+    quantity: int
+    surface_finish: str
+    lead_time_days: int
+    estimated_pcb_fabrication_cost_usd: float
+    estimated_unit_cost_usd: float
+    estimated_component_cost_usd: float
+    estimated_total_prototype_cost_usd: float
+    cost_breakdown: Dict[str, float] = Field(default_factory=dict)
+    pricing_assumptions: List[str] = Field(default_factory=list)
+    is_formal_quote: bool = False
+
+
+class PCBExportRequest(BaseModel):
+    board: PCBBoard
+    export_format: Literal[
+        "gerber_zip",
+        "kicad_pcb",
+        "excellon_drill",
+        "pick_and_place_csv",
+        "bom_csv",
+        "svg_board",
+    ]
+
+
+class PCBExportResponse(BaseModel):
+    export_format: str
+    filename: str
+    mime_type: str
+    content: str
+    files: Optional[Dict[str, str]] = None
+
+
+class PCBOverviewResponse(BaseModel):
+    stage: int = 28
+    projects_count: int
+    footprints_count: int
+    recent_projects: List[PCBProject] = Field(default_factory=list)
+    toolchains: Dict[str, bool] = Field(default_factory=dict)
+
+
+
 
 
 

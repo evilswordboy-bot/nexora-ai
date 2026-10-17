@@ -371,6 +371,24 @@ class Settings(BaseModel):
         "SCHEMATIC_ENABLE_ANALYTICAL_SOLVER", "true"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 28: PCB Layout & Design Studio
+    pcb_db_path: str = os.getenv(
+        "PCB_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "pcb" / "nexora_pcb.db"),
+    )
+    pcb_exports_dir: str = os.getenv(
+        "PCB_EXPORTS_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "pcb" / "exports"),
+    )
+    pcb_default_board_width_mm: float = float(os.getenv("PCB_DEFAULT_BOARD_WIDTH_MM", "100.0"))
+    pcb_default_board_height_mm: float = float(os.getenv("PCB_DEFAULT_BOARD_HEIGHT_MM", "80.0"))
+    pcb_default_layer_count: int = int(os.getenv("PCB_DEFAULT_LAYER_COUNT", "2"))
+    pcb_default_copper_thickness_oz: float = float(os.getenv("PCB_DEFAULT_COPPER_THICKNESS_OZ", "1.0"))
+    pcb_min_trace_width_mm: float = float(os.getenv("PCB_MIN_TRACE_WIDTH_MM", "0.25"))
+    pcb_min_clearance_mm: float = float(os.getenv("PCB_MIN_CLEARANCE_MM", "0.20"))
+    pcb_min_board_edge_clearance_mm: float = float(os.getenv("PCB_MIN_BOARD_EDGE_CLEARANCE_MM", "0.50"))
+    pcb_min_drill_diameter_mm: float = float(os.getenv("PCB_MIN_DRILL_DIAMETER_MM", "0.30"))
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

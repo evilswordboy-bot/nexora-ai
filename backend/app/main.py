@@ -30,6 +30,7 @@ from app.api.v1.firmware import router as firmware_router
 from app.api.v1.telemetry import router as telemetry_router
 from app.api.v1.iot_security import router as iot_security_router
 from app.api.v1.schematic import router as schematic_router
+from app.api.v1.pcb import router as pcb_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -89,6 +90,7 @@ app.include_router(firmware_router, prefix="/api/v1")
 app.include_router(telemetry_router, prefix="/api/v1")
 app.include_router(iot_security_router, prefix="/api/v1")
 app.include_router(schematic_router, prefix="/api/v1")
+app.include_router(pcb_router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -857,6 +857,61 @@ class ToolRegistry:
             handler=self._handle_schematic_studio_engine,
         )
 
+        # 29. Stage 28: PCB Layout & Design Studio Tool
+        self.register(
+            tool=ToolDefinition(
+                name="pcb_studio_engine",
+                description=(
+                    "Designs, converts, and validates printed circuit board (PCB) layouts. Converts schematics to PCB, "
+                    "runs geometric and electrical Design Rule Checks (DRC), calculates unrouted ratsnest flylines, "
+                    "sizes high-current traces with IPC-2152, calculates controlled impedance with IPC-2141, "
+                    "estimates prototype fabrication costs, and exports Gerber RS-274X, Excellon drill, KiCad S-expr, "
+                    "Centroid Pick-and-Place CSV, and SVG boards."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": [
+                                "overview",
+                                "footprints",
+                                "convert_schematic",
+                                "check_drc",
+                                "routing_status",
+                                "assisted_route",
+                                "calculate_trace_width",
+                                "calculate_impedance",
+                                "bom_and_cost",
+                                "export",
+                            ],
+                            "default": "overview",
+                        },
+                        "board": {
+                            "type": "object",
+                            "default": {},
+                        },
+                        "calc_params": {
+                            "type": "object",
+                            "default": {},
+                        },
+                        "export_format": {
+                            "type": "string",
+                            "enum": ["gerber_zip", "kicad_pcb", "excellon_drill", "pick_and_place_csv", "bom_csv", "svg_board"],
+                            "default": "gerber_zip",
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=28,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_pcb_studio_engine,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -2195,6 +2250,174 @@ class ToolRegistry:
         return {
             "action": action,
             "error": f"Unknown action '{action}' for schematic_studio_engine.",
+        }
+
+    async def _handle_pcb_studio_engine(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Tool handler for Stage 28 PCB Layout & Design Studio Engine."""
+        from app.models.schemas import (
+            PCBBoard,
+            SchematicSheet,
+            TraceWidthRequest,
+            ImpedanceRequest,
+            PCBCostEstimateRequest,
+            PCBExportRequest,
+        )
+        from app.services.pcb_studio import (
+            get_pcb_engine,
+            list_available_footprints,
+            convert_schematic_to_pcb,
+            run_design_rule_check,
+            calculate_routing_summary,
+            assisted_route_path,
+            calculate_trace_width,
+            calculate_microstrip_impedance,
+            extract_pcb_bom,
+            estimate_prototype_cost,
+            export_pcb_package,
+        )
+
+        action = str(params.get("action", "overview")).strip()
+        engine = get_pcb_engine()
+
+        if action == "overview":
+            overview = engine.get_overview()
+            return {
+                "action": "overview",
+                "stage": 28,
+                "projects_count": overview.projects_count,
+                "footprints_count": overview.footprints_count,
+                "toolchains": overview.toolchains,
+                "summary": f"NEXORA PCB Studio: {overview.projects_count} projects, {overview.footprints_count} standard footprints.",
+            }
+
+        if action == "footprints":
+            fps = list_available_footprints()
+            return {
+                "action": "footprints",
+                "count": len(fps),
+                "footprints": [f.model_dump() for f in fps],
+                "summary": f"Retrieved {len(fps)} standard verified SMD and Through-Hole footprints.",
+            }
+
+        if action == "convert_schematic":
+            sheet_data = params.get("sheet", {}) or {}
+            sheet = SchematicSheet(**sheet_data) if sheet_data else SchematicSheet()
+            overrides = params.get("custom_footprint_overrides", {})
+            w = float(params.get("board_width_mm", 100.0))
+            h = float(params.get("board_height_mm", 80.0))
+            resp = convert_schematic_to_pcb(
+                sheet=sheet,
+                board_width_mm=w,
+                board_height_mm=h,
+                custom_footprint_overrides=overrides,
+            )
+            return {
+                "action": "convert_schematic",
+                "mapped_count": resp.mapped_count,
+                "unmapped_count": len(resp.unmapped_components),
+                "unmapped_components": resp.unmapped_components,
+                "board": resp.board.model_dump(),
+                "summary": f"Converted schematic to PCB: {resp.mapped_count} components placed, {len(resp.unmapped_components)} unmapped.",
+            }
+
+        if action == "check_drc":
+            board_data = params.get("board", {}) or {}
+            board = PCBBoard(**board_data) if board_data else engine.list_projects()[0].board
+            report = run_design_rule_check(board)
+            return {
+                "action": "check_drc",
+                "passed": report.passed,
+                "total_findings": report.total_findings,
+                "critical_count": report.critical_count,
+                "warning_count": report.warning_count,
+                "routing_completion_pct": report.routing_completion_pct,
+                "report": report.model_dump(),
+                "summary": f"PCB DRC {'PASSED' if report.passed else 'FAILED'}: {report.critical_count} critical, {report.warning_count} warnings, completion {report.routing_completion_pct}%.",
+            }
+
+        if action == "routing_status":
+            board_data = params.get("board", {}) or {}
+            board = PCBBoard(**board_data) if board_data else engine.list_projects()[0].board
+            routing_stats = calculate_routing_summary(board)
+            return {
+                "action": "routing_status",
+                "total_connections": routing_stats["total_connections"],
+                "routed_connections": routing_stats["routed_connections"],
+                "unrouted_connections": routing_stats["unrouted_connections"],
+                "completion_percentage": routing_stats["completion_percentage"],
+                "summary": f"Routing completion: {routing_stats['completion_percentage']}% ({routing_stats['unrouted_connections']} unrouted flylines).",
+            }
+
+        if action == "assisted_route":
+            sx = float(params.get("start_x", 10.0))
+            sy = float(params.get("start_y", 10.0))
+            ex = float(params.get("end_x", 30.0))
+            ey = float(params.get("end_y", 25.0))
+            mode = str(params.get("mode", "45_degree"))
+            waypoints = assisted_route_path(sx, sy, ex, ey, mode=mode)
+            return {
+                "action": "assisted_route",
+                "mode": mode,
+                "waypoints": [{"x": p[0], "y": p[1]} for p in waypoints],
+                "summary": f"Computed {mode} route path with {len(waypoints)} vertices.",
+            }
+
+        if action == "calculate_trace_width":
+            calc_params = params.get("calc_params", {})
+            req = TraceWidthRequest(**calc_params) if calc_params else TraceWidthRequest(current_a=2.0)
+            res = calculate_trace_width(req)
+            return {
+                "action": "calculate_trace_width",
+                "result": res.model_dump(),
+                "summary": f"IPC-2152 for {res.current_a}A (ΔT={res.temp_rise_c}°C): min trace width = {res.min_width_mm:.3f}mm ({res.min_width_mils:.1f} mils).",
+            }
+
+        if action == "calculate_impedance":
+            calc_params = params.get("calc_params", {})
+            req = ImpedanceRequest(**calc_params) if calc_params else ImpedanceRequest(trace_width_mm=0.35)
+            res = calculate_microstrip_impedance(req)
+            return {
+                "action": "calculate_impedance",
+                "result": res.model_dump(),
+                "summary": f"IPC-2141 microstrip impedance for width {res.trace_width_mm}mm: Z0 = {res.characteristic_impedance_ohms:.1f} Ω, delay = {res.propagation_delay_ps_per_mm:.2f} ps/mm.",
+            }
+
+        if action == "bom_and_cost":
+            board_data = params.get("board", {}) or {}
+            board = PCBBoard(**board_data) if board_data else engine.list_projects()[0].board
+            bom = extract_pcb_bom(board)
+            cost_req = PCBCostEstimateRequest(
+                board_width_mm=board.width_mm,
+                board_height_mm=board.height_mm,
+                layer_count=board.layer_count,
+                quantity=int(params.get("quantity", 5)),
+                surface_finish=str(params.get("surface_finish", "HASL_lead_free")),
+            )
+            cost_res = estimate_prototype_cost(cost_req, bom_items=bom)
+            return {
+                "action": "bom_and_cost",
+                "bom_items_count": len(bom),
+                "bom": [b.model_dump() for b in bom],
+                "cost_estimate": cost_res.model_dump(),
+                "summary": f"BOM ({len(bom)} unique line items), Estimated prototype fab cost: ${cost_res.estimated_pcb_fabrication_cost_usd:.2f} for {cost_res.quantity} boards.",
+            }
+
+        if action == "export":
+            board_data = params.get("board", {}) or {}
+            board = PCBBoard(**board_data) if board_data else engine.list_projects()[0].board
+            fmt = str(params.get("export_format", "gerber_zip"))
+            exported = export_pcb_package(board, export_format=fmt)
+            return {
+                "action": "export",
+                "export_format": exported.export_format,
+                "filename": exported.filename,
+                "mime_type": exported.mime_type,
+                "summary": f"Exported board '{board.title}' as {exported.filename} ({exported.export_format}).",
+            }
+
+        return {
+            "action": action,
+            "error": f"Unknown action '{action}' for pcb_studio_engine.",
         }
 
 

@@ -40,7 +40,8 @@ interface CapabilityCard {
     | 'firmware'
     | 'telemetry'
     | 'security'
-    | 'schematic';
+    | 'schematic'
+    | 'pcb';
   icon: React.FC<{ className?: string }>;
 }
 
@@ -154,6 +155,16 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
     highlights: ['Interactive SVG netlist canvas', 'Static ERC diagnostic rules', 'SPICE & analytical linear solver'],
     targetView: 'schematic',
     icon: Cpu,
+  },
+  {
+    id: 'pcb-layout-studio',
+    title: 'PCB Layout & Design Studio',
+    stageBadge: 'Stage 28',
+    description:
+      'Multilayer EDA board editor, ratsnest flylines, assisted 45° routing, IPC-2152 DRC checks, 3D orbital preview, and Gerber/KiCad/drill exports.',
+    highlights: ['Interactive SVG/Canvas routing', '8-Rule geometric & short DRC', 'Gerber RS-274X & KiCad PCB'],
+    targetView: 'pcb',
+    icon: Layers,
   },
 ];
 
@@ -292,7 +303,8 @@ export const NexoraLandingPage: React.FC = () => {
       | 'firmware'
       | 'telemetry'
       | 'security'
-      | 'schematic' = 'chat'
+      | 'schematic'
+      | 'pcb' = 'chat'
   ) => {
     setActiveWorkspaceView(target);
   };

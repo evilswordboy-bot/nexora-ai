@@ -49,9 +49,9 @@ interface ChatContextType {
   showToast: (message: string, type?: 'success' | 'error' | 'info') => void;
   removeToast: (id: string) => void;
   refreshProviderStatus: () => Promise<void>;
-  // Workspace Views (Landing + Stages 4–27)
-  activeWorkspaceView: 'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic';
-  setActiveWorkspaceView: (view: 'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic') => void;
+  // Workspace Views (Landing + Stages 4–28)
+  activeWorkspaceView: 'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic' | 'pcb';
+  setActiveWorkspaceView: (view: 'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic' | 'pcb') => void;
   selectedDocumentIds: string[];
   toggleSelectDocument: (docId: string) => void;
   clearSelectedDocuments: () => void;
@@ -83,8 +83,8 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [setupGuideModalOpen, setSetupGuideModalOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
-  // Workspace Views State (Landing + Stages 4–27)
-  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic'>('landing');
+  // Workspace Views State (Landing + Stages 4–28)
+  const [activeWorkspaceView, setActiveWorkspaceView] = useState<'landing' | 'chat' | 'documents' | 'factcheck' | 'translation' | 'realtime' | 'vision' | 'reasoning' | 'routing' | 'memory' | 'agents' | 'workflows' | 'computer' | 'files' | 'terminal' | 'git' | 'evaluation' | 'discovery' | 'knowledgegraph' | 'iot' | 'firmware' | 'telemetry' | 'security' | 'schematic' | 'pcb'>('landing');
   const [selectedDocumentIds, setSelectedDocumentIds] = useState<string[]>([]);
 
   // Stage 7 Voice Intelligence State
