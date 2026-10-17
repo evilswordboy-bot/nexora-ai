@@ -385,11 +385,16 @@ async function handleCloudStandaloneChat(
     }
   }
 
-  // 3. Google Gemini Engine (Connected across all 29 Studios)
+  // 3. Multi-Model Engine (Google Gemini & OpenAI connected across all 29 Studios)
+  const isSelectedOpenAI =
+    params.settings.selectedProvider === 'openai' ||
+    params.settings.selectedModel.startsWith('gpt') ||
+    params.settings.selectedModel.startsWith('o1');
+
   params.onStart?.({
     id: msgId,
-    model: params.settings.selectedModel || 'gemini-1.5-flash',
-    provider: 'google-gemini',
+    model: params.settings.selectedModel || (isSelectedOpenAI ? 'gpt-4o' : 'gemini-1.5-flash'),
+    provider: isSelectedOpenAI ? 'openai' : 'google-gemini',
   });
 
   const reply = generateContextualEdgeResponse(lastUserMsg, params.messages);

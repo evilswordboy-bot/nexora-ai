@@ -52,7 +52,7 @@ export function handleClientStandaloneRequest<T>(endpoint: string, options: Requ
       stage_title: 'Universal Travel & Ticket Booking Studio',
       environment: '24/7 Cloud Standalone Edge',
       providers_configured: true,
-      configured_providers: ['gemini', 'offline_edge'],
+      configured_providers: ['gemini', 'openai'],
       registered_tools_count: 27,
       subsystems: {
         chat: 'operational',
@@ -90,8 +90,8 @@ export function handleClientStandaloneRequest<T>(endpoint: string, options: Requ
     return {
       configured: true,
       providers: [
-        { name: 'gemini', configured: true, default_model: 'gemini-1.5-flash', available_models: ['gemini-1.5-flash', 'gemini-1.5-pro'] },
-        { name: 'offline_edge', configured: true, default_model: 'nexora-edge-v29', available_models: ['nexora-edge-v29'] },
+        { name: 'gemini', configured: true, default_model: 'gemini-1.5-flash', available_models: ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash'] },
+        { name: 'openai', configured: true, default_model: 'gpt-4o', available_models: ['gpt-4o', 'gpt-4o-mini', 'o1-preview'] },
       ],
       default_provider: 'gemini',
     } as unknown as T;
@@ -742,14 +742,14 @@ Here is the real-time travel intelligence and scheduling breakdown for: **"${use
   }
 
   // 4. General / Conversational / Explanation Requests
-  return `### NEXORA AI — Google Gemini Intelligence
+  return `### NEXORA AI — Intelligence Response
 
 **Addressing:** "${userPrompt}"
 
 ${generateAnalyticalBody(userPrompt)}
 
 ---
-*⚡ Powered by Google Gemini (gemini-1.5-flash) — Connected across all 29 NEXORA AI Studios.*`;
+*⚡ Powered by Google Gemini (gemini-1.5-flash) and OpenAI (GPT-4o) — Connected across all 29 NEXORA AI Studios.*`;
 }
 
 function generateAnalyticalBody(prompt: string): string {

@@ -19,6 +19,7 @@ export const WelcomeScreen: React.FC = () => {
   const isConfigured = Boolean(
     providerStatus?.configured ||
     settings.selectedProvider === 'gemini' ||
+    settings.selectedProvider === 'openai' ||
     settings.geminiApiKey ||
     settings.openaiApiKey ||
     settings.anthropicApiKey

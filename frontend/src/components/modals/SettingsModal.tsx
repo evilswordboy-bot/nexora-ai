@@ -199,8 +199,8 @@ export const SettingsModal: React.FC = () => {
                   className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none"
                 >
                   <option value="gemini">Google Gemini (Connected Default)</option>
+                  <option value="openai">OpenAI (Connected / Configured)</option>
                   <option value="auto">Auto-Detect Configured Key</option>
-                  <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic Claude</option>
                 </select>
               </div>
