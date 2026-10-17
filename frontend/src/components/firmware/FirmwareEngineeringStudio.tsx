@@ -87,13 +87,13 @@ export const FirmwareEngineeringStudio: React.FC = () => {
         api.listIoTProjects(),
       ]);
       setMetadata(meta);
-      setPlatforms(plats);
-      setWorkspaces(wsList);
-      setIotProjects(iotList);
-      if (iotList.length > 0 && !linkedIotProjectId) {
+      setPlatforms(plats || []);
+      setWorkspaces(wsList || []);
+      setIotProjects(iotList || []);
+      if (iotList && iotList.length > 0 && !linkedIotProjectId) {
         setLinkedIotProjectId(iotList[0].project_id);
       }
-      if (wsList.length > 0) {
+      if (wsList && wsList.length > 0) {
         selectWorkspace(wsList[0]);
       }
     } catch (err: any) {
@@ -113,7 +113,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
     setExportResult(null);
     setPendingDeviceAction(null);
     const defaultFile =
-      ws.files.find((f) => f.role === 'main_entry') || ws.files[0] || null;
+      ws?.files?.find((f) => f.role === 'main_entry') || ws?.files?.[0] || null;
     if (defaultFile) {
       setSelectedFilePath(defaultFile.path);
       setEditorContent(defaultFile.content);
@@ -122,7 +122,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
 
   const handleSelectFile = (path: string) => {
     if (!activeWorkspace) return;
-    const found = activeWorkspace.files.find((f) => f.path === path);
+    const found = activeWorkspace?.files?.find((f) => f.path === path);
     if (found) {
       setSelectedFilePath(found.path);
       setEditorContent(found.content);
@@ -356,7 +356,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
             </div>
             <div>{metadata.safety_and_honesty_policy}</div>
             <div className="flex flex-wrap gap-2 pt-1">
-              {Object.entries(metadata.detected_toolchains).map(([tc, available]) => (
+              {metadata.detected_toolchains && Object.entries(metadata.detected_toolchains).map(([tc, available]) => (
                 <span
                   key={tc}
                   className={`px-2 py-0.5 rounded text-[11px] font-mono border ${
@@ -397,11 +397,11 @@ export const FirmwareEngineeringStudio: React.FC = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
               <Layers className="w-4 h-4 text-cyan-400" />
-              Firmware Workspaces ({workspaces.length})
+              Firmware Workspaces ({(workspaces || []).length})
             </h2>
           </div>
           <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-            {workspaces.map((ws) => (
+            {(workspaces || []).map((ws) => (
               <button
                 key={ws.fw_project_id}
                 onClick={() => selectWorkspace(ws)}
@@ -422,7 +422,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                   <span>•</span>
                   <span className="font-mono text-amber-300">{ws.framework}</span>
                   <span>•</span>
-                  <span>{ws.files.length} files</span>
+                  <span>{ws.files?.length || 0} files</span>
                 </div>
               </button>
             ))}
@@ -463,9 +463,9 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                 className="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
               >
                 <option value="">Standalone Board Profile (Default Sensor/Relay Netlist)</option>
-                {iotProjects.map((p) => (
+                {(iotProjects || []).map((p) => (
                   <option key={p.project_id} value={p.project_id}>
-                    {p.name} ({p.board_id} — {p.placed_components.length} components)
+                    {p.name} ({p.board_id} — {p.placed_components?.length || 0} components)
                   </option>
                 ))}
               </select>
@@ -540,14 +540,14 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                 { id: 'editor', label: 'Code Editor & Project Tree', icon: FileCode },
                 {
                   id: 'quality',
-                  label: `Hardware & Static Quality (${activeWorkspace.quality_report.issues.length + activeWorkspace.hardware_diagnostics.length})`,
+                  label: `Hardware & Static Quality (${(activeWorkspace.quality_report?.issues?.length || 0) + (activeWorkspace.hardware_diagnostics?.length || 0)})`,
                   icon: Wrench,
                 },
                 { id: 'compile', label: 'Sandboxed Compile & Unit Tests', icon: Play },
                 { id: 'serial', label: 'Serial Monitor & Device Flash', icon: Terminal },
                 {
                   id: 'versions',
-                  label: `Versions (${activeWorkspace.versions.length}) & Export`,
+                  label: `Versions (${activeWorkspace.versions?.length || 0}) & Export`,
                   icon: History,
                 },
               ].map((t) => {
@@ -578,12 +578,12 @@ export const FirmwareEngineeringStudio: React.FC = () => {
               </span>
               <span
                 className={`px-2.5 py-1 rounded font-semibold ${
-                  activeWorkspace.quality_report.passed_quality_gate
+                  activeWorkspace.quality_report?.passed_quality_gate
                     ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
                     : 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
                 }`}
               >
-                Quality Gate: {activeWorkspace.quality_report.passed_quality_gate ? 'PASS' : 'FAIL'}
+                Quality Gate: {activeWorkspace.quality_report?.passed_quality_gate ? 'PASS' : 'FAIL'}
               </span>
             </div>
           </div>
@@ -595,10 +595,10 @@ export const FirmwareEngineeringStudio: React.FC = () => {
               <div className="space-y-4">
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2">
                   <div className="text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                    Project Files ({activeWorkspace.files.length})
+                    Project Files ({activeWorkspace.files?.length || 0})
                   </div>
                   <div className="space-y-1">
-                    {activeWorkspace.files.map((f) => (
+                    {(activeWorkspace.files || []).map((f) => (
                       <button
                         key={f.path}
                         onClick={() => handleSelectFile(f.path)}
@@ -660,21 +660,21 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                   <div className="grid grid-cols-2 gap-1 text-[11px] text-slate-400">
                     <span>Optimization:</span>
                     <span className="font-mono text-white">
-                      {activeWorkspace.build_settings.optimization_level}
+                      {activeWorkspace.build_settings?.optimization_level || 'O2'}
                     </span>
                     <span>Watchdog Timer:</span>
                     <span className="font-mono text-emerald-300">
-                      {activeWorkspace.build_settings.watchdog_enabled
-                        ? `${activeWorkspace.build_settings.watchdog_timeout_ms} ms`
+                      {activeWorkspace.build_settings?.watchdog_enabled
+                        ? `${activeWorkspace.build_settings?.watchdog_timeout_ms || 5000} ms`
                         : 'Disabled'}
                     </span>
                     <span>Serial Baud:</span>
                     <span className="font-mono text-white">
-                      {activeWorkspace.build_settings.serial_baud_rate}
+                      {activeWorkspace.build_settings?.serial_baud_rate || 115200}
                     </span>
                   </div>
                   <div className="pt-2 border-t border-slate-800 space-y-1">
-                    {activeWorkspace.libraries.map((lib) => (
+                    {(activeWorkspace.libraries || []).map((lib) => (
                       <div
                         key={lib.name}
                         className="p-1.5 rounded bg-slate-950 border border-slate-800/80 text-[11px]"
@@ -738,9 +738,9 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-400" />
                   Hardware-Aware Pin, Voltage & Peripheral Diagnostics (
-                  {activeWorkspace.hardware_diagnostics.length})
+                  {(activeWorkspace.hardware_diagnostics || []).length})
                 </h3>
-                {activeWorkspace.hardware_diagnostics.length === 0 ? (
+                {(activeWorkspace.hardware_diagnostics || []).length === 0 ? (
                   <div className="p-4 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-300 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
                     All pin assignments, voltage levels, and peripheral headers match{' '}
@@ -748,7 +748,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {activeWorkspace.hardware_diagnostics.map((d) => (
+                    {(activeWorkspace.hardware_diagnostics || []).map((d) => (
                       <div
                         key={d.diag_id}
                         className="p-3 rounded-lg bg-slate-950 border border-amber-500/40 text-xs space-y-1"
@@ -784,31 +784,31 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                   <div className="p-2 rounded bg-slate-950 border border-slate-800">
                     <div className="text-slate-400">Critical</div>
                     <div className="text-lg font-bold text-rose-400">
-                      {activeWorkspace.quality_report.critical_count}
+                      {activeWorkspace.quality_report?.critical_count ?? 0}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-slate-950 border border-slate-800">
                     <div className="text-slate-400">Errors</div>
                     <div className="text-lg font-bold text-amber-400">
-                      {activeWorkspace.quality_report.error_count}
+                      {activeWorkspace.quality_report?.error_count ?? 0}
                     </div>
                   </div>
                   <div className="p-2 rounded bg-slate-950 border border-slate-800">
                     <div className="text-slate-400">Warnings</div>
                     <div className="text-lg font-bold text-yellow-300">
-                      {activeWorkspace.quality_report.warning_count}
+                      {activeWorkspace.quality_report?.warning_count ?? 0}
                     </div>
                   </div>
                 </div>
 
-                {activeWorkspace.quality_report.issues.length === 0 ? (
+                {(activeWorkspace.quality_report?.issues?.length || 0) === 0 ? (
                   <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-500/30 text-xs text-emerald-300">
                     Zero static safety issues (no unsafe strcpy/sprintf, no blocking loops, watchdog fed,
                     no hardcoded secrets).
                   </div>
                 ) : (
                   <div className="space-y-2 max-h-60 overflow-y-auto">
-                    {activeWorkspace.quality_report.issues.map((iss) => (
+                    {(activeWorkspace.quality_report?.issues || []).map((iss) => (
                       <div
                         key={iss.issue_id}
                         className="p-2.5 rounded-lg bg-slate-950 border border-rose-500/40 text-xs space-y-1"
@@ -840,20 +840,20 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                     </span>
                     <span
                       className={`font-mono px-2 py-0.5 rounded ${
-                        activeWorkspace.quality_report.unit_tests_passed
+                        activeWorkspace.quality_report?.unit_tests_passed
                           ? 'bg-emerald-500/20 text-emerald-300'
                           : 'bg-rose-500/20 text-rose-300'
                       }`}
                     >
-                      {activeWorkspace.quality_report.unit_tests_passed ? 'PASSED' : 'FAILED'}
+                      {activeWorkspace.quality_report?.unit_tests_passed ? 'PASSED' : 'FAILED'}
                     </span>
                   </div>
                   <pre className="text-[11px] font-mono text-slate-400 whitespace-pre-wrap max-h-32 overflow-y-auto">
-                    {activeWorkspace.quality_report.unit_test_output}
+                    {activeWorkspace.quality_report?.unit_test_output || 'No unit test output.'}
                   </pre>
                   <div className="text-[11px] text-amber-300 pt-1">
-                    <strong>HIL Status ({activeWorkspace.quality_report.hil_status}):</strong>{' '}
-                    {activeWorkspace.quality_report.hil_notes}
+                    <strong>HIL Status ({activeWorkspace.quality_report?.hil_status || 'not_configured'}):</strong>{' '}
+                    {activeWorkspace.quality_report?.hil_notes || 'No HIL notes'}
                   </div>
                 </div>
               </div>
@@ -1118,7 +1118,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                   <div className="font-semibold text-slate-200">
                     Bootloader Recovery & Safe Rollback Guidance
                   </div>
-                  {activeWorkspace.recovery_guidance.map((step, i) => (
+                  {(activeWorkspace.recovery_guidance || []).map((step, i) => (
                     <div key={i} className="text-slate-400 text-[11px]">
                       {step}
                     </div>
@@ -1135,10 +1135,10 @@ export const FirmwareEngineeringStudio: React.FC = () => {
               <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
                 <h3 className="text-sm font-semibold text-white flex items-center gap-2">
                   <History className="w-4 h-4 text-cyan-400" />
-                  Firmware Version History ({activeWorkspace.versions.length})
+                  Firmware Version History ({(activeWorkspace.versions || []).length})
                 </h3>
                 <div className="space-y-2">
-                  {activeWorkspace.versions
+                  {(activeWorkspace.versions || [])
                     .slice()
                     .reverse()
                     .map((ver) => (
@@ -1151,7 +1151,7 @@ export const FirmwareEngineeringStudio: React.FC = () => {
                             v{ver.semver} — <span className="text-slate-300">{ver.commit_note}</span>
                           </div>
                           <div className="text-[11px] text-slate-500">
-                            {ver.files.length} files • {ver.created_at}
+                            {ver.files?.length || 0} files • {ver.created_at}
                           </div>
                         </div>
                         <button

@@ -64,10 +64,10 @@ export const DiscoveryStudio: React.FC = () => {
         api.listDiscoveryHistory(10),
       ]);
       setMetadata(metaRes);
-      setHistory(histRes);
-      if (histRes.length > 0 && !discoveryResult) {
+      setHistory(histRes || []);
+      if (histRes && histRes.length > 0 && !discoveryResult) {
         setDiscoveryResult(histRes[0]);
-        setSelectedItem(histRes[0].results[0] || null);
+        setSelectedItem(histRes[0]?.results?.[0] || null);
       }
     } catch (err: any) {
       setErrorBanner(err.message || 'Failed to load Stage 21 Discovery metadata.');
@@ -161,7 +161,7 @@ export const DiscoveryStudio: React.FC = () => {
               </span>
               {metadata && (
                 <span className="px-2 py-0.5 text-[11px] font-mono rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                  {metadata.connectors.length} Multi-Source Connectors
+                  {metadata.connectors?.length || 0} Multi-Source Connectors
                 </span>
               )}
             </div>
@@ -415,7 +415,7 @@ export const DiscoveryStudio: React.FC = () => {
                     )}
                     <span>•</span>
                     <span>
-                      {discoveryResult.latency_ms.toFixed(1)} ms{' '}
+                      {(discoveryResult.latency_ms ?? 0).toFixed(1)} ms{' '}
                       {discoveryResult.cache_hit ? '(Cache Hit)' : '(Live)'}
                     </span>
                   </div>
@@ -423,7 +423,7 @@ export const DiscoveryStudio: React.FC = () => {
 
                 {/* Connector Status Pills (Explicitly surfacing source-specific errors) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {discoveryResult.connector_statuses.map((cs) => (
+                  {(discoveryResult.connector_statuses || []).map((cs) => (
                     <div
                       key={cs.connector_id}
                       className={`p-2 rounded-lg border text-[11px] ${
@@ -461,7 +461,7 @@ export const DiscoveryStudio: React.FC = () => {
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  Normalized Sources ({discoveryResult.results.length})
+                  Normalized Sources ({(discoveryResult.results || []).length})
                 </button>
                 <button
                   onClick={() => setActiveTab('synthesis')}
@@ -483,7 +483,7 @@ export const DiscoveryStudio: React.FC = () => {
                   }`}
                 >
                   <Clock className="w-3.5 h-3.5" />
-                  Timeline ({discoveryResult.synthesis.timeline.length})
+                  Timeline ({(discoveryResult.synthesis?.timeline || []).length})
                 </button>
                 <button
                   onClick={() => setActiveTab('comparison')}
@@ -513,7 +513,7 @@ export const DiscoveryStudio: React.FC = () => {
               {activeTab === 'results' && (
                 <div className="grid grid-cols-12 gap-4">
                   <div className="col-span-12 xl:col-span-7 space-y-2.5 max-h-[520px] overflow-y-auto pr-1">
-                    {discoveryResult.results.map((item) => {
+                    {(discoveryResult.results || []).map((item) => {
                       const isSelected = selectedItem?.item_id === item.item_id;
                       return (
                         <div
@@ -668,17 +668,17 @@ export const DiscoveryStudio: React.FC = () => {
                       Executive Grounded Summary
                     </h3>
                     <p className="text-xs text-slate-200 leading-relaxed">
-                      {discoveryResult.synthesis.concise_summary}
+                      {discoveryResult.synthesis?.concise_summary || 'No summary available.'}
                     </p>
                   </div>
 
-                  {discoveryResult.synthesis.detected_conflicts.length > 0 && (
+                  {(discoveryResult.synthesis?.detected_conflicts || []).length > 0 && (
                     <div className="bg-rose-950/40 border border-rose-500/40 rounded-xl p-4 space-y-2">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-rose-300">
                         Conflicting Information Detected (
-                        {discoveryResult.synthesis.detected_conflicts.length})
+                        {(discoveryResult.synthesis?.detected_conflicts || []).length})
                       </h3>
-                      {discoveryResult.synthesis.detected_conflicts.map((cf, i) => (
+                      {(discoveryResult.synthesis?.detected_conflicts || []).map((cf, i) => (
                         <div
                           key={i}
                           className="p-2.5 rounded-lg bg-slate-950/80 border border-rose-500/30 text-xs space-y-1"
@@ -698,13 +698,13 @@ export const DiscoveryStudio: React.FC = () => {
                     </div>
                   )}
 
-                  {discoveryResult.synthesis.evidence_gaps.length > 0 && (
+                  {(discoveryResult.synthesis?.evidence_gaps || []).length > 0 && (
                     <div className="bg-amber-950/40 border border-amber-500/40 rounded-xl p-4 space-y-2">
                       <h3 className="text-xs font-bold uppercase tracking-wider text-amber-300">
                         Identified Evidence Gaps & Provider Limitations
                       </h3>
                       <ul className="list-disc list-inside text-xs text-amber-100 space-y-1">
-                        {discoveryResult.synthesis.evidence_gaps.map((g, i) => (
+                        {(discoveryResult.synthesis?.evidence_gaps || []).map((g, i) => (
                           <li key={i}>{g}</li>
                         ))}
                       </ul>
@@ -716,7 +716,7 @@ export const DiscoveryStudio: React.FC = () => {
                       Detailed Multi-Section Discovery Report
                     </h3>
                     <pre className="p-3 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono text-slate-200 whitespace-pre-wrap max-h-80 overflow-y-auto">
-                      {discoveryResult.synthesis.detailed_report}
+                      {discoveryResult.synthesis?.detailed_report || 'No detailed report generated.'}
                     </pre>
                   </div>
                 </div>
@@ -728,19 +728,19 @@ export const DiscoveryStudio: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
                       Chronological Evidence Timeline (
-                      {discoveryResult.synthesis.timeline.length} Dated Events)
+                      {(discoveryResult.synthesis?.timeline || []).length} Dated Events)
                     </h3>
                     <span className="text-[11px] text-slate-400">
                       Undated sources are excluded rather than assigned fabricated dates
                     </span>
                   </div>
-                  {discoveryResult.synthesis.timeline.length === 0 ? (
+                  {(discoveryResult.synthesis?.timeline || []).length === 0 ? (
                     <p className="text-xs text-slate-500 py-6 text-center">
                       No sources with verified publication dates in this result set.
                     </p>
                   ) : (
                     <div className="space-y-2.5">
-                      {discoveryResult.synthesis.timeline.map((ev, i) => (
+                      {(discoveryResult.synthesis?.timeline || []).map((ev, i) => (
                         <div
                           key={i}
                           className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-start gap-3 text-xs"
@@ -776,7 +776,7 @@ export const DiscoveryStudio: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {discoveryResult.synthesis.source_comparison.map((row) => (
+                      {(discoveryResult.synthesis?.source_comparison || []).map((row) => (
                         <tr key={row.citation_index} className="hover:bg-slate-950/60">
                           <td className="py-2 pr-3 font-mono text-cyan-400 font-bold">
                             [{row.citation_index}]
@@ -819,7 +819,7 @@ export const DiscoveryStudio: React.FC = () => {
                       Expanded Subqueries & Follow-Up Searches
                     </h3>
                     <div className="space-y-1.5">
-                      {discoveryResult.expanded_subqueries.map((sq, i) => (
+                      {(discoveryResult.expanded_subqueries || []).map((sq, i) => (
                         <button
                           key={i}
                           onClick={() => {
@@ -838,7 +838,7 @@ export const DiscoveryStudio: React.FC = () => {
                       Suggested Follow-Up Questions
                     </h4>
                     <div className="space-y-1.5">
-                      {discoveryResult.follow_up_queries.map((fq, i) => (
+                      {(discoveryResult.follow_up_queries || []).map((fq, i) => (
                         <button
                           key={i}
                           onClick={() => {
@@ -858,7 +858,7 @@ export const DiscoveryStudio: React.FC = () => {
                       Alternative Viewpoints & Related Topics
                     </h3>
                     <div className="space-y-2">
-                      {discoveryResult.alternative_viewpoints.map((vp, i) => (
+                      {(discoveryResult.alternative_viewpoints || []).map((vp, i) => (
                         <div
                           key={i}
                           className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-300"
@@ -868,7 +868,7 @@ export const DiscoveryStudio: React.FC = () => {
                       ))}
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-2">
-                      {discoveryResult.related_topics.map((rt, i) => (
+                      {(discoveryResult.related_topics || []).map((rt, i) => (
                         <button
                           key={i}
                           onClick={() => {

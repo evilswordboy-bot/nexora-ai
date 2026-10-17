@@ -155,12 +155,12 @@ export const KnowledgeGraphStudio: React.FC = () => {
         api.listKnowledgeGraphHistory('default_user', workspaceId, 20),
       ]);
       setMetadata(metaRes);
-      setSnapshot(snapRes);
-      setDuplicates(dupRes);
-      setPendingOps(opsRes);
-      setHistoryLogs(histRes);
+      setSnapshot(snapRes || null);
+      setDuplicates(dupRes || []);
+      setPendingOps(opsRes || []);
+      setHistoryLogs(histRes || []);
 
-      if (snapRes.nodes.length > 0 && !selectedNode) {
+      if (snapRes?.nodes && snapRes.nodes.length > 0 && !selectedNode) {
         setSelectedNode(snapRes.nodes[0]);
       }
     } catch (err: any) {
@@ -619,7 +619,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
                   </button>
                 </div>
 
-                {snapshot && snapshot.nodes.length > 0 ? (
+                {snapshot && (snapshot.nodes?.length || 0) > 0 ? (
                   <svg
                     viewBox="0 0 860 520"
                     className="w-full h-full select-none"
@@ -662,7 +662,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
 
                     <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
                       {/* Edges */}
-                      {snapshot.edges.map((edge) => {
+                      {(snapshot.edges || []).map((edge) => {
                         const p1 = nodePositions[edge.source_entity_id];
                         const p2 = nodePositions[edge.target_entity_id];
                         if (!p1 || !p2) return null;
@@ -732,7 +732,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
                       })}
 
                       {/* Nodes */}
-                      {snapshot.nodes.map((node) => {
+                      {(snapshot.nodes || []).map((node) => {
                         const pt = nodePositions[node.entity_id];
                         if (!pt) return null;
                         const palette = ENTITY_COLORS[node.entity_type] || ENTITY_COLORS.concept;
@@ -822,11 +822,11 @@ export const KnowledgeGraphStudio: React.FC = () => {
                     </span>
                   </div>
 
-                  {selectedNode.aliases.length > 0 && (
+                  {(selectedNode.aliases?.length || 0) > 0 && (
                     <div>
                       <span className="text-[11px] font-semibold text-slate-400 uppercase">Known Aliases</span>
                       <div className="flex flex-wrap gap-1.5 mt-1">
-                        {selectedNode.aliases.map((al) => (
+                        {(selectedNode.aliases || []).map((al) => (
                           <span
                             key={al}
                             className="text-xs px-2 py-0.5 rounded-md bg-slate-800 text-slate-200 border border-slate-700"
@@ -863,7 +863,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                         <FileText className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Originating Provenance ({selectedNode.provenance.length})</span>
+                        <span>Originating Provenance ({(selectedNode.provenance?.length || 0)})</span>
                       </span>
                       <button
                         onClick={() => handleRequestDeleteNode(selectedNode.entity_id)}
@@ -876,7 +876,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
                     </div>
 
                     <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                      {selectedNode.provenance.map((ev) => (
+                      {(selectedNode.provenance || []).map((ev) => (
                         <div
                           key={ev.evidence_id}
                           className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800/80 space-y-1 text-xs"
@@ -935,9 +935,9 @@ export const KnowledgeGraphStudio: React.FC = () => {
 
                   <div className="space-y-2 pt-2 border-t border-slate-800">
                     <span className="text-xs font-bold text-slate-200">
-                      Supporting / Contradicting Evidence ({selectedEdge.evidence.length})
+                      Supporting / Contradicting Evidence ({(selectedEdge.evidence?.length || 0)})
                     </span>
-                    {selectedEdge.evidence.map((ev) => (
+                    {(selectedEdge.evidence || []).map((ev) => (
                       <div
                         key={ev.evidence_id}
                         className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1 text-xs"
@@ -1142,12 +1142,12 @@ export const KnowledgeGraphStudio: React.FC = () => {
                   </div>
 
                   {/* Connection Paths */}
-                  {queryResult.paths.length > 0 && (
+                  {(queryResult.paths?.length || 0) > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold text-slate-300 uppercase">
-                        Discovered Graph Paths ({queryResult.paths.length})
+                        Discovered Graph Paths ({(queryResult.paths?.length || 0)})
                       </h4>
-                      {queryResult.paths.map((pathSteps, pIdx) => (
+                      {(queryResult.paths || []).map((pathSteps, pIdx) => (
                         <div
                           key={pIdx}
                           className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 text-xs"
@@ -1155,7 +1155,7 @@ export const KnowledgeGraphStudio: React.FC = () => {
                           <div className="font-semibold text-cyan-300">
                             Path #{pIdx + 1} ({pathSteps.length} hop{pathSteps.length > 1 ? 's' : ''})
                           </div>
-                          {pathSteps.map((st) => (
+                          {(pathSteps || []).map((st) => (
                             <div
                               key={`${pIdx}-${st.step_index}`}
                               className="flex flex-wrap items-center justify-between gap-2 pl-2 border-l-2 border-cyan-500/40"
@@ -1184,13 +1184,13 @@ export const KnowledgeGraphStudio: React.FC = () => {
                   )}
 
                   {/* Contradictions */}
-                  {queryResult.contradictions.length > 0 && (
+                  {(queryResult.contradictions?.length || 0) > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-xs font-bold text-rose-300 uppercase flex items-center gap-1.5">
                         <AlertTriangle className="w-3.5 h-3.5" />
-                        <span>Contested Claims & Source Disagreements ({queryResult.contradictions.length})</span>
+                        <span>Contested Claims & Source Disagreements ({(queryResult.contradictions?.length || 0)})</span>
                       </h4>
-                      {queryResult.contradictions.map((c, idx) => (
+                      {(queryResult.contradictions || []).map((c, idx) => (
                         <div
                           key={idx}
                           className="p-3.5 rounded-xl bg-rose-950/20 border border-rose-500/30 space-y-2 text-xs"

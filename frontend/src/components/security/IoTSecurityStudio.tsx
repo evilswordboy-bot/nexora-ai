@@ -87,15 +87,15 @@ export const IoTSecurityStudio: React.FC = () => {
         api.listDefensiveActions(),
       ]);
 
-      setOverview(overviewRes);
-      setPostures(overviewRes.devices_posture);
-      setFindings(overviewRes.config_findings);
-      setAnomalies(overviewRes.recent_anomalies);
-      setIncidents(overviewRes.active_incidents);
-      setFirmwareMatrix(fwSpecs);
-      setDefensiveActions(actions);
+      setOverview(overviewRes || null);
+      setPostures(overviewRes?.devices_posture || []);
+      setFindings(overviewRes?.config_findings || []);
+      setAnomalies(overviewRes?.recent_anomalies || []);
+      setIncidents(overviewRes?.active_incidents || []);
+      setFirmwareMatrix(fwSpecs || []);
+      setDefensiveActions(actions || []);
 
-      if (!selectedDeviceId && overviewRes.devices_posture.length > 0) {
+      if (!selectedDeviceId && overviewRes?.devices_posture && overviewRes.devices_posture.length > 0) {
         setSelectedDeviceId(overviewRes.devices_posture[0].device_id);
       }
       setLastRefreshedAt(new Date());
@@ -243,14 +243,14 @@ export const IoTSecurityStudio: React.FC = () => {
             <span className="text-slate-400">Avg Risk:</span>
             <span
               className={`font-mono font-bold ${
-                (overview?.fleet_posture_summary.average_fleet_risk_score ?? 0) >= 60
+                (overview?.fleet_posture_summary?.average_fleet_risk_score ?? 0) >= 60
                   ? 'text-rose-400'
-                  : (overview?.fleet_posture_summary.average_fleet_risk_score ?? 0) >= 30
+                  : (overview?.fleet_posture_summary?.average_fleet_risk_score ?? 0) >= 30
                   ? 'text-amber-400'
                   : 'text-emerald-400'
               }`}
             >
-              {overview?.fleet_posture_summary.average_fleet_risk_score ?? 0}/100
+              {overview?.fleet_posture_summary?.average_fleet_risk_score ?? 0}/100
             </span>
           </div>
 

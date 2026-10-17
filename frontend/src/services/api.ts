@@ -211,7 +211,17 @@ import {
   TravelAuditRecord,
   TravelOverviewResponse,
 } from '../types';
-import { handleClientStandaloneRequest, generateContextualEdgeResponse } from './standaloneSimulation';
+import {
+  handleClientStandaloneRequest,
+  generateContextualEdgeResponse,
+  getStandaloneDiscoveryMetadata,
+  getSampleDiscoverySearch,
+  getStandaloneKGMetadata,
+  getStandaloneKGSnapshot,
+  getStandaloneFirmwareMetadata,
+  getSampleFirmwareWorkspace,
+  getStandaloneIoTSecurityOverview,
+} from './standaloneSimulation';
 
 const BASE_URL = '/api/v1';
 
@@ -2630,7 +2640,11 @@ export const api = {
   // =========================================================================
 
   async getDiscoveryMetadata(): Promise<DiscoveryMetadataResponse> {
-    return request<DiscoveryMetadataResponse>('/discovery/metadata');
+    try {
+      return await request<DiscoveryMetadataResponse>('/discovery/metadata');
+    } catch {
+      return getStandaloneDiscoveryMetadata();
+    }
   },
 
   async executeDiscoverySearch(params: {
@@ -2671,7 +2685,11 @@ export const api = {
   },
 
   async listDiscoveryHistory(limit = 15): Promise<DiscoverySearchResponse[]> {
-    return request<DiscoverySearchResponse[]>(`/discovery/history?limit=${limit}`);
+    try {
+      return await request<DiscoverySearchResponse[]>(`/discovery/history?limit=${limit}`);
+    } catch {
+      return [getSampleDiscoverySearch()];
+    }
   },
 
   // =========================================================================
@@ -2679,7 +2697,11 @@ export const api = {
   // =========================================================================
 
   async getKnowledgeGraphMetadata(): Promise<KGMetadataResponse> {
-    return request<KGMetadataResponse>('/knowledge-graph/metadata');
+    try {
+      return await request<KGMetadataResponse>('/knowledge-graph/metadata');
+    } catch {
+      return getStandaloneKGMetadata();
+    }
   },
 
   async getKnowledgeGraphSnapshot(params?: {
@@ -2692,16 +2714,20 @@ export const api = {
     page?: number;
     page_size?: number;
   }): Promise<KGGraphSnapshotResponse> {
-    const q = new URLSearchParams();
-    q.set('user_id', params?.user_id || 'default_user');
-    q.set('workspace_id', params?.workspace_id || 'default_workspace');
-    if (params?.search) q.set('search', params.search);
-    if (params?.entity_type) q.set('entity_type', params.entity_type);
-    if (params?.relation_type) q.set('relation_type', params.relation_type);
-    if (params?.fact_basis) q.set('fact_basis', params.fact_basis);
-    q.set('page', String(params?.page || 1));
-    q.set('page_size', String(params?.page_size || 50));
-    return request<KGGraphSnapshotResponse>(`/knowledge-graph/snapshot?${q.toString()}`);
+    try {
+      const q = new URLSearchParams();
+      q.set('user_id', params?.user_id || 'default_user');
+      q.set('workspace_id', params?.workspace_id || 'default_workspace');
+      if (params?.search) q.set('search', params.search);
+      if (params?.entity_type) q.set('entity_type', params.entity_type);
+      if (params?.relation_type) q.set('relation_type', params.relation_type);
+      if (params?.fact_basis) q.set('fact_basis', params.fact_basis);
+      q.set('page', String(params?.page || 1));
+      q.set('page_size', String(params?.page_size || 50));
+      return await request<KGGraphSnapshotResponse>(`/knowledge-graph/snapshot?${q.toString()}`);
+    } catch {
+      return getStandaloneKGSnapshot();
+    }
   },
 
   async ingestKnowledgeGraph(params: {
@@ -2782,9 +2808,13 @@ export const api = {
     userId = 'default_user',
     workspaceId = 'default_workspace'
   ): Promise<KGDuplicateCandidate[]> {
-    return request<KGDuplicateCandidate[]>(
-      `/knowledge-graph/duplicates?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
-    );
+    try {
+      return await request<KGDuplicateCandidate[]>(
+        `/knowledge-graph/duplicates?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return [];
+    }
   },
 
   async mergeKnowledgeGraphEntities(params: {
@@ -2852,9 +2882,13 @@ export const api = {
     userId = 'default_user',
     workspaceId = 'default_workspace'
   ): Promise<KGDestructiveOperationRecord[]> {
-    return request<KGDestructiveOperationRecord[]>(
-      `/knowledge-graph/operations?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
-    );
+    try {
+      return await request<KGDestructiveOperationRecord[]>(
+        `/knowledge-graph/operations?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return [];
+    }
   },
 
   async listKnowledgeGraphHistory(
@@ -2862,9 +2896,24 @@ export const api = {
     workspaceId = 'default_workspace',
     limit = 25
   ): Promise<KGChangeLogEntry[]> {
-    return request<KGChangeLogEntry[]>(
-      `/knowledge-graph/history?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}&limit=${limit}`
-    );
+    try {
+      return await request<KGChangeLogEntry[]>(
+        `/knowledge-graph/history?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}&limit=${limit}`
+      );
+    } catch {
+      return [
+        {
+          change_id: 'chg-01',
+          user_id: userId,
+          workspace_id: workspaceId,
+          action_type: 'seed_sample',
+          summary: 'Seeded initial verified hardware topology knowledge graph with ESP32, FreeRTOS, and mTLS standards.',
+          affected_entity_ids: ['ent-esp32', 'ent-freertos', 'ent-mqtt-tls'],
+          affected_relationship_ids: ['rel-1', 'rel-2'],
+          created_at: new Date().toISOString(),
+        },
+      ];
+    }
   },
 
   // Stage 23: IoT Project Builder Methods
@@ -3033,20 +3082,32 @@ export const api = {
 
   // Stage 24: Embedded Firmware Engineering Studio Methods
   async getFirmwareMetadata(): Promise<FirmwareMetadataResponse> {
-    return request<FirmwareMetadataResponse>('/firmware/metadata');
+    try {
+      return await request<FirmwareMetadataResponse>('/firmware/metadata');
+    } catch {
+      return getStandaloneFirmwareMetadata();
+    }
   },
 
   async listFirmwarePlatforms(): Promise<FirmwarePlatformMatrixEntry[]> {
-    return request<FirmwarePlatformMatrixEntry[]>('/firmware/platforms');
+    try {
+      return await request<FirmwarePlatformMatrixEntry[]>('/firmware/platforms');
+    } catch {
+      return getStandaloneFirmwareMetadata().platform_matrix;
+    }
   },
 
   async listFirmwareWorkspaces(
     userId = 'default_user',
     workspaceId = 'default_workspace'
   ): Promise<FirmwareWorkspaceRecord[]> {
-    return request<FirmwareWorkspaceRecord[]>(
-      `/firmware/workspaces?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
-    );
+    try {
+      return await request<FirmwareWorkspaceRecord[]>(
+        `/firmware/workspaces?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return [getSampleFirmwareWorkspace()];
+    }
   },
 
   async createFirmwareWorkspace(params: {
@@ -3560,25 +3621,7 @@ export const api = {
         `/iot-security/overview?workspace_id=${encodeURIComponent(workspaceId)}`
       );
     } catch {
-      return {
-        stage: 26,
-        fleet_posture_summary: {
-          total_devices_monitored: 0,
-          average_fleet_risk_score: 0,
-          risk_distribution: { critical: 0, high: 0, medium: 0, low: 0, unknown: 0 },
-          active_config_findings: 0,
-          recent_behavioral_anomalies: 0,
-          open_security_incidents: 0,
-          tls_enforced_devices_count: 0,
-          unencrypted_transport_devices_count: 0,
-        },
-        devices_posture: [],
-        active_incidents: [],
-        recent_anomalies: [],
-        config_findings: [],
-        firmware_integrity_matrix: [],
-        last_assessment_at: new Date().toISOString(),
-      };
+      return getStandaloneIoTSecurityOverview();
     }
   },
 
@@ -3764,7 +3807,7 @@ export const api = {
     try {
       return await request<FirmwareIntegritySpec[]>('/iot-security/firmware-integrity-matrix');
     } catch {
-      return [];
+      return getStandaloneIoTSecurityOverview().firmware_integrity_matrix;
     }
   },
 

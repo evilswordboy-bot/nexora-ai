@@ -32,11 +32,12 @@ import { SchematicStudio } from './components/schematic/SchematicStudio';
 import { PCBStudio } from './components/pcb/PCBStudio';
 import { TravelBookingStudio } from './components/travel/TravelBookingStudio';
 import { NexoraLandingPage } from './components/landing/NexoraLandingPage';
+import { StudioErrorBoundary } from './components/ui/StudioErrorBoundary';
 import { Conversation } from './types';
 
 
 const MainLayout: React.FC = () => {
-  const { deleteConversation, activeWorkspaceView } = useChat();
+  const { deleteConversation, activeWorkspaceView, setActiveWorkspaceView } = useChat();
   const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
 
   if (activeWorkspaceView === 'landing') {
@@ -58,58 +59,62 @@ const MainLayout: React.FC = () => {
       {/* Main Workspace Column */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
         <Header />
-        {activeWorkspaceView === 'documents' ? (
-          <DocumentsWorkspace />
-        ) : activeWorkspaceView === 'factcheck' ? (
-          <FactCheckWorkspace />
-        ) : activeWorkspaceView === 'translation' ? (
-          <TranslationWorkspace />
-        ) : activeWorkspaceView === 'realtime' ? (
-          <RealTimeWorkspace />
-        ) : activeWorkspaceView === 'vision' ? (
-          <VisionStudio />
-        ) : activeWorkspaceView === 'reasoning' ? (
-          <ReasoningStudio />
-        ) : activeWorkspaceView === 'routing' ? (
-          <RoutingStudio />
-        ) : activeWorkspaceView === 'memory' ? (
-          <MemoryStudio />
-        ) : activeWorkspaceView === 'agents' ? (
-          <AgentStudio />
-        ) : activeWorkspaceView === 'workflows' ? (
-          <WorkflowStudio />
-        ) : activeWorkspaceView === 'computer' ? (
-          <ComputerStudio />
-        ) : activeWorkspaceView === 'files' ? (
-          <FileWorkspaceStudio />
-        ) : activeWorkspaceView === 'terminal' ? (
-          <TerminalCodeStudio />
-        ) : activeWorkspaceView === 'git' ? (
-          <GitVersionControlStudio />
-        ) : activeWorkspaceView === 'evaluation' ? (
-          <EvaluationStudio />
-        ) : activeWorkspaceView === 'discovery' ? (
-          <DiscoveryStudio />
-        ) : activeWorkspaceView === 'knowledgegraph' ? (
-          <KnowledgeGraphStudio />
-        ) : activeWorkspaceView === 'iot' ? (
-          <IoTProjectBuilderStudio />
-        ) : activeWorkspaceView === 'firmware' ? (
-          <FirmwareEngineeringStudio />
-        ) : activeWorkspaceView === 'security' ? (
-          <IoTSecurityStudio />
-        ) : activeWorkspaceView === 'schematic' ? (
-          <SchematicStudio />
-        ) : activeWorkspaceView === 'pcb' ? (
-          <PCBStudio />
-        ) : activeWorkspaceView === 'travel' ? (
-          <TravelBookingStudio />
-        ) : activeWorkspaceView === 'telemetry' ? (
-          <IoTTelemetryStudio />
-        ) : (
-          <ChatArea />
-        )}
-
+        <StudioErrorBoundary
+          studioName={activeWorkspaceView}
+          onGoHome={() => setActiveWorkspaceView('chat')}
+        >
+          {activeWorkspaceView === 'documents' ? (
+            <DocumentsWorkspace />
+          ) : activeWorkspaceView === 'factcheck' ? (
+            <FactCheckWorkspace />
+          ) : activeWorkspaceView === 'translation' ? (
+            <TranslationWorkspace />
+          ) : activeWorkspaceView === 'realtime' ? (
+            <RealTimeWorkspace />
+          ) : activeWorkspaceView === 'vision' ? (
+            <VisionStudio />
+          ) : activeWorkspaceView === 'reasoning' ? (
+            <ReasoningStudio />
+          ) : activeWorkspaceView === 'routing' ? (
+            <RoutingStudio />
+          ) : activeWorkspaceView === 'memory' ? (
+            <MemoryStudio />
+          ) : activeWorkspaceView === 'agents' ? (
+            <AgentStudio />
+          ) : activeWorkspaceView === 'workflows' ? (
+            <WorkflowStudio />
+          ) : activeWorkspaceView === 'computer' ? (
+            <ComputerStudio />
+          ) : activeWorkspaceView === 'files' ? (
+            <FileWorkspaceStudio />
+          ) : activeWorkspaceView === 'terminal' ? (
+            <TerminalCodeStudio />
+          ) : activeWorkspaceView === 'git' ? (
+            <GitVersionControlStudio />
+          ) : activeWorkspaceView === 'evaluation' ? (
+            <EvaluationStudio />
+          ) : activeWorkspaceView === 'discovery' ? (
+            <DiscoveryStudio />
+          ) : activeWorkspaceView === 'knowledgegraph' ? (
+            <KnowledgeGraphStudio />
+          ) : activeWorkspaceView === 'iot' ? (
+            <IoTProjectBuilderStudio />
+          ) : activeWorkspaceView === 'firmware' ? (
+            <FirmwareEngineeringStudio />
+          ) : activeWorkspaceView === 'security' ? (
+            <IoTSecurityStudio />
+          ) : activeWorkspaceView === 'schematic' ? (
+            <SchematicStudio />
+          ) : activeWorkspaceView === 'pcb' ? (
+            <PCBStudio />
+          ) : activeWorkspaceView === 'travel' ? (
+            <TravelBookingStudio />
+          ) : activeWorkspaceView === 'telemetry' ? (
+            <IoTTelemetryStudio />
+          ) : (
+            <ChatArea />
+          )}
+        </StudioErrorBoundary>
       </div>
 
       {/* Global Modals & Notifications */}
