@@ -3767,6 +3767,211 @@ export interface PCBOverviewResponse {
   toolchains: Record<string, boolean>;
 }
 
+// ==========================================
+// STAGE 29: UNIVERSAL TRAVEL & TICKET BOOKING
+// ==========================================
+
+export type TravelCategory =
+  | 'flight'
+  | 'train'
+  | 'bus'
+  | 'hotel'
+  | 'movie'
+  | 'event'
+  | 'concert'
+  | 'sport';
+
+export type TravelBookingStatus =
+  | 'HELD'
+  | 'CONFIRMED'
+  | 'PENDING_PROVIDER'
+  | 'CANCEL_REQUESTED'
+  | 'CANCELLED'
+  | 'RESCHEDULE_REQUESTED'
+  | 'RESCHEDULED'
+  | 'EXPIRED'
+  | 'FAILED';
+
+export type TravelRefundStatus =
+  | 'NONE'
+  | 'PENDING'
+  | 'COMPLETED'
+  | 'REJECTED_NON_REFUNDABLE'
+  | 'PARTIAL';
+
+export interface TravelCancellationPolicy {
+  is_refundable: boolean;
+  deadline_hours_before?: number | null;
+  cancellation_fee: number;
+  fee_currency: string;
+  description: string;
+  allow_reschedule: boolean;
+  reschedule_fee: number;
+}
+
+export interface TravelPriceBreakdown {
+  base_amount: number;
+  taxes_amount: number;
+  fees_amount: number;
+  discount_amount: number;
+  total_amount: number;
+  currency: string;
+}
+
+export interface TravelProductItem {
+  id: string;
+  category: TravelCategory;
+  provider: string;
+  provider_code: string;
+  title: string;
+  subtitle?: string | null;
+  origin?: string | null;
+  destination: string;
+  departure_time?: string | null;
+  arrival_time?: string | null;
+  duration?: string | null;
+  operator_name: string;
+  rating?: number | null;
+  amenities: string[];
+  accessibility: string[];
+  cabin_or_seat_class: string;
+  available_seats: number;
+  price_breakdown: TravelPriceBreakdown;
+  cancellation_policy: TravelCancellationPolicy;
+  terms_url?: string | null;
+  retrieved_at: string;
+  is_stale?: boolean;
+  tags: string[];
+}
+
+export interface TravelSearchQuery {
+  category: TravelCategory;
+  origin?: string | null;
+  destination: string;
+  departure_date: string;
+  return_date?: string | null;
+  passengers_count: number;
+  min_price?: number | null;
+  max_price?: number | null;
+  cabin_class?: string | null;
+  direct_only?: boolean;
+  timing_slot?: string | null;
+  amenities?: string[] | null;
+  accessible_required?: boolean;
+  provider?: string | null;
+}
+
+export interface TravelPassengerInfo {
+  passenger_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone?: string | null;
+  document_type?: string | null;
+  document_number?: string | null;
+  seat_preference?: string | null;
+  special_requests?: string | null;
+}
+
+export interface TravelPaymentToken {
+  payment_method: 'tokenized_card' | 'upi_token' | 'wallet_token' | 'sandbox_token';
+  payment_token: string;
+  card_brand?: string | null;
+  card_last4?: string | null;
+  billing_name: string;
+}
+
+export interface TravelHoldRequest {
+  product_id: string;
+  category: TravelCategory;
+  provider: string;
+  passengers_count: number;
+  user_id?: string;
+}
+
+export interface TravelHoldResponse {
+  hold_id: string;
+  product_id: string;
+  expires_at: string;
+  locked_price: TravelPriceBreakdown;
+  status: string;
+}
+
+export interface TravelBookingRequest {
+  idempotency_key: string;
+  product_id: string;
+  hold_id?: string | null;
+  category: TravelCategory;
+  passengers: TravelPassengerInfo[];
+  payment: TravelPaymentToken;
+  explicit_confirmation: boolean;
+  contact_email: string;
+  contact_phone?: string | null;
+  user_id?: string;
+}
+
+export interface TravelBookingRecord {
+  booking_id: string;
+  idempotency_key: string;
+  user_id: string;
+  product_id: string;
+  category: TravelCategory;
+  provider: string;
+  provider_booking_ref: string;
+  product_summary: string;
+  operator_name: string;
+  origin?: string | null;
+  destination: string;
+  departure_date: string;
+  passengers: TravelPassengerInfo[];
+  payment_method: string;
+  payment_last4?: string | null;
+  payment_tx_id: string;
+  price_breakdown: TravelPriceBreakdown;
+  cancellation_policy: TravelCancellationPolicy;
+  booking_status: TravelBookingStatus;
+  refund_status: TravelRefundStatus;
+  refund_amount: number;
+  receipt_url: string;
+  support_contact: string;
+  is_idempotent_replay: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TravelCancellationRequest {
+  booking_id: string;
+  reason: string;
+  confirm_cancellation: boolean;
+}
+
+export interface TravelRescheduleRequest {
+  booking_id: string;
+  new_departure_date: string;
+  reason?: string | null;
+}
+
+export interface TravelAuditRecord {
+  audit_id: string;
+  booking_id?: string | null;
+  user_id: string;
+  action: string;
+  provider: string;
+  status: string;
+  details: Record<string, any>;
+  created_at: string;
+}
+
+export interface TravelOverviewResponse {
+  stage: number;
+  active_providers: string[];
+  supported_categories: string[];
+  total_bookings: number;
+  confirmed_bookings: number;
+  recent_bookings: TravelBookingRecord[];
+}
+
+
 
 
 

@@ -30,8 +30,10 @@ import { IoTTelemetryStudio } from './components/telemetry/IoTTelemetryStudio';
 import { IoTSecurityStudio } from './components/security/IoTSecurityStudio';
 import { SchematicStudio } from './components/schematic/SchematicStudio';
 import { PCBStudio } from './components/pcb/PCBStudio';
+import { TravelBookingStudio } from './components/travel/TravelBookingStudio';
 import { NexoraLandingPage } from './components/landing/NexoraLandingPage';
 import { Conversation } from './types';
+
 
 const MainLayout: React.FC = () => {
   const { deleteConversation, activeWorkspaceView } = useChat();
@@ -100,11 +102,14 @@ const MainLayout: React.FC = () => {
           <SchematicStudio />
         ) : activeWorkspaceView === 'pcb' ? (
           <PCBStudio />
+        ) : activeWorkspaceView === 'travel' ? (
+          <TravelBookingStudio />
         ) : activeWorkspaceView === 'telemetry' ? (
           <IoTTelemetryStudio />
         ) : (
           <ChatArea />
         )}
+
       </div>
 
       {/* Global Modals & Notifications */}

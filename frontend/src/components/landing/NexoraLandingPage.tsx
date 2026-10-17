@@ -20,7 +20,9 @@ import {
   ChevronRight,
   Radio,
   ShieldAlert,
+  Plane,
 } from 'lucide-react';
+
 import { useChat } from '../../context/ChatContext';
 
 interface CapabilityCard {
@@ -41,8 +43,10 @@ interface CapabilityCard {
     | 'telemetry'
     | 'security'
     | 'schematic'
-    | 'pcb';
+    | 'pcb'
+    | 'travel';
   icon: React.FC<{ className?: string }>;
+
 }
 
 const CAPABILITY_CARDS: CapabilityCard[] = [
@@ -166,7 +170,18 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
     targetView: 'pcb',
     icon: Layers,
   },
+  {
+    id: 'travel-ticket-commerce',
+    title: 'Universal Travel & Ticket Booking',
+    stageBadge: 'Stage 29',
+    description:
+      'Unified multi-provider discovery and booking for flights, trains, buses, hotels, movies, and events with live availability, transparent pricing, and tokenized payment security.',
+    highlights: ['Amadeus, IRCTC, RedBus, Booking & Ticketmaster', 'Tokenized cards & zero raw CVV storage', 'Idempotent checkout & digital pass PNR'],
+    targetView: 'travel',
+    icon: Plane,
+  },
 ];
+
 
 const PIPELINE_STEPS = [
   {
@@ -304,10 +319,12 @@ export const NexoraLandingPage: React.FC = () => {
       | 'telemetry'
       | 'security'
       | 'schematic'
-      | 'pcb' = 'chat'
+      | 'pcb'
+      | 'travel' = 'chat'
   ) => {
     setActiveWorkspaceView(target);
   };
+
 
   const scrollToSection = (sectionId: string) => {
     const el = document.getElementById(sectionId);

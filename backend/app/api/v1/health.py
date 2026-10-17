@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 28,
-        "stage_title": "PCB Layout & Design Studio",
+        "stage": 29,
+        "stage_title": "Universal Travel & Ticket Booking Studio",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -46,7 +46,9 @@ async def health_check():
             "iot_security": "operational",
             "schematic_studio": "operational",
             "pcb_studio": "operational",
+            "travel_booking": "operational",
         },
+
     }
 
 

@@ -912,6 +912,51 @@ class ToolRegistry:
             handler=self._handle_pcb_studio_engine,
         )
 
+        # 30. Stage 29: Universal Travel & Ticket Booking Tool
+        self.register(
+            tool=ToolDefinition(
+                name="travel_booking_engine",
+                description=(
+                    "Discovers, searches, compares, and books travel and ticket products (flights, trains, buses, hotels, "
+                    "movies, concerts, sports, and live events) across authorized provider adapters (Amadeus, IRCTC, "
+                    "RedBus, Booking.com, BookMyShow, Ticketmaster, and NEXORA Sandbox). "
+                    "Enforces transparent pricing breakdowns, live availability, tokenized payment processing, "
+                    "strict idempotency, booking confirmations, cancellation policies, and audit logging."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["overview", "providers", "search", "get_product", "hold", "book", "list_bookings", "cancel", "reschedule", "audit"],
+                            "default": "overview",
+                        },
+                        "category": {
+                            "type": "string",
+                            "enum": ["flight", "train", "bus", "hotel", "movie", "event", "concert", "sport"],
+                            "default": "flight",
+                        },
+                        "destination": {"type": "string", "default": ""},
+                        "origin": {"type": "string", "default": ""},
+                        "departure_date": {"type": "string", "default": ""},
+                        "passengers_count": {"type": "integer", "default": 1},
+                        "product_id": {"type": "string", "default": ""},
+                        "booking_id": {"type": "string", "default": ""},
+                        "idempotency_key": {"type": "string", "default": ""},
+                        "reason": {"type": "string", "default": ""},
+                        "new_departure_date": {"type": "string", "default": ""},
+                        "user_id": {"type": "string", "default": "default_user"},
+                    },
+                },
+                stage_introduced=29,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_travel_booking_engine,
+        )
+
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -2420,8 +2465,172 @@ class ToolRegistry:
             "error": f"Unknown action '{action}' for pcb_studio_engine.",
         }
 
+    async def _handle_travel_booking_engine(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.travel_commerce import travel_engine, travel_registry
+        from app.models.schemas import (
+            TravelSearchQuery,
+            TravelHoldRequest,
+            TravelBookingRequest,
+            TravelCancellationRequest,
+            TravelRescheduleRequest,
+            TravelPassengerInfo,
+            TravelPaymentToken,
+        )
+
+        action = params.get("action", "overview")
+        user_id = str(params.get("user_id", "default_user"))
+
+        if action == "overview":
+            ov = travel_engine.get_overview(user_id=user_id)
+            return {
+                "action": "overview",
+                "stage": 29,
+                "overview": ov.model_dump(),
+                "summary": f"Travel Booking Engine operational with {len(ov.active_providers)} active provider networks and {ov.total_bookings} registered bookings.",
+            }
+
+        if action == "providers":
+            provs = travel_registry.list_active_providers()
+            return {
+                "action": "providers",
+                "providers": provs,
+                "total": len(provs),
+                "summary": f"Found {len(provs)} active travel adapters.",
+            }
+
+        if action == "search":
+            query = TravelSearchQuery(
+                category=params.get("category", "flight"),
+                destination=params.get("destination", "New York"),
+                origin=params.get("origin") or None,
+                departure_date=params.get("departure_date", "2026-11-01"),
+                passengers_count=int(params.get("passengers_count", 1)),
+                cabin_class=params.get("cabin_class") or None,
+                min_price=float(params["min_price"]) if params.get("min_price") is not None else None,
+                max_price=float(params["max_price"]) if params.get("max_price") is not None else None,
+            )
+            results = travel_engine.search(query)
+            return {
+                "action": "search",
+                "category": query.category,
+                "destination": query.destination,
+                "count": len(results),
+                "products": [p.model_dump() for p in results],
+                "summary": f"Found {len(results)} {query.category} options to {query.destination}.",
+            }
+
+        if action == "get_product":
+            product_id = params.get("product_id", "")
+            product = travel_registry.find_product_by_id(product_id)
+            if not product:
+                return {"action": "get_product", "found": False, "error": f"Product '{product_id}' not found."}
+            return {
+                "action": "get_product",
+                "found": True,
+                "product": product.model_dump(),
+                "summary": f"Retrieved live quotes for {product.title}: ${product.price_breakdown.total_amount:.2f}.",
+            }
+
+        if action == "hold":
+            hold_req = TravelHoldRequest(
+                product_id=params.get("product_id", ""),
+                category=params.get("category", "flight"),
+                provider=params.get("provider", "NEXORA Universal Travel Sandbox"),
+                passengers_count=int(params.get("passengers_count", 1)),
+                user_id=user_id,
+            )
+            hold = travel_engine.create_hold(hold_req)
+            return {
+                "action": "hold",
+                "hold": hold.model_dump(),
+                "summary": f"Inventory held with ID {hold.hold_id}. Locked price: ${hold.locked_price.total_amount:.2f}.",
+            }
+
+        if action == "book":
+            import uuid
+            idempotency_key = params.get("idempotency_key") or f"IDEMP-{uuid.uuid4().hex[:12].upper()}"
+            passengers_data = params.get("passengers") or [
+                {"first_name": "Alex", "last_name": "Vanguard", "email": "alex.vanguard@nexora.ai"}
+            ]
+            passengers = [TravelPassengerInfo(**p) for p in passengers_data]
+            payment = TravelPaymentToken(
+                payment_method="sandbox_token",
+                payment_token=params.get("payment_token", "tok_sandbox_approved_live"),
+                billing_name=params.get("billing_name", "Alex Vanguard"),
+            )
+            book_req = TravelBookingRequest(
+                idempotency_key=idempotency_key,
+                product_id=params.get("product_id", "SBX-FLIGHT-001"),
+                category=params.get("category", "flight"),
+                passengers=passengers,
+                payment=payment,
+                explicit_confirmation=True,
+                contact_email=params.get("contact_email", "alex.vanguard@nexora.ai"),
+                user_id=user_id,
+            )
+            booking = travel_engine.confirm_booking(book_req)
+            return {
+                "action": "book",
+                "booking": booking.model_dump(),
+                "summary": f"Booking confirmed! Booking ID: {booking.booking_id}, Provider Reference: {booking.provider_booking_ref}, Amount: ${booking.price_breakdown.total_amount:.2f}.",
+            }
+
+        if action == "list_bookings":
+            bookings = travel_engine.list_bookings(
+                user_id=user_id,
+                category=params.get("category"),
+                status=params.get("status"),
+            )
+            return {
+                "action": "list_bookings",
+                "count": len(bookings),
+                "bookings": [b.model_dump() for b in bookings],
+                "summary": f"Retrieved {len(bookings)} bookings for user '{user_id}'.",
+            }
+
+        if action == "cancel":
+            canc_req = TravelCancellationRequest(
+                booking_id=params.get("booking_id", ""),
+                reason=params.get("reason", "Customer requested cancellation"),
+                confirm_cancellation=True,
+            )
+            updated = travel_engine.cancel_booking(canc_req, user_id=user_id)
+            return {
+                "action": "cancel",
+                "booking": updated.model_dump(),
+                "summary": f"Booking '{updated.booking_id}' cancelled. Refund status: {updated.refund_status}, Refund amount: ${updated.refund_amount:.2f}.",
+            }
+
+        if action == "reschedule":
+            resch_req = TravelRescheduleRequest(
+                booking_id=params.get("booking_id", ""),
+                new_departure_date=params.get("new_departure_date", "2026-11-15"),
+                reason=params.get("reason"),
+            )
+            updated = travel_engine.reschedule_booking(resch_req, user_id=user_id)
+            return {
+                "action": "reschedule",
+                "booking": updated.model_dump(),
+                "summary": f"Booking '{updated.booking_id}' rescheduled to {updated.departure_date}.",
+            }
+
+        if action == "audit":
+            audit = travel_engine.get_audit_trail(booking_id=params.get("booking_id"))
+            return {
+                "action": "audit",
+                "records_count": len(audit),
+                "records": [a.model_dump() for a in audit],
+                "summary": f"Retrieved {len(audit)} audit trail log records.",
+            }
+
+        return {
+            "action": action,
+            "error": f"Unknown action '{action}' for travel_booking_engine.",
+        }
+
 
 tool_registry = ToolRegistry()
+
 
 
 

@@ -12,13 +12,47 @@
 
 ---
 
-# NEXORA AI — Stage 28: PCB Layout & Design Studio
+# NEXORA AI — Stage 29: Universal Travel & Ticket Booking
 
-**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 28** introduces the **PCB Layout & Design Studio (`PCBStudioEngine`)**: a professional printed circuit board (PCB) design workspace featuring schematic-to-PCB conversion with strict unmapped-footprint protection (never silently substituting unknown packages), an interactive multilayer SVG/Canvas board editor (`F.Cu`, `B.Cu`, `F.SilkS`, `B.SilkS`, `Edge.Cuts`), component placement with fine grid snapping, interactive & 45-degree orthogonal trace routing with Euclidean MST ratsnest flylines and live completion metrics, 8-rule geometric and electrical Design Rule Checking (DRC) with actionable remediation, IPC-2152 current/temperature trace width and IPC-2141 microstrip controlled impedance calculators, an interactive 3D board visualizer with customizable solder mask (classic green, matte black, royal blue, crimson red) and 360° orbital tilt, aggregated BOM & transparent prototype fabrication cost estimation, industry exports (Gerber RS-274X 7-layer suite, Excellon NC drill, KiCad S-expr `.kicad_pcb`, Pick-and-Place centroid CSV, BOM CSV, SVG), SQLite persistence (`data/pcb/nexora_pcb.db`) with revision snapshots & board diffing, and Tool #26 `pcb_studio_engine` in `PCBStudio.tsx`.
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 29** introduces the **Universal Travel & Ticket Booking Studio (`TravelCommerceEngine`)**: a unified travel-commerce and ticketing architecture supporting seamless discovery, comparison, and booking across 8 core product categories (flights, trains, buses, hotels, movies, live events, concerts, and sports) through modular provider adapters (Amadeus Global Distribution, IRCTC & RailEurope, RedBus & FlixBus, Booking.com, BookMyShow & AMC, Ticketmaster & Live Nation, and NEXORA Sandbox). Enforces guaranteed live availability with retrieval timestamps, itemized transparent pricing breakdowns (base fare, taxes, carrier fees, and checkout total) without artificial markups, secure tokenized payment methods (`tok_...`) strictly prohibiting raw CVV/CVC storage or exposed secrets, guaranteed idempotent transactions (`Idempotency-Key` header and UUID prevention against double billing), confirmed provider references (PNRs and e-ticket codes), policy-governed cancellation & refund evaluation with countdown deadlines, travel date rescheduling, immutable SQLite audit logging (`data/travel/nexora_travel.db`), Tool #27 `travel_booking_engine` in the runtime ToolRegistry, and `TravelBookingStudio.tsx` with dynamic passenger manifest, 15-minute hold timer, and interactive digital boarding passes.
+
+---
+
+## 🌟 Stage 29 Core Deliverables
+
+- **Unified Multi-Category Discovery & Modular Provider Adapters**:
+  - Connects to separately configured modular provider adapters across 8 product categories:
+    - *Flights*: Amadeus Global Distribution (`AmadeusFlightAdapter`) with multi-cabin classes (Economy, Business, First), baggage specs, and flight routes.
+    - *Trains*: IRCTC & RailEurope (`IRCTCRailAdapter`) with high-speed bullet trains (Eurostar, Shinkansen, Vande Bharat Express) and AC tiers.
+    - *Buses*: RedBus & FlixBus (`RedBusAdapter`) with luxury Volvo sleepers, multi-axle coaches, and intercity lines.
+    - *Hotels & Stays*: Booking.com Worldwide Stays (`BookingHotelAdapter`) with check-in/out schedules, star ratings, and amenities.
+    - *Movies & Cinema*: BookMyShow & AMC Entertainment (`BookMyShowCinemaAdapter`) with Dual Laser IMAX 70mm, Dolby Vision/Atmos, and recliner seating.
+    - *Concerts, Sports & Events*: Ticketmaster & Live Nation (`TicketmasterEventAdapter`) with stadium tours, Broadway musicals, and Formula 1 Grand Prix.
+    - *NEXORA Sandbox*: Unified deterministic fallback provider for automated testing and sandbox bookings.
+- **Live Inventory Honesty & Transparent Pricing Breakdown**:
+  - Displays real-time seats remaining, cabin classes, and ISO retrieval timestamps. If inventory is unavailable, the engine reports exact provider statuses rather than inventing fictitious slots or prices.
+  - Generates clear, normalized price breakdowns via `calculate_normalized_pricing` separating base amount, mandatory taxes, carrier fees, discounts, and the final checkout amount with zero hidden charges.
+- **Tokenized Payment Security & Zero Raw CVV Storage**:
+  - Complies with strict PCI DSS security guidelines: never accepts, transmits, or stores raw credit card CVV/CVC verification codes.
+  - Integrates approved tokenized payment instruments (`tokenized_card`, `upi_token`, `wallet_token`, `sandbox_token`) storing only masked card records (e.g. `brand: Visa`, `last4: 4242`).
+- **Guaranteed Idempotent Transactions**:
+  - Enforces atomic idempotency checks via `Idempotency-Key` headers or request payload tokens.
+  - Submitting identical requests returns the existing confirmed booking record with `is_idempotent_replay=True`, completely preventing double billing.
+- **Complete Post-Booking Lifecycle & Digital Boarding Passes**:
+  - Confirmed bookings issue verifiable provider references (PNRs e.g. `AMD-8B29FA`), cryptographic barcode representations, and formal digital receipts.
+  - Policy-evaluated cancellation engine calculates exact refund amounts and cancellation penalties based on remaining hours to departure.
+  - Date rescheduling updates departure itineraries while maintaining provider links.
+- **Immutable Compliance Audit Ledger**:
+  - Dedicated SQLite audit log (`data/travel/nexora_travel.db`) recording every search, seat hold, booking confirmation, idempotent replay, cancellation, and refund.
+- **Tool #27 `travel_booking_engine` in Runtime ToolRegistry**:
+  - Callable by autonomous reasoning agents to discover routes, evaluate quotes, lock seat holds, and book itineraries with structured audit tracking.
+- **Interactive Travel & Ticket Booking Studio UI (`TravelBookingStudio.tsx`)**:
+  - Accessible via the top navigation bar (**Travel & Tickets** tab) featuring category switchers, route filters, price comparisons, dynamic passenger manifests, 15-minute hold countdowns, tokenized checkout modals, "My Bookings" management drawer, and digital boarding pass previews.
 
 ---
 
 ## 🌟 Stage 28 Core Deliverables
+
 
 - **Schematic-to-PCB Conversion & Footprint Safety**:
   - Automatically translates validated Stage 27 schematics and netlists into 2-layer or multilayer PCB projects.

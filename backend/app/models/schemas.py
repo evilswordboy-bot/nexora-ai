@@ -4814,6 +4814,196 @@ class PCBOverviewResponse(BaseModel):
     toolchains: Dict[str, bool] = Field(default_factory=dict)
 
 
+# ==========================================
+# STAGE 29: UNIVERSAL TRAVEL & TICKET BOOKING
+# ==========================================
+
+TravelCategory = Literal[
+    "flight", "train", "bus", "hotel", "movie", "event", "concert", "sport"
+]
+
+TravelBookingStatus = Literal[
+    "HELD", "CONFIRMED", "PENDING_PROVIDER", "CANCEL_REQUESTED", "CANCELLED", "RESCHEDULE_REQUESTED", "RESCHEDULED", "EXPIRED", "FAILED"
+]
+
+TravelRefundStatus = Literal[
+    "NONE", "PENDING", "COMPLETED", "REJECTED_NON_REFUNDABLE", "PARTIAL"
+]
+
+
+class TravelCancellationPolicy(BaseModel):
+    is_refundable: bool = True
+    deadline_hours_before: Optional[int] = 24
+    cancellation_fee: float = 0.0
+    fee_currency: str = "USD"
+    description: str = "Free cancellation up to 24 hours prior to departure."
+    allow_reschedule: bool = True
+    reschedule_fee: float = 0.0
+
+
+class TravelPriceBreakdown(BaseModel):
+    base_amount: float
+    taxes_amount: float
+    fees_amount: float
+    discount_amount: float = 0.0
+    total_amount: float
+    currency: str = "USD"
+
+
+class TravelProductItem(BaseModel):
+    id: str
+    category: TravelCategory
+    provider: str
+    provider_code: str
+    title: str
+    subtitle: Optional[str] = None
+    origin: Optional[str] = None
+    destination: str
+    departure_time: Optional[str] = None
+    arrival_time: Optional[str] = None
+    duration: Optional[str] = None
+    operator_name: str
+    rating: Optional[float] = 4.8
+    amenities: List[str] = Field(default_factory=list)
+    accessibility: List[str] = Field(default_factory=list)
+    cabin_or_seat_class: str = "Standard"
+    available_seats: int = 1
+    price_breakdown: TravelPriceBreakdown
+    cancellation_policy: TravelCancellationPolicy
+    terms_url: Optional[str] = "https://nexora.ai/terms/travel"
+    retrieved_at: str
+    is_stale: bool = False
+    tags: List[str] = Field(default_factory=list)
+
+
+class TravelSearchQuery(BaseModel):
+    category: TravelCategory = "flight"
+    origin: Optional[str] = None
+    destination: str
+    departure_date: str
+    return_date: Optional[str] = None
+    passengers_count: int = 1
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    cabin_class: Optional[str] = None
+    direct_only: bool = False
+    timing_slot: Optional[str] = None
+    amenities: Optional[List[str]] = None
+    accessible_required: bool = False
+    provider: Optional[str] = None
+
+
+class TravelPassengerInfo(BaseModel):
+    passenger_id: str = "PAX-1"
+    first_name: str
+    last_name: str
+    email: str
+    phone: Optional[str] = None
+    document_type: Optional[str] = "NATIONAL_ID"
+    document_number: Optional[str] = None
+    seat_preference: Optional[str] = None
+    special_requests: Optional[str] = None
+
+
+class TravelPaymentToken(BaseModel):
+    payment_method: Literal["tokenized_card", "upi_token", "wallet_token", "sandbox_token"] = "sandbox_token"
+    payment_token: str
+    card_brand: Optional[str] = "Visa"
+    card_last4: Optional[str] = "4242"
+    billing_name: str
+
+
+class TravelHoldRequest(BaseModel):
+    product_id: str
+    category: TravelCategory
+    provider: str
+    passengers_count: int = 1
+    user_id: str = "default_user"
+
+
+class TravelHoldResponse(BaseModel):
+    hold_id: str
+    product_id: str
+    expires_at: str
+    locked_price: TravelPriceBreakdown
+    status: str = "HELD"
+
+
+class TravelBookingRequest(BaseModel):
+    idempotency_key: str
+    product_id: str
+    hold_id: Optional[str] = None
+    category: TravelCategory
+    passengers: List[TravelPassengerInfo]
+    payment: TravelPaymentToken
+    explicit_confirmation: bool = True
+    contact_email: str
+    contact_phone: Optional[str] = None
+    user_id: str = "default_user"
+
+
+class TravelBookingRecord(BaseModel):
+    booking_id: str
+    idempotency_key: str
+    user_id: str
+    product_id: str
+    category: TravelCategory
+    provider: str
+    provider_booking_ref: str
+    product_summary: str
+    operator_name: str
+    origin: Optional[str] = None
+    destination: str
+    departure_date: str
+    passengers: List[TravelPassengerInfo]
+    payment_method: str
+    payment_last4: Optional[str] = None
+    payment_tx_id: str
+    price_breakdown: TravelPriceBreakdown
+    cancellation_policy: TravelCancellationPolicy
+    booking_status: TravelBookingStatus
+    refund_status: TravelRefundStatus = "NONE"
+    refund_amount: float = 0.0
+    receipt_url: str
+    support_contact: str
+    is_idempotent_replay: bool = False
+    created_at: str
+    updated_at: str
+
+
+class TravelCancellationRequest(BaseModel):
+    booking_id: str
+    reason: str
+    confirm_cancellation: bool = True
+
+
+class TravelRescheduleRequest(BaseModel):
+    booking_id: str
+    new_departure_date: str
+    reason: Optional[str] = None
+
+
+class TravelAuditRecord(BaseModel):
+    audit_id: str
+    booking_id: Optional[str] = None
+    user_id: str
+    action: str
+    provider: str
+    status: str
+    details: Dict[str, Any] = Field(default_factory=dict)
+    created_at: str
+
+
+class TravelOverviewResponse(BaseModel):
+    stage: int = 29
+    active_providers: List[str] = Field(default_factory=list)
+    supported_categories: List[str] = Field(default_factory=list)
+    total_bookings: int = 0
+    confirmed_bookings: int = 0
+    recent_bookings: List[TravelBookingRecord] = Field(default_factory=list)
+
+
+
 
 
 

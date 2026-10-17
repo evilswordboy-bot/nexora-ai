@@ -198,7 +198,20 @@ import {
   PCBExportRequest,
   PCBExportResponse,
   PCBOverviewResponse,
+
+  TravelCategory,
+  TravelProductItem,
+  TravelSearchQuery,
+  TravelHoldRequest,
+  TravelHoldResponse,
+  TravelBookingRequest,
+  TravelBookingRecord,
+  TravelCancellationRequest,
+  TravelRescheduleRequest,
+  TravelAuditRecord,
+  TravelOverviewResponse,
 } from '../types';
+
 
 const BASE_URL = '/api/v1';
 
@@ -3912,7 +3925,91 @@ export const api = {
       }
     );
   },
+
+  // ==========================================
+  // Stage 29: Universal Travel & Ticket Booking
+  // ==========================================
+  async getTravelOverview(userId = 'default_user'): Promise<TravelOverviewResponse> {
+    return request<TravelOverviewResponse>(`/travel/overview?user_id=${encodeURIComponent(userId)}`);
+  },
+
+  async getTravelProviders(): Promise<{ providers: any[]; total_active: number }> {
+    return request<{ providers: any[]; total_active: number }>('/travel/providers');
+  },
+
+  async searchTravel(query: TravelSearchQuery): Promise<TravelProductItem[]> {
+    return request<TravelProductItem[]>('/travel/search', {
+      method: 'POST',
+      body: JSON.stringify(query),
+    });
+  },
+
+  async getTravelProductDetails(productId: string): Promise<TravelProductItem> {
+    return request<TravelProductItem>(`/travel/products/${encodeURIComponent(productId)}`);
+  },
+
+  async holdTravelInventory(req: TravelHoldRequest): Promise<TravelHoldResponse> {
+    return request<TravelHoldResponse>('/travel/hold', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async bookTravel(req: TravelBookingRequest, idempotencyKey?: string): Promise<TravelBookingRecord> {
+    const headers: Record<string, string> = {};
+    if (idempotencyKey) {
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+    return request<TravelBookingRecord>('/travel/book', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(req),
+    });
+  },
+
+  async listTravelBookings(
+    userId?: string,
+    category?: string,
+    status?: string
+  ): Promise<TravelBookingRecord[]> {
+    const params = new URLSearchParams();
+    if (userId) params.append('user_id', userId);
+    if (category) params.append('category', category);
+    if (status) params.append('status', status);
+    const qs = params.toString() ? `?${params.toString()}` : '';
+    return request<TravelBookingRecord[]>(`/travel/bookings${qs}`);
+  },
+
+  async getTravelBookingDetails(bookingId: string): Promise<TravelBookingRecord> {
+    return request<TravelBookingRecord>(`/travel/bookings/${encodeURIComponent(bookingId)}`);
+  },
+
+  async cancelTravelBooking(
+    req: TravelCancellationRequest,
+    userId = 'default_user'
+  ): Promise<TravelBookingRecord> {
+    return request<TravelBookingRecord>(`/travel/cancel?user_id=${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async rescheduleTravelBooking(
+    req: TravelRescheduleRequest,
+    userId = 'default_user'
+  ): Promise<TravelBookingRecord> {
+    return request<TravelBookingRecord>(`/travel/reschedule?user_id=${encodeURIComponent(userId)}`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    });
+  },
+
+  async getTravelAuditTrail(bookingId?: string): Promise<TravelAuditRecord[]> {
+    const qs = bookingId ? `?booking_id=${encodeURIComponent(bookingId)}` : '';
+    return request<TravelAuditRecord[]>(`/travel/audit${qs}`);
+  },
 };
+
 
 export const schematicApi = {
   getProjects: (userId = 'default_user', workspaceId = 'default_workspace') =>
@@ -4054,4 +4151,26 @@ export const pcbApi = {
     });
   },
 };
+
+// ==========================================
+// Stage 29: Universal Travel & Ticket Booking API
+// ==========================================
+export const travelApi = {
+  getOverview: (userId = 'default_user') => api.getTravelOverview(userId),
+  getProviders: () => api.getTravelProviders(),
+  search: (query: TravelSearchQuery) => api.searchTravel(query),
+  getProductDetails: (productId: string) => api.getTravelProductDetails(productId),
+  holdInventory: (req: TravelHoldRequest) => api.holdTravelInventory(req),
+  book: (req: TravelBookingRequest, idempotencyKey?: string) => api.bookTravel(req, idempotencyKey),
+  listBookings: (userId?: string, category?: string, status?: string) =>
+    api.listTravelBookings(userId, category, status),
+  getBookingDetails: (bookingId: string) => api.getTravelBookingDetails(bookingId),
+  cancelBooking: (req: TravelCancellationRequest, userId = 'default_user') =>
+    api.cancelTravelBooking(req, userId),
+  rescheduleBooking: (req: TravelRescheduleRequest, userId = 'default_user') =>
+    api.rescheduleTravelBooking(req, userId),
+  getAuditTrail: (bookingId?: string) => api.getTravelAuditTrail(bookingId),
+};
+
+
 

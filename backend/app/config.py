@@ -389,6 +389,18 @@ class Settings(BaseModel):
     pcb_min_board_edge_clearance_mm: float = float(os.getenv("PCB_MIN_BOARD_EDGE_CLEARANCE_MM", "0.50"))
     pcb_min_drill_diameter_mm: float = float(os.getenv("PCB_MIN_DRILL_DIAMETER_MM", "0.30"))
 
+    # Stage 29: Universal Travel & Ticket Booking
+    travel_db_path: str = os.getenv(
+        "TRAVEL_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "travel" / "nexora_travel.db"),
+    )
+    travel_cache_ttl_seconds: int = int(os.getenv("TRAVEL_CACHE_TTL_SECONDS", "300"))
+    travel_hold_duration_minutes: int = int(os.getenv("TRAVEL_HOLD_DURATION_MINUTES", "15"))
+    travel_default_currency: str = os.getenv("TRAVEL_DEFAULT_CURRENCY", "USD")
+    travel_max_passengers: int = int(os.getenv("TRAVEL_MAX_PASSENGERS", "9"))
+    travel_allow_sandbox_booking: bool = os.getenv("TRAVEL_ALLOW_SANDBOX_BOOKING", "true").lower() in ("true", "1", "yes")
+
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():
@@ -415,3 +427,5 @@ class Settings(BaseModel):
 settings = Settings()
 # Ensure document storage directory exists
 Path(settings.document_storage_dir).mkdir(parents=True, exist_ok=True)
+Path(settings.travel_db_path).parent.mkdir(parents=True, exist_ok=True)
+
