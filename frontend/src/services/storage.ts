@@ -8,7 +8,7 @@ const STORAGE_KEYS = {
 
 export const defaultSettings: UserSettings = {
   geminiApiKey: '',
-  openaiApiKey: '',
+  openaiApiKey: (import.meta as any).env?.VITE_OPENAI_API_KEY || '',
   anthropicApiKey: '',
   selectedProvider: 'gemini',
   selectedModel: 'gemini-1.5-flash',
@@ -68,6 +68,9 @@ export const storage = {
         const merged = { ...defaultSettings, ...parsed };
         if (!merged.selectedProvider || merged.selectedProvider === 'auto' || merged.selectedProvider === 'unconfigured') {
           merged.selectedProvider = 'gemini';
+        }
+        if (!merged.openaiApiKey && (import.meta as any).env?.VITE_OPENAI_API_KEY) {
+          merged.openaiApiKey = (import.meta as any).env.VITE_OPENAI_API_KEY;
         }
         return merged;
       }
