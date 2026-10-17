@@ -13,8 +13,8 @@ async def health_check():
         "status": "healthy",
         "app": settings.app_name,
         "version": settings.app_version,
-        "stage": 26,
-        "stage_title": "IoT Security & Device Threat Detection",
+        "stage": 27,
+        "stage_title": "Electronic Circuit Schematic Design Studio",
         "environment": settings.environment,
         "providers_configured": len(configured_providers) > 0,
         "configured_providers": configured_providers,
@@ -44,6 +44,7 @@ async def health_check():
             "firmware_studio": "operational",
             "iot_telemetry": "operational",
             "iot_security": "operational",
+            "schematic_studio": "operational",
         },
     }
 

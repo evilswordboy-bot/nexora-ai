@@ -805,6 +805,58 @@ class ToolRegistry:
             handler=self._handle_iot_security_engine,
         )
 
+        # 28. Stage 27: Electronic Circuit Schematic Design Studio Tool
+        self.register(
+            tool=ToolDefinition(
+                name="schematic_studio_engine",
+                description=(
+                    "Designs and validates electronic circuit schematics, runs electrical rule checks (ERC), "
+                    "executes engineering calculations (Ohm's law, voltage dividers, LED resistors, RC filters, "
+                    "transistor bias, power dissipation & thermal junction temp, logic truth tables), runs SPICE simulations, "
+                    "synthesizes circuits from natural-language descriptions, and exports BOM, SPICE, KiCad netlists, and SVG schematics."
+                ),
+                parameters_schema={
+                    "type": "object",
+                    "properties": {
+                        "action": {
+                            "type": "string",
+                            "enum": ["overview", "catalog", "calculate", "check_erc", "simulate", "ai_assistant", "export"],
+                            "default": "overview",
+                        },
+                        "calculator_type": {
+                            "type": "string",
+                            "enum": ["ohms_law", "voltage_divider", "led_resistor", "rc_filter", "transistor_bias", "power_thermal", "logic_expression"],
+                            "default": "ohms_law",
+                        },
+                        "prompt": {
+                            "type": "string",
+                            "default": "",
+                        },
+                        "export_format": {
+                            "type": "string",
+                            "enum": ["spice_netlist", "kicad_netlist", "bom_json", "bom_csv", "svg_schematic", "connection_table_json"],
+                            "default": "spice_netlist",
+                        },
+                        "calc_params": {
+                            "type": "object",
+                            "default": {},
+                        },
+                        "sheet": {
+                            "type": "object",
+                            "default": {},
+                        },
+                        "user_id": {"type": "string", "default": "default_user"},
+                        "workspace_id": {"type": "string", "default": "default_workspace"},
+                    },
+                },
+                stage_introduced=27,
+                requires_approval=False,
+                risk_level="low",
+                treats_output_as_untrusted=False,
+            ),
+            handler=self._handle_schematic_studio_engine,
+        )
+
     def register(self, tool: ToolDefinition, handler: Optional[Callable] = None):
         self._tools[tool.name] = tool
         if handler:
@@ -1977,6 +2029,172 @@ class ToolRegistry:
             "anomalies_count": len(anomalies),
             "anomalies": [a.model_dump() for a in anomalies],
             "summary": f"Retrieved {len(anomalies)} recent behavioral anomalies.",
+        }
+
+    async def _handle_schematic_studio_engine(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        from app.services.schematic_studio.engine import schematic_studio_engine
+        from app.services.schematic_studio.catalog import build_standard_component_catalog
+        from app.services.schematic_studio.calculators import (
+            calculate_ohms_law,
+            calculate_voltage_divider,
+            calculate_led_resistor,
+            calculate_rc_time_constant,
+            calculate_transistor_bias,
+            calculate_power_thermal,
+            calculate_logic_expression,
+        )
+        from app.services.schematic_studio.drc import run_electrical_rule_checks
+        from app.services.schematic_studio.spice import run_spice_simulation
+        from app.models.schemas import (
+            SchematicSheet,
+            OhmsLawRequest,
+            VoltageDividerRequest,
+            LEDResistorRequest,
+            RCTimeConstantRequest,
+            TransistorBiasRequest,
+            PowerThermalRequest,
+            LogicExpressionRequest,
+            SPICESimulationRequest,
+            AICircuitPromptRequest,
+        )
+
+        action = str(params.get("action", "overview")).strip()
+        user_id = str(params.get("user_id", "default_user")).strip()
+        workspace_id = str(params.get("workspace_id", "default_workspace")).strip()
+
+        if action == "overview":
+            overview = schematic_studio_engine.get_overview(user_id=user_id, workspace_id=workspace_id)
+            return {
+                "action": "overview",
+                "projects_count": overview.projects_count,
+                "standard_components_count": overview.standard_components_count,
+                "toolchains": overview.toolchains,
+                "summary": f"Schematic Studio Overview: {overview.projects_count} project(s), {overview.standard_components_count} verified components in catalog.",
+            }
+
+        if action == "catalog":
+            catalog = build_standard_component_catalog()
+            return {
+                "action": "catalog",
+                "components_count": len(catalog),
+                "categories": list(set(c.category for c in catalog.values())),
+                "summary": f"Retrieved {len(catalog)} standard electronic component definitions.",
+            }
+
+        if action == "calculate":
+            calc_type = str(params.get("calculator_type", "ohms_law")).strip()
+            c_params = params.get("calc_params", {}) or {}
+
+            if calc_type == "ohms_law":
+                res = calculate_ohms_law(OhmsLawRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "ohms_law",
+                    "result": res.model_dump(),
+                    "summary": f"Ohm's Law Result: V={res.voltage_v}V, I={res.current_a}A, R={res.resistance_ohms} ohms, P={res.power_w}W ({res.recommended_wattage_rating}).",
+                }
+            elif calc_type == "voltage_divider":
+                res = calculate_voltage_divider(VoltageDividerRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "voltage_divider",
+                    "result": res.model_dump(),
+                    "summary": f"Voltage Divider Result: Vin={res.vin_v}V, Vout={res.ideal_vout_v}V (Zout={res.output_impedance_ohms} ohms).",
+                }
+            elif calc_type == "led_resistor":
+                res = calculate_led_resistor(LEDResistorRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "led_resistor",
+                    "result": res.model_dump(),
+                    "summary": f"LED Resistor Result: Standard E24 Resistor={res.standard_e24_resistor_ohms} ohms ({res.recommended_resistor_power_rating}), I={res.actual_current_with_e24_ma}mA.",
+                }
+            elif calc_type == "rc_filter":
+                res = calculate_rc_time_constant(RCTimeConstantRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "rc_filter",
+                    "result": res.model_dump(),
+                    "summary": f"RC Time Constant Result: tau={res.tau_formatted}, cutoff frequency fc={res.cutoff_frequency_formatted}.",
+                }
+            elif calc_type == "transistor_bias":
+                res = calculate_transistor_bias(TransistorBiasRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "transistor_bias",
+                    "result": res.model_dump(),
+                    "summary": f"Transistor Bias Result: Base Resistor Rb={res.standard_e24_base_resistor_ohms} ohms, Saturation Confirmed={res.saturation_confirmed}.",
+                }
+            elif calc_type == "power_thermal":
+                res = calculate_power_thermal(PowerThermalRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "power_thermal",
+                    "result": res.model_dump(),
+                    "summary": f"Thermal Analysis: P={res.power_dissipation_w}W, Tj={res.estimated_junction_temp_c} C, Verdict='{res.thermal_verdict}'.",
+                }
+            elif calc_type == "logic_expression":
+                res = calculate_logic_expression(LogicExpressionRequest(**c_params))
+                return {
+                    "action": "calculate",
+                    "calculator": "logic_expression",
+                    "result": res.model_dump(),
+                    "summary": f"Logic Truth Table generated for '{res.expression}': {len(res.truth_table)} states, SOP minterms={res.sop_minterms}.",
+                }
+
+        if action == "check_erc":
+            sheet_data = params.get("sheet", {}) or {}
+            sheet = SchematicSheet(**sheet_data) if sheet_data else SchematicSheet()
+            report = run_electrical_rule_checks(sheet)
+            return {
+                "action": "check_erc",
+                "findings_count": report.total_findings,
+                "critical_count": report.critical_count,
+                "warning_count": report.warning_count,
+                "report": report.model_dump(),
+                "summary": f"ERC Complete: {report.critical_count} critical, {report.warning_count} warning, {report.info_count} info findings.",
+            }
+
+        if action == "simulate":
+            sheet_data = params.get("sheet", {}) or {}
+            sheet = SchematicSheet(**sheet_data) if sheet_data else SchematicSheet()
+            analysis_type = str(params.get("analysis_type", "op")).strip()
+            sim_res = run_spice_simulation(SPICESimulationRequest(sheet=sheet, analysis_type=analysis_type))
+            return {
+                "action": "simulate",
+                "status": sim_res.sim_status,
+                "engine": sim_res.engine_name,
+                "result": sim_res.model_dump(),
+                "summary": f"Circuit Simulation: Status '{sim_res.sim_status}' using {sim_res.engine_name}.",
+            }
+
+        if action == "ai_assistant":
+            prompt = str(params.get("prompt", "5V to 3.3V voltage regulator")).strip()
+            design = schematic_studio_engine.generate_circuit_from_prompt(AICircuitPromptRequest(prompt=prompt))
+            return {
+                "action": "ai_assistant",
+                "circuit_name": design.circuit_name,
+                "description": design.description,
+                "design": design.model_dump(),
+                "summary": f"Generated circuit '{design.circuit_name}': {len(design.sheet.components)} components, {len(design.sheet.nets)} nets.",
+            }
+
+        if action == "export":
+            sheet_data = params.get("sheet", {}) or {}
+            sheet = SchematicSheet(**sheet_data) if sheet_data else SchematicSheet()
+            fmt = str(params.get("export_format", "spice_netlist")).strip()
+            exp = schematic_studio_engine.export_schematic(sheet, export_format=fmt)
+            return {
+                "action": "export",
+                "format": exp.export_format,
+                "filename": exp.filename,
+                "content_preview": exp.content[:500] + ("..." if len(exp.content) > 500 else ""),
+                "summary": f"Exported '{sheet.title}' to format '{exp.export_format}' ({exp.filename}).",
+            }
+
+        return {
+            "action": action,
+            "error": f"Unknown action '{action}' for schematic_studio_engine.",
         }
 
 

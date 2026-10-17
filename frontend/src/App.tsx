@@ -28,6 +28,7 @@ import { IoTProjectBuilderStudio } from './components/iot/IoTProjectBuilderStudi
 import { FirmwareEngineeringStudio } from './components/firmware/FirmwareEngineeringStudio';
 import { IoTTelemetryStudio } from './components/telemetry/IoTTelemetryStudio';
 import { IoTSecurityStudio } from './components/security/IoTSecurityStudio';
+import { SchematicStudio } from './components/schematic/SchematicStudio';
 import { NexoraLandingPage } from './components/landing/NexoraLandingPage';
 import { Conversation } from './types';
 
@@ -94,6 +95,8 @@ const MainLayout: React.FC = () => {
           <FirmwareEngineeringStudio />
         ) : activeWorkspaceView === 'security' ? (
           <IoTSecurityStudio />
+        ) : activeWorkspaceView === 'schematic' ? (
+          <SchematicStudio />
         ) : activeWorkspaceView === 'telemetry' ? (
           <IoTTelemetryStudio />
         ) : (

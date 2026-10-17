@@ -3169,5 +3169,318 @@ export interface IoTSecurityOverviewResponse {
   last_assessment_at: string;
 }
 
+// ============================================================================
+// STAGE 27: ELECTRONIC CIRCUIT SCHEMATIC DESIGN STUDIO TYPES
+// ============================================================================
+
+export type PinType =
+  | 'passive'
+  | 'power_in'
+  | 'power_out'
+  | 'input'
+  | 'output'
+  | 'bidirectional'
+  | 'open_collector'
+  | 'not_connected';
+
+export type ComponentCategory =
+  | 'passive_resistor'
+  | 'passive_capacitor'
+  | 'passive_inductor'
+  | 'semiconductor_diode'
+  | 'semiconductor_led'
+  | 'semiconductor_transistor_bjt'
+  | 'semiconductor_transistor_mosfet'
+  | 'analog_opamp'
+  | 'analog_regulator'
+  | 'analog_timer'
+  | 'digital_logic_gate'
+  | 'electromechanical_switch'
+  | 'electromechanical_relay'
+  | 'connector_header'
+  | 'connector_terminal'
+  | 'power_source'
+  | 'microcontroller_module'
+  | 'custom_component';
+
+export interface SchematicPin {
+  pin_id: string;
+  pin_number: string;
+  name: string;
+  pin_type: PinType;
+  rel_x: number;
+  rel_y: number;
+  orientation: 'left' | 'right' | 'top' | 'bottom';
+  electrical_type: string;
+  notes?: string | null;
+}
+
+export interface SchematicComponentDef {
+  component_id: string;
+  name: string;
+  ref_des_prefix: string;
+  category: ComponentCategory;
+  default_value: string;
+  default_tolerance: string;
+  footprint: string;
+  description: string;
+  pins: SchematicPin[];
+  symbol_type: string;
+  max_voltage_v?: number | null;
+  max_current_ma?: number | null;
+  max_power_mw?: number | null;
+  forward_voltage_v?: number | null;
+  breakdown_voltage_v?: number | null;
+  beta_hfe?: number | null;
+  quiescent_current_ma?: number | null;
+  datasheet_url?: string | null;
+  spec_verification: 'verified_datasheet_spec' | 'standard_generic_model' | 'user_defined';
+  is_custom: boolean;
+}
+
+export interface ComponentInstance {
+  instance_id: string;
+  component_id: string;
+  ref_des: string;
+  value: string;
+  tolerance: string;
+  pos_x: number;
+  pos_y: number;
+  rotation: number;
+  mirror: boolean;
+  custom_name?: string | null;
+  attributes: Record<string, any>;
+}
+
+export interface NetPinConnection {
+  instance_id: string;
+  pin_id: string;
+}
+
+export interface SchematicNet {
+  net_id: string;
+  name: string;
+  is_power: boolean;
+  is_ground: boolean;
+  voltage_level_v?: number | null;
+  connections: NetPinConnection[];
+  color?: string | null;
+}
+
+export interface WirePoint {
+  x: number;
+  y: number;
+}
+
+export interface WireSegment {
+  wire_id: string;
+  net_id: string;
+  points: WirePoint[];
+}
+
+export interface SchematicSheet {
+  sheet_id: string;
+  title: string;
+  components: ComponentInstance[];
+  nets: SchematicNet[];
+  wires: WireSegment[];
+  annotations: Record<string, any>[];
+}
+
+export interface SchematicProject {
+  project_id: string;
+  user_id: string;
+  workspace_id: string;
+  title: string;
+  description: string;
+  version: string;
+  sheet: SchematicSheet;
+  created_at: string;
+  updated_at: string;
+  notes: string[];
+}
+
+export interface ERCFinding {
+  finding_id: string;
+  rule_code: string;
+  severity: 'critical' | 'warning' | 'info';
+  title: string;
+  message: string;
+  affected_components: string[];
+  affected_nets: string[];
+  remediation_steps: string;
+  engineering_disclaimer: string;
+}
+
+export interface ERCReport {
+  timestamp: string;
+  total_findings: number;
+  critical_count: number;
+  warning_count: number;
+  info_count: number;
+  findings: ERCFinding[];
+  passed_rule_checks: string[];
+}
+
+export interface OhmsLawResult {
+  voltage_v: number;
+  current_a: number;
+  resistance_ohms: number;
+  power_w: number;
+  recommended_wattage_rating: string;
+  thermal_derating_advisory: string;
+  formulas_used: string[];
+}
+
+export interface ResistorPairRecommendation {
+  r1_ohms: number;
+  r2_ohms: number;
+  actual_vout_v: number;
+  error_pct: number;
+  series: string;
+}
+
+export interface VoltageDividerResult {
+  vin_v: number;
+  r1_ohms: number;
+  r2_ohms: number;
+  ideal_vout_v: number;
+  loaded_vout_v?: number | null;
+  loading_effect_error_pct?: number | null;
+  quiescent_current_ma: number;
+  output_impedance_ohms: number;
+  r1_power_mw: number;
+  r2_power_mw: number;
+  recommended_pairs: ResistorPairRecommendation[];
+  formulas_used: string[];
+}
+
+export interface LEDResistorResult {
+  supply_voltage_v: number;
+  led_forward_voltage_v: number;
+  target_current_ma: number;
+  calculated_resistance_ohms: number;
+  standard_e12_resistor_ohms: number;
+  standard_e24_resistor_ohms: number;
+  actual_current_with_e24_ma: number;
+  resistor_power_dissipation_mw: number;
+  recommended_resistor_power_rating: string;
+  safety_margin_pct: number;
+  formulas_used: string[];
+}
+
+export interface RCTimeConstantResult {
+  resistance_ohms: number;
+  capacitance_farads: number;
+  tau_seconds: number;
+  tau_formatted: string;
+  cutoff_frequency_hz: number;
+  cutoff_frequency_formatted: string;
+  rise_time_10_90_seconds: number;
+  time_to_95_pct_seconds: number;
+  time_to_99_pct_seconds: number;
+  charge_curve_points: Array<{
+    t_seconds: number;
+    t_normalized: number;
+    voltage_v: number;
+    percentage: number;
+  }>;
+  formulas_used: string[];
+}
+
+export interface TransistorBiasResult {
+  transistor_type: string;
+  required_base_current_ma: number;
+  base_resistor_ohms: number;
+  standard_e24_base_resistor_ohms: number;
+  actual_base_current_ma: number;
+  collector_current_ma: number;
+  transistor_power_dissipation_mw: number;
+  base_resistor_power_mw: number;
+  saturation_confirmed: boolean;
+  flyback_diode_required: boolean;
+  notes_and_tradeoffs: string[];
+  formulas_used: string[];
+}
+
+export interface PowerThermalResult {
+  power_dissipation_w: number;
+  theta_ja_used: number;
+  estimated_junction_temp_c: number;
+  max_recommended_junction_temp_c: number;
+  heatsink_required: boolean;
+  recommended_heatsink_thermal_resistance_c_per_w?: number | null;
+  efficiency_pct: number;
+  thermal_verdict: 'safe_without_heatsink' | 'heatsink_required' | 'unsafe_thermal_exceeded';
+  advisory: string;
+  formulas_used: string[];
+}
+
+export interface LogicExpressionResult {
+  expression: string;
+  normalized_expression: string;
+  variables: string[];
+  truth_table: Array<Record<string, any>>;
+  sop_minterms: number[];
+  pos_maxterms: number[];
+  is_tautology: boolean;
+  is_contradiction: boolean;
+}
+
+export interface SPICESimulationResult {
+  analysis_type: string;
+  sim_status:
+    | 'completed_host_engine'
+    | 'analytical_ideal_solver'
+    | 'netlist_ready_engine_not_installed'
+    | 'simulation_error';
+  engine_name: string;
+  netlist_text: string;
+  node_voltages: Record<string, number>;
+  branch_currents: Record<string, number>;
+  waveform_data?: {
+    time_s: number[];
+    v_out: number[];
+  } | null;
+  log_output: string;
+  model_limitations: string[];
+  anti_fabrication_note: string;
+}
+
+export interface AICircuitDesignResponse {
+  circuit_name: string;
+  description: string;
+  operational_explanation: string;
+  sheet: SchematicSheet;
+  design_notes: string[];
+  engineering_assumptions: string[];
+  design_warnings: string[];
+  engineering_review_required: boolean;
+  review_banner: string;
+}
+
+export interface SchematicExportResponse {
+  export_format:
+    | 'spice_netlist'
+    | 'kicad_netlist'
+    | 'bom_json'
+    | 'bom_csv'
+    | 'svg_schematic'
+    | 'connection_table_json';
+  content: string;
+  filename: string;
+  mime_type: string;
+}
+
+export interface SchematicOverviewResponse {
+  stage: number;
+  projects_count: number;
+  custom_components_count: number;
+  recent_projects: SchematicProject[];
+  standard_components_count: number;
+  toolchains: Record<string, boolean>;
+}
+
+
 
 

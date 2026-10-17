@@ -349,6 +349,28 @@ class Settings(BaseModel):
         "IOT_SECURITY_NETWORK_ADAPTER_CONFIGURED", "false"
     ).lower() in ("true", "1", "yes")
 
+    # Stage 27: Electronic Circuit Schematic Design Studio
+    schematic_db_path: str = os.getenv(
+        "SCHEMATIC_DB_PATH",
+        str(Path(__file__).resolve().parent.parent / "data" / "schematics" / "nexora_schematics.db"),
+    )
+    schematic_exports_dir: str = os.getenv(
+        "SCHEMATIC_EXPORTS_DIR",
+        str(Path(__file__).resolve().parent.parent / "data" / "schematics" / "exports"),
+    )
+    schematic_max_components_per_sheet: int = int(
+        os.getenv("SCHEMATIC_MAX_COMPONENTS_PER_SHEET", "200")
+    )
+    schematic_max_nets_per_sheet: int = int(
+        os.getenv("SCHEMATIC_MAX_NETS_PER_SHEET", "300")
+    )
+    schematic_spice_simulation_timeout_seconds: float = float(
+        os.getenv("SCHEMATIC_SPICE_SIMULATION_TIMEOUT_SECONDS", "10.0")
+    )
+    schematic_enable_analytical_solver: bool = os.getenv(
+        "SCHEMATIC_ENABLE_ANALYTICAL_SOLVER", "true"
+    ).lower() in ("true", "1", "yes")
+
     def get_configured_providers(self) -> list[str]:
         configured = []
         if self.gemini_api_key and self.gemini_api_key.strip():

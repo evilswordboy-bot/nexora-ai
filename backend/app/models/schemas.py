@@ -4125,6 +4125,409 @@ class IoTSecurityOverviewResponse(BaseModel):
     last_assessment_at: str
 
 
+# ============================================================================
+# STAGE 27: ELECTRONIC CIRCUIT SCHEMATIC DESIGN STUDIO SCHEMAS
+# ============================================================================
+
+PinType = Literal[
+    "passive",
+    "power_in",
+    "power_out",
+    "input",
+    "output",
+    "bidirectional",
+    "open_collector",
+    "not_connected",
+]
+
+ComponentCategory = Literal[
+    "passive_resistor",
+    "passive_capacitor",
+    "passive_inductor",
+    "semiconductor_diode",
+    "semiconductor_led",
+    "semiconductor_transistor_bjt",
+    "semiconductor_transistor_mosfet",
+    "analog_opamp",
+    "analog_regulator",
+    "analog_timer",
+    "digital_logic_gate",
+    "electromechanical_switch",
+    "electromechanical_relay",
+    "connector_header",
+    "connector_terminal",
+    "power_source",
+    "microcontroller_module",
+    "custom_component",
+]
+
+
+class SchematicPin(BaseModel):
+    pin_id: str
+    pin_number: str
+    name: str
+    pin_type: PinType = "passive"
+    rel_x: float = 0.0
+    rel_y: float = 0.0
+    orientation: Literal["left", "right", "top", "bottom"] = "left"
+    electrical_type: str = "passive"
+    notes: Optional[str] = None
+
+
+class SchematicComponentDef(BaseModel):
+    component_id: str
+    name: str
+    ref_des_prefix: str
+    category: ComponentCategory
+    default_value: str
+    default_tolerance: str = "5%"
+    footprint: str = "0805"
+    description: str
+    pins: List[SchematicPin] = Field(default_factory=list)
+    symbol_type: str
+    max_voltage_v: Optional[float] = None
+    max_current_ma: Optional[float] = None
+    max_power_mw: Optional[float] = None
+    forward_voltage_v: Optional[float] = None
+    breakdown_voltage_v: Optional[float] = None
+    beta_hfe: Optional[float] = None
+    quiescent_current_ma: Optional[float] = None
+    datasheet_url: Optional[str] = None
+    spec_verification: Literal["verified_datasheet_spec", "standard_generic_model", "user_defined"] = "standard_generic_model"
+    is_custom: bool = False
+
+
+class ComponentInstance(BaseModel):
+    instance_id: str
+    component_id: str
+    ref_des: str
+    value: str
+    tolerance: str = "5%"
+    pos_x: float
+    pos_y: float
+    rotation: int = 0
+    mirror: bool = False
+    custom_name: Optional[str] = None
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class NetPinConnection(BaseModel):
+    instance_id: str
+    pin_id: str
+
+
+class SchematicNet(BaseModel):
+    net_id: str
+    name: str
+    is_power: bool = False
+    is_ground: bool = False
+    voltage_level_v: Optional[float] = None
+    connections: List[NetPinConnection] = Field(default_factory=list)
+    color: Optional[str] = None
+
+
+class WirePoint(BaseModel):
+    x: float
+    y: float
+
+
+class WireSegment(BaseModel):
+    wire_id: str
+    net_id: str
+    points: List[WirePoint]
+
+
+class SchematicSheet(BaseModel):
+    sheet_id: str = "sheet_1"
+    title: str = "Main Schematic"
+    components: List[ComponentInstance] = Field(default_factory=list)
+    nets: List[SchematicNet] = Field(default_factory=list)
+    wires: List[WireSegment] = Field(default_factory=list)
+    annotations: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class SchematicProject(BaseModel):
+    project_id: str
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    title: str
+    description: str = ""
+    version: str = "1.0.0"
+    sheet: SchematicSheet
+    created_at: str
+    updated_at: str
+    notes: List[str] = Field(default_factory=list)
+
+
+class SchematicProjectCreate(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    title: str
+    description: Optional[str] = ""
+    sheet: Optional[SchematicSheet] = None
+
+
+class SchematicProjectUpdate(BaseModel):
+    user_id: str = "default_user"
+    workspace_id: str = "default_workspace"
+    title: Optional[str] = None
+    description: Optional[str] = None
+    sheet: Optional[SchematicSheet] = None
+    bump_version: bool = False
+    change_note: Optional[str] = None
+
+
+class ERCFinding(BaseModel):
+    finding_id: str
+    rule_code: str
+    severity: Literal["critical", "warning", "info"]
+    title: str
+    message: str
+    affected_components: List[str] = Field(default_factory=list)
+    affected_nets: List[str] = Field(default_factory=list)
+    remediation_steps: str
+    engineering_disclaimer: str = "Engineering guidance based on component metadata; does not guarantee physical safety."
+
+
+class ERCReport(BaseModel):
+    timestamp: str
+    total_findings: int
+    critical_count: int
+    warning_count: int
+    info_count: int
+    findings: List[ERCFinding] = Field(default_factory=list)
+    passed_rule_checks: List[str] = Field(default_factory=list)
+
+
+# Engineering Calculators Schemas
+class OhmsLawRequest(BaseModel):
+    voltage_v: Optional[float] = None
+    current_a: Optional[float] = None
+    resistance_ohms: Optional[float] = None
+    power_w: Optional[float] = None
+
+
+class OhmsLawResult(BaseModel):
+    voltage_v: float
+    current_a: float
+    resistance_ohms: float
+    power_w: float
+    recommended_wattage_rating: str
+    thermal_derating_advisory: str
+    formulas_used: List[str]
+
+
+class VoltageDividerRequest(BaseModel):
+    vin_v: float
+    r1_ohms: Optional[float] = None
+    r2_ohms: Optional[float] = None
+    target_vout_v: Optional[float] = None
+    load_resistance_ohms: Optional[float] = None
+
+
+class ResistorPairRecommendation(BaseModel):
+    r1_ohms: float
+    r2_ohms: float
+    actual_vout_v: float
+    error_pct: float
+    series: str
+
+
+class VoltageDividerResult(BaseModel):
+    vin_v: float
+    r1_ohms: float
+    r2_ohms: float
+    ideal_vout_v: float
+    loaded_vout_v: Optional[float] = None
+    loading_effect_error_pct: Optional[float] = None
+    quiescent_current_ma: float
+    output_impedance_ohms: float
+    r1_power_mw: float
+    r2_power_mw: float
+    recommended_pairs: List[ResistorPairRecommendation] = Field(default_factory=list)
+    formulas_used: List[str]
+
+
+class LEDResistorRequest(BaseModel):
+    supply_voltage_v: float
+    led_forward_voltage_v: float = 2.0
+    led_current_ma: float = 20.0
+    led_color: Optional[str] = "red"
+
+
+class LEDResistorResult(BaseModel):
+    supply_voltage_v: float
+    led_forward_voltage_v: float
+    target_current_ma: float
+    calculated_resistance_ohms: float
+    standard_e12_resistor_ohms: float
+    standard_e24_resistor_ohms: float
+    actual_current_with_e24_ma: float
+    resistor_power_dissipation_mw: float
+    recommended_resistor_power_rating: str
+    safety_margin_pct: float
+    formulas_used: List[str]
+
+
+class RCTimeConstantRequest(BaseModel):
+    resistance_ohms: float
+    capacitance_farads: float
+    step_voltage_v: float = 5.0
+
+
+class RCTimeConstantResult(BaseModel):
+    resistance_ohms: float
+    capacitance_farads: float
+    tau_seconds: float
+    tau_formatted: str
+    cutoff_frequency_hz: float
+    cutoff_frequency_formatted: str
+    rise_time_10_90_seconds: float
+    time_to_95_pct_seconds: float
+    time_to_99_pct_seconds: float
+    charge_curve_points: List[Dict[str, float]] = Field(default_factory=list)
+    formulas_used: List[str]
+
+
+class TransistorBiasRequest(BaseModel):
+    supply_vcc_v: float
+    input_base_voltage_v: float = 3.3
+    collector_load_current_ma: float = 50.0
+    collector_load_resistance_ohms: Optional[float] = None
+    transistor_type: Literal["npn", "pnp"] = "npn"
+    vbe_sat_v: float = 0.7
+    vce_sat_v: float = 0.2
+    typical_beta_hfe: float = 100.0
+    forced_beta_saturation: float = 10.0
+
+
+class TransistorBiasResult(BaseModel):
+    transistor_type: str
+    required_base_current_ma: float
+    base_resistor_ohms: float
+    standard_e24_base_resistor_ohms: float
+    actual_base_current_ma: float
+    collector_current_ma: float
+    transistor_power_dissipation_mw: float
+    base_resistor_power_mw: float
+    saturation_confirmed: bool
+    flyback_diode_required: bool
+    notes_and_tradeoffs: List[str]
+    formulas_used: List[str]
+
+
+class PowerThermalRequest(BaseModel):
+    input_voltage_v: float
+    output_voltage_v: float
+    load_current_ma: float
+    quiescent_current_ma: float = 5.0
+    ambient_temp_c: float = 25.0
+    package_type: str = "TO-220"
+    theta_ja_c_per_w: Optional[float] = None
+
+
+class PowerThermalResult(BaseModel):
+    power_dissipation_w: float
+    theta_ja_used: float
+    estimated_junction_temp_c: float
+    max_recommended_junction_temp_c: float = 125.0
+    heatsink_required: bool
+    recommended_heatsink_thermal_resistance_c_per_w: Optional[float] = None
+    efficiency_pct: float
+    thermal_verdict: Literal["safe_without_heatsink", "heatsink_required", "unsafe_thermal_exceeded"]
+    advisory: str
+    formulas_used: List[str]
+
+
+class LogicExpressionRequest(BaseModel):
+    expression: str  # e.g. "A AND (B OR NOT C)" or "A & (B | ~C)"
+    variables: Optional[List[str]] = None
+
+
+class LogicExpressionResult(BaseModel):
+    expression: str
+    normalized_expression: str
+    variables: List[str]
+    truth_table: List[Dict[str, Any]]
+    sop_minterms: List[int]
+    pos_maxterms: List[int]
+    is_tautology: bool
+    is_contradiction: bool
+
+
+# SPICE & Simulation Schemas
+class SPICESimulationRequest(BaseModel):
+    sheet: SchematicSheet
+    analysis_type: Literal["op", "transient", "ac"] = "op"
+    tstep_seconds: Optional[float] = 1e-6
+    tstop_seconds: Optional[float] = 1e-3
+    fstart_hz: Optional[float] = 10.0
+    fstop_hz: Optional[float] = 1e6
+    points_per_decade: Optional[int] = 10
+
+
+class SPICESimulationResult(BaseModel):
+    analysis_type: str
+    sim_status: Literal[
+        "completed_host_engine",
+        "analytical_ideal_solver",
+        "netlist_ready_engine_not_installed",
+        "simulation_error",
+    ]
+    engine_name: str
+    netlist_text: str
+    node_voltages: Dict[str, float] = Field(default_factory=dict)
+    branch_currents: Dict[str, float] = Field(default_factory=dict)
+    waveform_data: Optional[Dict[str, List[float]]] = None
+    log_output: str
+    model_limitations: List[str] = Field(default_factory=list)
+    anti_fabrication_note: str
+
+
+# AI Circuit Assistant Schemas
+class AICircuitPromptRequest(BaseModel):
+    prompt: str
+    target_supply_voltage_v: Optional[float] = 5.0
+    preferred_components: Optional[List[str]] = None
+
+
+class AICircuitDesignResponse(BaseModel):
+    circuit_name: str
+    description: str
+    operational_explanation: str
+    sheet: SchematicSheet
+    design_notes: List[str]
+    engineering_assumptions: List[str]
+    design_warnings: List[str]
+    engineering_review_required: bool = True
+    review_banner: str = "MANDATORY REVIEW: AI-generated electronic schematic requires qualified engineering verification before prototyping, simulation sign-off, or physical PCB fabrication."
+
+
+# Export Schemas
+class SchematicExportResponse(BaseModel):
+    export_format: Literal[
+        "spice_netlist",
+        "kicad_netlist",
+        "bom_json",
+        "bom_csv",
+        "svg_schematic",
+        "connection_table_json",
+    ]
+    content: str
+    filename: str
+    mime_type: str
+
+
+class SchematicOverviewResponse(BaseModel):
+    stage: int = 27
+    projects_count: int
+    custom_components_count: int
+    recent_projects: List[SchematicProject] = Field(default_factory=list)
+    standard_components_count: int
+    toolchains: Dict[str, bool] = Field(default_factory=dict)
+
+
+
 
 
 

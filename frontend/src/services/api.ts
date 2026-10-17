@@ -153,6 +153,25 @@ import {
   IoTSecurityOverviewResponse,
   DefensiveActionType,
   IncidentStatus,
+  SchematicPin,
+  SchematicComponentDef,
+  ComponentInstance,
+  SchematicNet,
+  SchematicSheet,
+  SchematicProject,
+  ERCFinding,
+  ERCReport,
+  OhmsLawResult,
+  VoltageDividerResult,
+  LEDResistorResult,
+  RCTimeConstantResult,
+  TransistorBiasResult,
+  PowerThermalResult,
+  LogicExpressionResult,
+  SPICESimulationResult,
+  AICircuitDesignResponse,
+  SchematicExportResponse,
+  SchematicOverviewResponse,
 } from '../types';
 
 const BASE_URL = '/api/v1';
@@ -3626,6 +3645,246 @@ export const api = {
     } catch {
       return [];
     }
+  },
+
+  // =========================================================================
+  // Stage 27: Electronic Circuit Schematic Design Studio
+  // =========================================================================
+
+  async getSchematicOverview(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<SchematicOverviewResponse> {
+    try {
+      return await request<SchematicOverviewResponse>(
+        `/schematic/overview?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return {
+        stage: 27,
+        projects_count: 0,
+        custom_components_count: 0,
+        recent_projects: [],
+        standard_components_count: 30,
+        toolchains: {},
+      };
+    }
+  },
+
+  async getSchematicCatalog(): Promise<Record<string, SchematicComponentDef>> {
+    try {
+      return await request<Record<string, SchematicComponentDef>>('/schematic/catalog');
+    } catch {
+      return {};
+    }
+  },
+
+  async listSchematicProjects(
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<SchematicProject[]> {
+    try {
+      return await request<SchematicProject[]>(
+        `/schematic/projects?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+      );
+    } catch {
+      return [];
+    }
+  },
+
+  async createSchematicProject(params: {
+    title: string;
+    description?: string;
+    sheet?: SchematicSheet;
+    user_id?: string;
+    workspace_id?: string;
+  }): Promise<SchematicProject> {
+    return request<SchematicProject>('/schematic/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        title: params.title,
+        description: params.description || '',
+        sheet: params.sheet,
+      }),
+    });
+  },
+
+  async getSchematicProject(
+    projectId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<SchematicProject> {
+    return request<SchematicProject>(
+      `/schematic/projects/${encodeURIComponent(projectId)}?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`
+    );
+  },
+
+  async updateSchematicProject(
+    projectId: string,
+    params: {
+      title?: string;
+      description?: string;
+      sheet?: SchematicSheet;
+      bump_version?: boolean;
+      change_note?: string;
+      user_id?: string;
+      workspace_id?: string;
+    }
+  ): Promise<SchematicProject> {
+    return request<SchematicProject>(`/schematic/projects/${encodeURIComponent(projectId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        user_id: params.user_id || 'default_user',
+        workspace_id: params.workspace_id || 'default_workspace',
+        title: params.title,
+        description: params.description,
+        sheet: params.sheet,
+        bump_version: params.bump_version ?? false,
+        change_note: params.change_note,
+      }),
+    });
+  },
+
+  async deleteSchematicProject(
+    projectId: string,
+    userId = 'default_user',
+    workspaceId = 'default_workspace'
+  ): Promise<{ status: string; project_id: string }> {
+    return request<{ status: string; project_id: string }>(
+      `/schematic/projects/${encodeURIComponent(projectId)}?user_id=${encodeURIComponent(userId)}&workspace_id=${encodeURIComponent(workspaceId)}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async runSchematicERC(sheet: SchematicSheet): Promise<ERCReport> {
+    return request<ERCReport>('/schematic/erc', {
+      method: 'POST',
+      body: JSON.stringify(sheet),
+    });
+  },
+
+  async calculateOhmsLaw(params: {
+    voltage_v?: number;
+    current_a?: number;
+    resistance_ohms?: number;
+    power_w?: number;
+  }): Promise<OhmsLawResult> {
+    return request<OhmsLawResult>('/schematic/calculators/ohms-law', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculateVoltageDivider(params: {
+    vin_v: number;
+    r1_ohms?: number;
+    r2_ohms?: number;
+    target_vout_v?: number;
+    load_resistance_ohms?: number;
+  }): Promise<VoltageDividerResult> {
+    return request<VoltageDividerResult>('/schematic/calculators/voltage-divider', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculateLEDResistor(params: {
+    supply_voltage_v: number;
+    led_forward_voltage_v?: number;
+    led_current_ma?: number;
+    led_color?: string;
+  }): Promise<LEDResistorResult> {
+    return request<LEDResistorResult>('/schematic/calculators/led-resistor', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculateRCFilter(params: {
+    resistance_ohms: number;
+    capacitance_farads: number;
+    step_voltage_v?: number;
+  }): Promise<RCTimeConstantResult> {
+    return request<RCTimeConstantResult>('/schematic/calculators/rc-filter', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculateTransistorBias(params: {
+    supply_vcc_v: number;
+    input_base_voltage_v?: number;
+    collector_load_current_ma?: number;
+    forced_beta_saturation?: number;
+  }): Promise<TransistorBiasResult> {
+    return request<TransistorBiasResult>('/schematic/calculators/transistor-bias', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculatePowerThermal(params: {
+    input_voltage_v: number;
+    output_voltage_v: number;
+    load_current_ma: number;
+    package_type?: string;
+  }): Promise<PowerThermalResult> {
+    return request<PowerThermalResult>('/schematic/calculators/power-thermal', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async calculateLogicExpression(params: {
+    expression: string;
+    variables?: string[];
+  }): Promise<LogicExpressionResult> {
+    return request<LogicExpressionResult>('/schematic/calculators/logic-expression', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async runSPICESimulation(params: {
+    sheet: SchematicSheet;
+    analysis_type?: 'op' | 'transient' | 'ac';
+    tstep_seconds?: number;
+    tstop_seconds?: number;
+  }): Promise<SPICESimulationResult> {
+    return request<SPICESimulationResult>('/schematic/simulation/run', {
+      method: 'POST',
+      body: JSON.stringify({
+        sheet: params.sheet,
+        analysis_type: params.analysis_type || 'op',
+        tstep_seconds: params.tstep_seconds || 1e-6,
+        tstop_seconds: params.tstop_seconds || 1e-3,
+      }),
+    });
+  },
+
+  async generateAICircuit(params: {
+    prompt: string;
+    target_supply_voltage_v?: number;
+  }): Promise<AICircuitDesignResponse> {
+    return request<AICircuitDesignResponse>('/schematic/ai-assistant', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  async exportSchematic(
+    sheet: SchematicSheet,
+    exportFormat: string
+  ): Promise<SchematicExportResponse> {
+    return request<SchematicExportResponse>(
+      `/schematic/export?export_format=${encodeURIComponent(exportFormat)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(sheet),
+      }
+    );
   },
 };
 

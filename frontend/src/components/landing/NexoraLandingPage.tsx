@@ -39,7 +39,8 @@ interface CapabilityCard {
     | 'agents'
     | 'firmware'
     | 'telemetry'
-    | 'security';
+    | 'security'
+    | 'schematic';
   icon: React.FC<{ className?: string }>;
 }
 
@@ -143,6 +144,16 @@ const CAPABILITY_CARDS: CapabilityCard[] = [
     highlights: ['Device posture auditing', 'Secret masking & credential checks', 'Anomaly detection & containment'],
     targetView: 'security',
     icon: ShieldAlert,
+  },
+  {
+    id: 'circuit-schematic-studio',
+    title: 'Circuit Schematic Design Studio',
+    stageBadge: 'Stage 27',
+    description:
+      'Interactive EDA netlist canvas, topological Electrical Rule Checks (ERC), standard SPICE simulation, E24 engineering calculators, and AI circuit synthesis.',
+    highlights: ['Interactive SVG netlist canvas', 'Static ERC diagnostic rules', 'SPICE & analytical linear solver'],
+    targetView: 'schematic',
+    icon: Cpu,
   },
 ];
 
@@ -280,7 +291,8 @@ export const NexoraLandingPage: React.FC = () => {
       | 'iot'
       | 'firmware'
       | 'telemetry'
-      | 'security' = 'chat'
+      | 'security'
+      | 'schematic' = 'chat'
   ) => {
     setActiveWorkspaceView(target);
   };
@@ -906,7 +918,7 @@ export const NexoraLandingPage: React.FC = () => {
                 NEXORA AI
               </span>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800">
-                Stages 1–26 Operational
+                Stages 1–27 Operational
               </span>
               <span
                 className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded ${

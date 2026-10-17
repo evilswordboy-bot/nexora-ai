@@ -12,6 +12,45 @@
 
 ---
 
+# NEXORA AI — Stage 27: Electronic Circuit Schematic Design Studio
+
+**NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 27** introduces the **Electronic Circuit Schematic Design Studio (`SchematicStudioEngine`)**: a professional electronic design automation (EDA) workspace featuring an interactive SVG netlist canvas, comprehensive discrete and IC component library, topological Electrical Rule Checks (ERC) with actionable diagnostic hints, standard SPICE netlist generation with local `ngspice` execution and deterministic analytical linear solving, 7 precision engineering calculators, multi-format exports (SPICE `.cir`, KiCad `.net`, BOM CSV/JSON, connection tables, SVG), and natural-language AI circuit synthesis with mandatory engineering review banners in `SchematicStudio.tsx`.
+
+---
+
+## 🌟 Stage 27 Core Deliverables
+
+- **Interactive Schematic Netlist Canvas (`SchematicStudio.tsx`)**:
+  - Interactive SVG schematic editor with component placement, rotation (`0°/90°/180°/270°`), orthographic Manhattan wiring, pin connection detection, power rails (`VCC`, `3V3`, `5V`, `12V`), ground symbols (`GND`), 20px grid snapping, zoom/pan (`0.4x` to `2.5x`), undo/redo history stack, and inspector for editing reference designators, component values, and pin connections.
+- **Component Catalog & Custom Component Modeler**:
+  - Comprehensive standard library covering resistors, capacitors, inductors, diodes, LEDs, NPN/PNP bipolar transistors (BJT), N-MOSFETs, operational amplifiers (LM358), 555 timer, linear voltage regulators (LM7805, AMS1117-3.3), logic gates (AND, OR, NOT, NAND, NOR, XOR), SPST switches, and connector headers.
+  - Supports user-defined custom components with validated pin assignments and ratings.
+- **Topological Electrical Rule Checks (ERC)**:
+  - 10 static diagnostic rules: `ERC_UNCONNECTED_PIN`, `ERC_FLOATING_INPUT`, `ERC_POWER_PIN_NO_SOURCE`, `ERC_CONFLICTING_POWER_RAILS`, `ERC_OUTPUT_CONTENTION`, `ERC_MISSING_GROUND`, `ERC_SINGLE_PIN_NET`, `ERC_REVERSE_POLARITY_DIODE`, `ERC_SHORT_CIRCUIT_POWER_GND`, and `ERC_EXCESSIVE_CURRENT_ESTIMATE`.
+  - Severity classification (`critical`, `warning`, `info`) with impacted components, nets, and actionable remediation steps.
+  - Non-physical guidance notice: explicitly clarifies that static rule checks do not replace physical breadboarding, thermal dissipation testing, or RF signal integrity simulations.
+- **Simulation Integration & Deterministic Linear Solver**:
+  - Generates standard Berkeley SPICE netlists (`.cir`) from schematic sheets.
+  - Probes host system for local `ngspice` executable; when installed, executes transient and DC operating point analyses (`completed_host_engine`).
+  - When `ngspice` is absent, an analytical ideal solver deterministically computes DC operating node voltages and branch currents for linear networks (`analytical_ideal_solver`), or provides ready-to-copy SPICE netlists with installation guidance (`netlist_ready_engine_not_installed`) — never fabricating fictional waveforms.
+- **7 Precision Engineering Calculators**:
+  1. *Ohm's & Power Law*: 4-quadrant solver ($V, I, R, P$) with standard resistor wattage recommendations ($1/8\text{W}$, $1/4\text{W}$, $1/2\text{W}$, $1\text{W}$, $2\text{W}$, $5\text{W}$).
+  2. *Voltage Divider*: Ideal output voltage, loaded output voltage with loading effect error percentage, quiescent current, and nearest standard E24 resistor pairs.
+  3. *LED Current Limiting Resistor*: Forward voltage drop compensation across LED colors (Red, Green, Blue, White), calculated resistance, standard E24 selection, actual current, and minimum power rating.
+  4. *RC Time Constant & Filter*: Low-pass and high-pass cutoff frequencies ($-3\text{dB}$ corner), time constant $\tau = R \cdot C$, and $10\%\text{--}90\%$ rise / settling times.
+  5. *BJT Transistor Saturation Bias*: Base overdrive calculation for switching transistors ($I_B = I_C / \beta \times \text{overdrive}$), standard $R_B$ selection, base power dissipation, and flyback diode advisory for inductive loads.
+  6. *Power & Thermal Dissipation*: Linear regulator thermal dissipation ($P_D = (V_{in} - V_{out}) \cdot I_L$), estimated junction temperature without heatsink, and maximum thermal resistance ($\theta_{SA} \le \frac{T_{J,max} - T_A}{P_D} - \theta_{JC} - \theta_{CS}$) for heatsink selection.
+  7. *Logic Expression Truth Table*: Multi-variable Boolean truth table generator with tautology and contradiction detection.
+- **Multi-Format Schematic & BOM Export**:
+  - Export to Berkeley SPICE netlist (`.cir`), KiCad netlist (`.net`), Bill of Materials (BOM in CSV and JSON), connection tables, and standalone scalable vector graphics (`.svg`).
+- **AI Circuit Design Assistant**:
+  - Natural-language circuit synthesis with component values, operational explanation, and design formulas.
+  - Prominent mandatory engineering review banner on all AI-generated circuits before physical assembly.
+- **Tool #25 Runtime Integration**:
+  - Registered `schematic_studio_engine` in the central tool registry for autonomous agent tool calling.
+
+---
+
 # NEXORA AI — Stage 26: IoT Security & Device Threat Detection
 
 **NEXORA AI** is a premium, scalable, universal AI assistant platform engineered to evolve through 100 structured development phases. **Stage 26** introduces the **IoT Security & Device Threat Detection Engine (`IoTSecurityEngine`)**: a defensive IoT security workspace that maintains honest device security postures, executes rule-based configuration audits with secret redaction, detects behavioral anomalies (frequency bursts, unexpected sequence resets / crashloops, metric z-score leaps, sensor saturation), correlates security incidents without unproven attacker attribution, enforces consequential defensive gates (`quarantine_device`, `revoke_credential`, `isolate_network` with anti-fabrication adapter check), documents hardware-backed firmware integrity architectures, and provides a defensive dashboard in `IoTSecurityStudio.tsx`.
