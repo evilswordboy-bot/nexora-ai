@@ -198,8 +198,8 @@ export const SettingsModal: React.FC = () => {
                   onChange={(e) => setForm({ ...form, selectedProvider: e.target.value })}
                   className="w-full bg-midnight-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-slate-200 text-sm focus:border-cyan-500/50 focus:outline-none"
                 >
-                  <option value="auto">Auto-Detect Configured Key (Recommended)</option>
-                  <option value="gemini">Google Gemini</option>
+                  <option value="gemini">Google Gemini (Connected Default)</option>
+                  <option value="auto">Auto-Detect Configured Key</option>
                   <option value="openai">OpenAI</option>
                   <option value="anthropic">Anthropic Claude</option>
                 </select>

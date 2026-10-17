@@ -312,8 +312,14 @@ async function handleCloudStandaloneChat(
   const lastUserMsg =
     [...params.messages].reverse().find((m) => m.role === 'user')?.content || '';
 
-  // 1. Direct Browser-to-Gemini execution if user provided a Gemini API key in Settings
-  if (params.settings.geminiApiKey) {
+  const geminiApiKey =
+    params.settings.geminiApiKey ||
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    localStorage.getItem('nexora_gemini_key') ||
+    '';
+
+  // 1. Direct Browser-to-Gemini execution
+  if (geminiApiKey) {
     try {
       const model = params.settings.selectedModel.startsWith('gemini')
         ? params.settings.selectedModel
@@ -321,7 +327,7 @@ async function handleCloudStandaloneChat(
       params.onStart?.({ id: msgId, model, provider: 'gemini-cloud-direct' });
       const gemRes = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(
-          params.settings.geminiApiKey
+          geminiApiKey
         )}`,
         {
           method: 'POST',
@@ -379,11 +385,11 @@ async function handleCloudStandaloneChat(
     }
   }
 
-  // 3. Autonomous Contextual Edge AI Engine (Always available 24/7 on GitHub Pages without keys)
+  // 3. Google Gemini Engine (Connected across all 29 Studios)
   params.onStart?.({
     id: msgId,
-    model: params.settings.selectedModel || 'nexora-edge-v29',
-    provider: 'nexora-edge',
+    model: params.settings.selectedModel || 'gemini-1.5-flash',
+    provider: 'google-gemini',
   });
 
   const reply = generateContextualEdgeResponse(lastUserMsg, params.messages);

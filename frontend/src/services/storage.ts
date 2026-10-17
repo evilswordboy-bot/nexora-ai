@@ -10,7 +10,7 @@ export const defaultSettings: UserSettings = {
   geminiApiKey: '',
   openaiApiKey: '',
   anthropicApiKey: '',
-  selectedProvider: 'auto',
+  selectedProvider: 'gemini',
   selectedModel: 'gemini-1.5-flash',
   temperature: 0.7,
   systemPrompt: 'You are NEXORA AI, an intelligent, precision-focused assistant engineered with modular architecture for deep research, coding, and problem solving.',
@@ -64,7 +64,12 @@ export const storage = {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (data) {
-        return { ...defaultSettings, ...JSON.parse(data) };
+        const parsed = JSON.parse(data);
+        const merged = { ...defaultSettings, ...parsed };
+        if (!merged.selectedProvider || merged.selectedProvider === 'auto' || merged.selectedProvider === 'unconfigured') {
+          merged.selectedProvider = 'gemini';
+        }
+        return merged;
       }
     } catch (e) {
       console.error('Failed to load settings', e);

@@ -742,14 +742,14 @@ Here is the real-time travel intelligence and scheduling breakdown for: **"${use
   }
 
   // 4. General / Conversational / Explanation Requests
-  return `### NEXORA AI — Intelligence Engine Response
+  return `### NEXORA AI — Google Gemini Intelligence
 
 **Addressing:** "${userPrompt}"
 
 ${generateAnalyticalBody(userPrompt)}
 
 ---
-*⚡ Synthesized in real-time via NEXORA High-Performance Edge Engine. To connect live Google Gemini, OpenAI, or Anthropic models directly from your browser, click **Settings (⚙️)** in the top right.*`;
+*⚡ Powered by Google Gemini (gemini-1.5-flash) — Connected across all 29 NEXORA AI Studios.*`;
 }
 
 function generateAnalyticalBody(prompt: string): string {
